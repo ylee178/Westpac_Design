@@ -156,7 +156,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
               className="text-[13px] font-semibold leading-tight"
               style={{ color: "var(--theme-text-primary)" }}
             >
-              Pac
+              Pac AI
             </div>
             <div className="flex items-center gap-1.5 text-[10px]">
               <span
@@ -357,7 +357,7 @@ function HeaderBriefing({
       <div
         className="px-3 py-3 w-full min-w-0"
         style={{
-          background: "#ededed",
+          background: "#f5f5f5",
           border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
         }}

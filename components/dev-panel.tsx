@@ -83,7 +83,7 @@ export function DevPanel() {
               />
               <OptionButton
                 selected={aiPanel}
-                label="V2 · AI teammate (Pac)"
+                label="V2 · AI teammate (Pac AI)"
                 onClick={() => setAiPanel(true)}
               />
             </div>

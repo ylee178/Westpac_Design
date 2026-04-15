@@ -169,6 +169,14 @@ export function V1EmptyState() {
         {/* Product type — always visible */}
         <section className="mb-8">
           <SectionLabel step="1" label="Product type" />
+          {!product ? (
+            <div
+              className="text-[12px] mb-3 -mt-1"
+              style={{ color: "var(--theme-text-tertiary)" }}
+            >
+              Select a product to continue.
+            </div>
+          ) : null}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {PRODUCTS_IN_ORDER.map((id) => {
               const p = WESTPAC_PRODUCTS[id];
@@ -349,14 +357,7 @@ export function V1EmptyState() {
               )}
             </section>
           </>
-        ) : (
-          <div
-            className="text-center py-8 text-[12px]"
-            style={{ color: "var(--theme-text-tertiary)" }}
-          >
-            Select a product to continue.
-          </div>
-        )}
+        ) : null}
 
         <div className="flex items-center justify-end">
           <button
