@@ -388,6 +388,33 @@
   30%           { opacity: 1;   transform: translateY(-2px); }
 }
 
+/* Shimmering status text — a red light beam sweeping through
+   muted gray letters. Used by the Pac typing indicator. */
+.shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #9a9a9a 0%,
+    #9a9a9a 38%,
+    #DA1710 48%,
+    #ffffff 50%,
+    #DA1710 52%,
+    #9a9a9a 62%,
+    #9a9a9a 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-sweep 2.4s linear infinite;
+  font-weight: 500;
+}
+
+@keyframes shimmer-sweep {
+  0%   { background-position: 220% 0; }
+  100% { background-position: -100% 0; }
+}
+
 /* ============================================================
    Skeleton — shared placeholder language.
    Used by the <Skeleton /> component AND by grayscale dev mode

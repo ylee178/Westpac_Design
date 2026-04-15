@@ -42,7 +42,16 @@ interface Props {
   readinessScore: number;
 }
 
-// First-mount intro. Everything else is event-driven via props.
+// Lending-themed "thinking" verbs for the shimmering status text.
+const STATUS_VERBS = [
+  "Underwriting",
+  "Cross-checking AUSTRAC guidance",
+  "Reviewing the deal profile",
+  "Reconciling sources",
+  "Crystallising a response",
+  "Calibrating risk context",
+];
+
 function buildIntro(bankerFirstName: string): TimelineMessage {
   return {
     id: "intro",
@@ -51,10 +60,9 @@ function buildIntro(bankerFirstName: string): TimelineMessage {
     createdAt: Date.now(),
     content:
       `Hi ${bankerFirstName}. I'm watching this deal alongside you. ` +
-      `Pick a product in the main area and I'll surface contextual ` +
-      `guidance as you go — checking what's legally mandatory, ` +
-      `flagging rare-product risks, and explaining the AUSTRAC reform ` +
-      `moves.`,
+      `I'll surface contextual guidance as you go — checking what's ` +
+      `legally mandatory, flagging rare-product risks, and explaining ` +
+      `the AUSTRAC reform moves.`,
   };
 }
 
@@ -64,9 +72,10 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
   const { step, draft } = useFlowMode();
   const firstName = deal.banker.name.split(" ")[0] || "there";
 
-  const [timeline, setTimeline] = useState<TimelineMessage[]>(() => [
-    buildIntro(firstName),
-  ]);
+  // Start EMPTY — the first Pac message only appears once the banker
+  // does something in the main area (or types here). That way the
+  // panel opens with the welcome splash instead of a pre-loaded greeting.
+  const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
   const [freeText, setFreeText] = useState("");
   const [pacTyping, setPacTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -81,20 +90,26 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
   const lastSkippedItemId = useRef<string | null>(null);
 
   // Push a Pac message with a brief typing delay so it feels alive.
+  // On the very first message we also prepend the intro card so the
+  // banker sees the "Pac · Westpac AI teammate" introduction.
   function pushPac(content: string) {
     setPacTyping(true);
     setTimeout(() => {
-      setTimeline((t) => [
-        ...t,
-        {
-          id: `pac-${Date.now()}-${Math.random()}`,
-          sender: "pac",
-          content,
-          createdAt: Date.now(),
-        },
-      ]);
+      setTimeline((t) => {
+        const base =
+          t.length === 0 ? [buildIntro(firstName)] : t;
+        return [
+          ...base,
+          {
+            id: `pac-${Date.now()}-${Math.random()}`,
+            sender: "pac",
+            content,
+            createdAt: Date.now(),
+          },
+        ];
+      });
       setPacTyping(false);
-    }, 900);
+    }, 1100);
   }
 
   function pushBanker(content: string) {
@@ -241,28 +256,32 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
         </div>
       </div>
 
-      {/* Scrollable chat */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-      >
-        {timeline.map((msg, i) => {
-          const prev = timeline[i - 1];
-          const sameSpeakerContinuation =
-            prev &&
-            prev.sender === msg.sender &&
-            msg.createdAt - prev.createdAt < PAC_HUMAN_GAP_MS;
-          return (
-            <MessageBubble
-              key={msg.id}
-              message={msg}
-              compactContinuation={sameSpeakerContinuation}
-              firstName={firstName}
-            />
-          );
-        })}
-        {pacTyping ? <TypingIndicator /> : null}
-      </div>
+      {/* Scrollable chat — empty state or thread */}
+      {timeline.length === 0 && !pacTyping ? (
+        <EmptyChatState />
+      ) : (
+        <div
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+        >
+          {timeline.map((msg, i) => {
+            const prev = timeline[i - 1];
+            const sameSpeakerContinuation =
+              prev &&
+              prev.sender === msg.sender &&
+              msg.createdAt - prev.createdAt < PAC_HUMAN_GAP_MS;
+            return (
+              <MessageBubble
+                key={msg.id}
+                message={msg}
+                compactContinuation={sameSpeakerContinuation}
+                firstName={firstName}
+              />
+            );
+          })}
+          {pacTyping ? <TypingIndicator /> : null}
+        </div>
+      )}
 
       {/* Input */}
       <form
@@ -416,38 +435,63 @@ function MessageBubble({
 }
 
 function TypingIndicator() {
+  const [verbIdx, setVerbIdx] = useState(0);
+  useEffect(() => {
+    const t = setInterval(
+      () => setVerbIdx((i) => (i + 1) % STATUS_VERBS.length),
+      1600,
+    );
+    return () => clearInterval(t);
+  }, []);
   return (
     <div className="flex items-start gap-2">
       <div className="shrink-0 pt-0.5">
         <PacAvatar size={26} state="speaking" />
       </div>
       <div
-        className="inline-flex items-center gap-1 px-3 py-2.5"
+        className="inline-flex items-center px-3 py-2"
         style={{
           background: "var(--theme-card-bg)",
           border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
           borderTopLeftRadius: "4px",
+          minHeight: "32px",
         }}
       >
-        <Dot delay={0} />
-        <Dot delay={150} />
-        <Dot delay={300} />
+        <span
+          className="shimmer-text text-[12px] tracking-[0.16px]"
+          key={verbIdx}
+        >
+          {STATUS_VERBS[verbIdx]}…
+        </span>
       </div>
     </div>
   );
 }
 
-function Dot({ delay }: { delay: number }) {
+function EmptyChatState() {
   return (
-    <span
-      className="inline-block w-1.5 h-1.5"
-      style={{
-        background: "var(--theme-text-tertiary)",
-        borderRadius: "50%",
-        animation: `pac-typing 1.2s ease-in-out ${delay}ms infinite`,
-      }}
-    />
+    <div
+      className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center"
+      style={{ background: "var(--theme-page-bg)" }}
+    >
+      <PacAvatar size={68} state="idle" />
+      <div>
+        <div
+          className="text-[14px] font-semibold mb-1"
+          style={{ color: "var(--theme-text-primary)" }}
+        >
+          Pac · Westpac AI teammate
+        </div>
+        <div
+          className="text-[12px] max-w-[260px] leading-[1.5]"
+          style={{ color: "var(--theme-text-secondary)" }}
+        >
+          What would you like to do first? Ask about this deal, or I
+          can walk you through the checklist.
+        </div>
+      </div>
+    </div>
   );
 }
 
