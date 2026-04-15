@@ -65,7 +65,7 @@ export const SAMPLE_DEAL: Deal = {
   jurisdiction: "NSW",
   amount: 850_000,
   currency: "AUD",
-  phase: "identification",
+  phase: "setup",
   cddMode: "reform-cdd",
   banker: {
     name: "Sarah Nguyen",
@@ -102,8 +102,86 @@ export const SKIP_REASON_OPTIONS: SkipReasonOption[] = [
   },
 ];
 
-// ——— Checklist items (11 items across phases, D1 reshape logic included) ———
+// ——— Checklist items (spans all 5 phases, D1 reshape logic included) ———
 export const INITIAL_CHECKLIST: ChecklistItem[] = [
+  // ═══════════════════════════════════════════════════════════════
+  // SETUP phase — deal scaffolding
+  // ═══════════════════════════════════════════════════════════════
+
+  // S1. Link to customer record (banker, setup) — starts as complete
+  {
+    id: "setup-01",
+    label: "Link customer record",
+    description:
+      "Match the prospect to an existing Westpac customer record, or create a new customer stub.",
+    owner: "banker",
+    status: "complete",
+    phase: "setup",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "customer-id",
+    knowledge: {
+      what:
+        "Customer linkage — every deal must be tied to a customer record in Westpac's customer master.",
+      why:
+        "Without linkage, the deal is orphaned from the relationship context and downstream KYC/CDD cannot run.",
+    },
+  },
+
+  // S2. Confirm product + entity type (system)
+  {
+    id: "setup-02",
+    label: "Confirm product and entity type",
+    description:
+      "Capture the loan product and the customer entity structure. These two fields drive the dynamic checklist in the next phase.",
+    owner: "banker",
+    status: "complete",
+    phase: "setup",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "entity-verification",
+    knowledge: {
+      what:
+        "Product × entity capture — the two axes that D1 dynamic checklist reshapes on.",
+      why:
+        "AUSTRAC's guidance groups CDD requirements by entity type; Westpac's product rules layer on top. Missing either axis means the reshape fires the wrong checklist.",
+    },
+    provenance: {
+      source: "Manual capture (banker)",
+      timestamp: "2026-04-14 08:45 AEST",
+      confidence: "high",
+    },
+  },
+
+  // S3. Initial eligibility screen (system)
+  {
+    id: "setup-03",
+    label: "Initial eligibility screen",
+    description:
+      "Automated eligibility pre-check against BizEdge's trading-history, exposure, and risk thresholds.",
+    owner: "system",
+    status: "complete",
+    phase: "setup",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "risk",
+    knowledge: {
+      what:
+        "Automated eligibility: trading age ≥12 months, no trading losses, TCE ≤ $20M, industry not on exclusion list.",
+      why:
+        "BizEdge fast-tracks deals that pass the eligibility screen. Deals that fail fall back to manual underwriting.",
+    },
+    provenance: {
+      source: "BizEdge eligibility engine",
+      timestamp: "2026-04-14 08:47 AEST",
+      confidence: "high",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // IDENTIFICATION phase — AUSTRAC CDD
+  // ═══════════════════════════════════════════════════════════════
+
   // 1. Verify ABN (system, auto-filled, provenance — D6 demo)
   {
     id: "item-01",
@@ -349,6 +427,104 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
         "Audited P&L, balance sheet, and cashflow statements for FY24 and FY25.",
       why:
         "Credit assessment cannot proceed without financials. This is a customer-owned task — banker cannot complete it directly.",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // APPROVAL phase
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "approval-01",
+    label: "Credit decision — recommend to approver",
+    description:
+      "Banker formally recommends approval with stated conditions; decision routed to the credit approver queue.",
+    owner: "banker",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "Formal recommendation object with conditions, repayment structure, pricing, and security.",
+      why:
+        "Credit decisioning needs a structured recommendation object, not just a narrative. Missing fields block the approver's workflow.",
+    },
+  },
+  {
+    id: "approval-02",
+    label: "Approver sign-off",
+    description:
+      "Credit approver reviews the recommendation, credit memo, and risk rating; signs off or requests revisions.",
+    owner: "system",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "Approver e-signature on the credit decision. For auto-decisioned deals this is skipped.",
+      why:
+        "Human approver review is required for deals above automated decisioning thresholds.",
+    },
+  },
+  {
+    id: "approval-03",
+    label: "Customer accepts conditions",
+    description:
+      "Customer reviews final conditions, pricing, and security requirements; e-signs acceptance.",
+    owner: "customer",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "Customer-facing conditions document, e-signed on the customer portal.",
+      why:
+        "Formal acceptance creates the enforceable contract and unlocks settlement.",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SETTLEMENT phase
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "settle-01",
+    label: "Generate loan documentation",
+    description:
+      "Auto-generate loan documentation pack (facility agreement, security docs, guarantee paper for bank-guarantee products).",
+    owner: "system",
+    status: "pending",
+    phase: "settlement",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "Templated loan docs populated from deal data. For bank guarantees, this includes the physical paper printed at a branch.",
+      why:
+        "Missing or wrong doc templates are a top rework driver at settlement. Templated generation reduces that failure mode.",
+    },
+  },
+  {
+    id: "settle-02",
+    label: "Book facility on core banking",
+    description:
+      "Facility is booked on the core banking system and the drawdown account is provisioned.",
+    owner: "system",
+    status: "pending",
+    phase: "settlement",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "Core banking integration — facility account creation and initial balance set.",
+      why:
+        "This is the final handoff from origination to servicing. Once booked, the deal moves out of BizEdge into the live portfolio.",
     },
   },
 ];

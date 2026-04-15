@@ -13,14 +13,16 @@ import type {
   Deal,
   EntityType,
   OwnerFilter as OF,
+  Phase,
   ProductType,
 } from "@/lib/types";
-import { INITIAL_CHECKLIST, SAMPLE_DEAL } from "@/data/deal-data";
+import { INITIAL_CHECKLIST, PHASES, SAMPLE_DEAL } from "@/data/deal-data";
 import { calculateConfidence } from "@/lib/confidence-calc";
 import {
   reshapeChecklist,
   itemsForPhase,
 } from "@/lib/checklist-reshape";
+import { useDevMode } from "@/lib/dev-mode-context";
 
 import { DealHeader } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
@@ -29,7 +31,7 @@ import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistItemRow } from "@/components/checklist-item";
 import { SkipDialog } from "@/components/skip-dialog";
 import { DevPanel } from "@/components/dev-panel";
-import { Info } from "lucide-react";
+import { ArrowRight, ArrowLeft, Info, Sparkles } from "lucide-react";
 
 export default function Page() {
   // ——— State ———
@@ -37,6 +39,8 @@ export default function Page() {
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
+  const { version } = useDevMode();
+  const isV2 = version === "v2";
 
   // ——— Derived (computed during render — no useEffect for this) ———
   // D1: reshape by product × entity
@@ -90,6 +94,37 @@ export default function Page() {
     [reshaped],
   );
 
+  // V2 — AI adds a 5th input to the confidence score.
+  // Simple model: AI signal reads deal profile and contributes a flat "high" value
+  // when the product × entity combination is a common one, lower when rare.
+  // Here we just pick 92 for the demo so V2 visibly bumps the score.
+  const v2Breakdown = useMemo(() => {
+    if (!isV2) return breakdown;
+    const aiSignal = 92;
+    // Reweight: checklist 35, skip 15, provenance 22, mode 13, ai 15 → 100
+    const total = Math.round(
+      breakdown.checklistCompletion * 0.35 +
+        breakdown.skipQuality * 0.15 +
+        breakdown.provenanceConfidence * 0.22 +
+        breakdown.modeAlignment * 0.13 +
+        aiSignal * 0.15,
+    );
+    return { ...breakdown, total };
+  }, [breakdown, isV2]);
+  const effectiveBreakdown = isV2 ? v2Breakdown : breakdown;
+
+  // Phase navigation — next/prev phase
+  const currentPhaseIdx = PHASES.findIndex((p) => p.id === deal.phase);
+  const prevPhase: Phase | null =
+    currentPhaseIdx > 0 ? PHASES[currentPhaseIdx - 1].id : null;
+  const nextPhase: Phase | null =
+    currentPhaseIdx < PHASES.length - 1
+      ? PHASES[currentPhaseIdx + 1].id
+      : null;
+  const nextPhaseLabel = nextPhase
+    ? PHASES.find((p) => p.id === nextPhase)?.label
+    : null;
+
   // ——— Handlers ———
   function handleProductChange(product: ProductType) {
     setDeal((d) => ({ ...d, product }));
@@ -119,13 +154,48 @@ export default function Page() {
     setSkipTarget(null);
   }
 
+  function handlePhaseChange(phase: Phase) {
+    setDeal((d) => ({ ...d, phase }));
+  }
+
+  const currentPhaseMeta = PHASES.find((p) => p.id === deal.phase);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Header — customer, amount, D8 mode, D9 confidence */}
-      <DealHeader deal={deal} breakdown={breakdown} hasRedFlag={hasRedFlag} />
+      <DealHeader
+        deal={deal}
+        breakdown={effectiveBreakdown}
+        hasRedFlag={hasRedFlag}
+      />
 
-      {/* D5 — Progress spine */}
-      <ProgressSpine currentPhase={deal.phase} />
+      {/* V2 — AI teammate banner */}
+      {isV2 ? (
+        <div
+          className="border-b"
+          style={{
+            background: "var(--theme-card-bg)",
+            borderColor: "var(--theme-border)",
+          }}
+        >
+          <div
+            className="max-w-[1584px] mx-auto px-6 md:px-8 py-1.5 flex items-center gap-2 text-[11px]"
+            style={{ color: "var(--theme-primary)" }}
+          >
+            <Sparkles size={11} strokeWidth={2.2} />
+            <span className="font-semibold tracking-[0.32px] uppercase">
+              V2 · AI teammate active
+            </span>
+            <span style={{ color: "var(--theme-text-tertiary)" }}>
+              · contributing a 5th input to Deal Confidence · surfacing rare
+              combinations · drafting skip reason hints
+            </span>
+          </div>
+        </div>
+      ) : null}
+
+      {/* D5 — Progress spine (click to jump between phases) */}
+      <ProgressSpine currentPhase={deal.phase} onPhaseChange={handlePhaseChange} />
 
       {/* Main workspace — table-first, quiet */}
       <main
@@ -169,7 +239,7 @@ export default function Page() {
               className="text-[15px] leading-[1.4] font-semibold"
               style={{ color: "var(--theme-text-primary)" }}
             >
-              Identification phase — checklist
+              {currentPhaseMeta?.label} phase — checklist
             </h2>
             <div
               className="text-[11px]"
@@ -213,6 +283,52 @@ export default function Page() {
               No items match the current filter. Change Owner filter back to "All".
             </div>
           )}
+
+          {/* Phase navigation — prev / next primary button */}
+          <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
+            <button
+              type="button"
+              onClick={() => prevPhase && handlePhaseChange(prevPhase)}
+              disabled={!prevPhase}
+              className="inline-flex items-center gap-1.5 h-9 px-4 text-[13px] font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: "var(--theme-card-bg)",
+                borderColor: "var(--theme-border-strong)",
+                color: "var(--theme-text-secondary)",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              <ArrowLeft size={13} strokeWidth={2.2} />
+              {prevPhase
+                ? `Previous: ${PHASES.find((p) => p.id === prevPhase)?.label}`
+                : "No previous phase"}
+            </button>
+
+            <div
+              className="text-[11px] text-center flex-1 min-w-0"
+              style={{ color: "var(--theme-text-tertiary)" }}
+            >
+              Phase {currentPhaseIdx + 1} of {PHASES.length} ·{" "}
+              {currentPhaseItems.filter((i) => i.status === "complete" || i.status === "skipped").length}
+              /{currentPhaseItems.length} items resolved
+            </div>
+
+            <button
+              type="button"
+              onClick={() => nextPhase && handlePhaseChange(nextPhase)}
+              disabled={!nextPhase}
+              className="inline-flex items-center gap-1.5 h-9 px-4 text-[13px] font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: "var(--theme-primary)",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              {nextPhase
+                ? `Continue to ${nextPhaseLabel}`
+                : "Deal complete"}
+              <ArrowRight size={13} strokeWidth={2.2} />
+            </button>
+          </div>
 
           {/* Footer hint — subtle, table-like */}
           <aside

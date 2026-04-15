@@ -18,9 +18,10 @@ import { Check } from "lucide-react";
 
 interface Props {
   currentPhase: Phase;
+  onPhaseChange?: (phase: Phase) => void;
 }
 
-export function ProgressSpine({ currentPhase }: Props) {
+export function ProgressSpine({ currentPhase, onPhaseChange }: Props) {
   const currentOrder = PHASES.find((p) => p.id === currentPhase)?.order ?? 1;
 
   return (
@@ -40,12 +41,15 @@ export function ProgressSpine({ currentPhase }: Props) {
             <li key={phase.id}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div
-                    className="relative flex items-center gap-2 h-11 px-4 cursor-help"
+                  <button
+                    type="button"
+                    onClick={() => onPhaseChange?.(phase.id)}
+                    className="relative flex items-center gap-2 h-11 px-4 transition-colors"
                     style={{
                       color: isCurrent
                         ? "var(--theme-primary)"
                         : "var(--theme-text-secondary)",
+                      cursor: onPhaseChange ? "pointer" : "help",
                     }}
                   >
                     <span
@@ -76,7 +80,7 @@ export function ProgressSpine({ currentPhase }: Props) {
                         style={{ background: "var(--theme-primary)" }}
                       />
                     ) : null}
-                  </div>
+                  </button>
                 </TooltipTrigger>
                 <TooltipContent className="max-w-[260px]" sideOffset={4}>
                   <div
