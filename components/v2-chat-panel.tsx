@@ -358,7 +358,6 @@ function HeaderBriefing({
         className="px-3 py-3 w-full min-w-0"
         style={{
           background: "#f5f5f5",
-          border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
         }}
       >
