@@ -11,10 +11,8 @@ import { useMemo, useState } from "react";
 import type {
   ChecklistItem as CI,
   Deal,
-  EntityType,
   OwnerFilter as OF,
   Phase,
-  ProductType,
 } from "@/lib/types";
 import { INITIAL_CHECKLIST, PHASES, SAMPLE_DEAL } from "@/data/deal-data";
 import { calculateConfidence } from "@/lib/confidence-calc";
@@ -26,7 +24,6 @@ import { useDevMode } from "@/lib/dev-mode-context";
 
 import { DealHeader } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
-import { ProductEntitySwitcher } from "@/components/product-entity-switcher";
 import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
 import { ChecklistDetail } from "@/components/checklist-detail";
@@ -35,13 +32,25 @@ import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 
 export default function Page() {
   // ——— State ———
-  const [deal, setDeal] = useState<Deal>(SAMPLE_DEAL);
+  const [baseDeal, setBaseDeal] = useState<Deal>(SAMPLE_DEAL);
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const { version } = useDevMode();
+  const { version, product: demoProduct, entity: demoEntity } = useDevMode();
   const isV2 = version === "v2";
+
+  // Dev panel overrides the product × entity axes for D1 reshape demo.
+  const deal: Deal = useMemo(
+    () => ({
+      ...baseDeal,
+      product: demoProduct as Deal["product"],
+      entity: demoEntity as Deal["entity"],
+    }),
+    [baseDeal, demoProduct, demoEntity],
+  );
+
+  const setDeal = setBaseDeal;
 
   // ——— Derived (computed during render — no useEffect for this) ———
   // D1: reshape by product × entity
@@ -183,14 +192,6 @@ export default function Page() {
     : null;
 
   // ——— Handlers ———
-  function handleProductChange(product: ProductType) {
-    setDeal((d) => ({ ...d, product }));
-  }
-
-  function handleEntityChange(entity: EntityType) {
-    setDeal((d) => ({ ...d, entity }));
-  }
-
   function handleRequestSkip(item: CI) {
     setSkipTarget(item);
   }
@@ -400,37 +401,6 @@ export default function Page() {
                 onRequestSkip={handleRequestSkip}
               />
             </div>
-          </div>
-
-          {/* D1 demo controls — visually distinct, clearly not part of real UI */}
-          <div
-            className="mt-5 p-3 flex items-center gap-3 flex-wrap"
-            style={{
-              background: "repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f4f4f4 6px, #f4f4f4 12px)",
-              border: "1px dashed var(--theme-border-strong)",
-              borderRadius: "var(--theme-radius)",
-            }}
-          >
-            <div
-              className="text-[10px] uppercase font-semibold tracking-[0.5px] shrink-0"
-              style={{ color: "var(--theme-text-tertiary)" }}
-            >
-              Demo controls · D1 reshape
-            </div>
-            <div
-              className="text-[11px] shrink-0"
-              style={{ color: "var(--theme-text-tertiary)" }}
-            >
-              Not part of the real UI — switch product / entity to see the
-              checklist reshape
-            </div>
-            <div className="flex-1 min-w-[200px]" />
-            <ProductEntitySwitcher
-              product={deal.product}
-              entity={deal.entity}
-              onProductChange={handleProductChange}
-              onEntityChange={handleEntityChange}
-            />
           </div>
 
           {/* Phase navigation — prev / next primary button */}

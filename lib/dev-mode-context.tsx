@@ -21,6 +21,8 @@ import {
 
 export type AppVersion = "v1" | "v2";
 export type AppTheme = "ibm" | "stripe";
+export type DemoProduct = "bank-guarantee" | "term-loan" | "overdraft" | "trust-lending";
+export type DemoEntity = "sole-trader" | "company" | "trust" | "partnership";
 
 interface DevMode {
   version: AppVersion;
@@ -29,6 +31,10 @@ interface DevMode {
   setTheme: (t: AppTheme) => void;
   grayscale: boolean;
   setGrayscale: (g: boolean) => void;
+  product: DemoProduct;
+  setProduct: (p: DemoProduct) => void;
+  entity: DemoEntity;
+  setEntity: (e: DemoEntity) => void;
 }
 
 const DevModeContext = createContext<DevMode | null>(null);
@@ -37,6 +43,8 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
   const [version, setVersion] = useState<AppVersion>("v1");
   const [theme, setTheme] = useState<AppTheme>("ibm");
   const [grayscale, setGrayscale] = useState(false);
+  const [product, setProduct] = useState<DemoProduct>("bank-guarantee");
+  const [entity, setEntity] = useState<DemoEntity>("company");
 
   // Apply data-attrs to <html> so CSS variable overrides cascade everywhere.
   useLayoutEffect(() => {
@@ -54,8 +62,12 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
       setTheme,
       grayscale,
       setGrayscale,
+      product,
+      setProduct,
+      entity,
+      setEntity,
     }),
-    [version, theme, grayscale],
+    [version, theme, grayscale, product, entity],
   );
 
   return (

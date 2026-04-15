@@ -6,7 +6,13 @@
  * Height capped to viewport; body scrolls if content overflows.
  */
 import { Settings, Check } from "lucide-react";
-import { useDevMode, type AppTheme, type AppVersion } from "@/lib/dev-mode-context";
+import {
+  useDevMode,
+  type AppTheme,
+  type AppVersion,
+  type DemoProduct,
+  type DemoEntity,
+} from "@/lib/dev-mode-context";
 import {
   Popover,
   PopoverContent,
@@ -23,9 +29,33 @@ const THEMES: { id: AppTheme; label: string }[] = [
   { id: "stripe", label: "Stripe" },
 ];
 
+const PRODUCTS: { id: DemoProduct; label: string }[] = [
+  { id: "bank-guarantee", label: "Bank guarantee" },
+  { id: "term-loan", label: "Term loan" },
+  { id: "overdraft", label: "Overdraft" },
+  { id: "trust-lending", label: "Trust lending" },
+];
+
+const ENTITIES: { id: DemoEntity; label: string }[] = [
+  { id: "company", label: "Company" },
+  { id: "trust", label: "Trust" },
+  { id: "partnership", label: "Partnership" },
+  { id: "sole-trader", label: "Sole trader" },
+];
+
 export function DevPanel() {
-  const { version, setVersion, theme, setTheme, grayscale, setGrayscale } =
-    useDevMode();
+  const {
+    version,
+    setVersion,
+    theme,
+    setTheme,
+    grayscale,
+    setGrayscale,
+    product,
+    setProduct,
+    entity,
+    setEntity,
+  } = useDevMode();
 
   return (
     <div className="fixed bottom-5 right-5 z-[1000]">
@@ -107,6 +137,30 @@ export function DevPanel() {
                   selected={theme === t.id}
                   label={t.label}
                   onClick={() => setTheme(t.id)}
+                />
+              ))}
+            </div>
+
+            <SectionLabel>D1 · Product</SectionLabel>
+            <div className="px-2 pb-2 space-y-1">
+              {PRODUCTS.map((p) => (
+                <OptionButton
+                  key={p.id}
+                  selected={product === p.id}
+                  label={p.label}
+                  onClick={() => setProduct(p.id)}
+                />
+              ))}
+            </div>
+
+            <SectionLabel>D1 · Entity type</SectionLabel>
+            <div className="px-2 pb-2 space-y-1">
+              {ENTITIES.map((e) => (
+                <OptionButton
+                  key={e.id}
+                  selected={entity === e.id}
+                  label={e.label}
+                  onClick={() => setEntity(e.id)}
                 />
               ))}
             </div>
