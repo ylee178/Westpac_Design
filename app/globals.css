@@ -287,7 +287,12 @@
    see "what's where". SKELETON only the detail-level flowing text
    (<p> tags + elements explicitly marked `.skeleton-detail`).
    ============================================================ */
-[data-grayscale="on"] body {
+/* Apply the grayscale filter to the content root, NOT body.
+   Filtering body creates a new stacking context and breaks
+   position: fixed for the dev panel (it gets pushed down).
+   Dev panel is mounted as a sibling of .app-content-root,
+   so it stays outside this filter. */
+[data-grayscale="on"] .app-content-root {
   filter: grayscale(1);
   transition: filter 0.2s ease;
 }

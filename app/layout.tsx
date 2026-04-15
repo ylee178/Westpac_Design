@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono, Inter } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { DevModeProvider } from "@/lib/dev-mode-context";
+import { DevPanel } from "@/components/dev-panel";
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -48,7 +49,15 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <DevModeProvider>
-          <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
+          <TooltipProvider delayDuration={200}>
+            {/* Content root is the filter target for grayscale/skeleton mode.
+                DevPanel lives OUTSIDE this wrapper so its fixed positioning
+                isn't broken by CSS filter stacking context. */}
+            <div className="app-content-root flex flex-col flex-1 min-h-full">
+              {children}
+            </div>
+            <DevPanel />
+          </TooltipProvider>
         </DevModeProvider>
       </body>
     </html>

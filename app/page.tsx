@@ -31,7 +31,6 @@ import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
 import { ChecklistDetail } from "@/components/checklist-detail";
 import { SkipDialog } from "@/components/skip-dialog";
-import { DevPanel } from "@/components/dev-panel";
 import { ArrowRight, ArrowLeft, Info, Sparkles } from "lucide-react";
 
 export default function Page() {
@@ -399,9 +398,7 @@ export default function Page() {
         onCancel={handleSkipCancel}
         onConfirm={handleSkipConfirm}
       />
-
-      {/* Floating dev panel — theme / version / grayscale */}
-      <DevPanel />
+      {/* Dev panel is mounted in layout.tsx — outside the filter target */}
     </div>
   );
 }
