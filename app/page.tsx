@@ -36,6 +36,7 @@ import { V1DealContextForm } from "@/components/v1-deal-context-form";
 import { V1DynamicLoading } from "@/components/v1-dynamic-loading";
 import { V1FocusedCard } from "@/components/v1-focused-card";
 import { V1PhaseTransition } from "@/components/v1-phase-transition";
+import { V2Chat } from "@/components/v2-chat";
 import { ArrowRight, ArrowLeft, LayoutList, ListChecks, Sparkles } from "lucide-react";
 
 export default function Page() {
@@ -237,7 +238,47 @@ export default function Page() {
   const shouldShowComplete =
     step === "focused" && phaseAllResolved;
 
+  // V2 side-effect handlers used by the scripted chat
+  function v2CompleteItem(id: string) {
+    setLibrary((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, status: "complete" } : i)),
+    );
+  }
+  function v2SkipItem(id: string, category: string) {
+    setLibrary((prev) =>
+      prev.map((i) =>
+        i.id === id
+          ? { ...i, status: "skipped", skipReason: { category } }
+          : i,
+      ),
+    );
+  }
+
   // ——— Render ———
+  // V2 mode — chat interface (Pac + scripted scenes)
+  if (mode === "v2") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <DealHeader
+          deal={deal}
+          breakdown={effectiveBreakdown}
+          hasRedFlag={hasRedFlag}
+          redFlagLabel={redFlagItem?.label}
+          redFlagSubtitle={redFlagItem?.subtitle}
+          bankerActionCount={bankerPending}
+          projectedAfterActions={projectedAfterActions}
+        />
+        <V2Chat
+          deal={deal}
+          breakdown={effectiveBreakdown}
+          library={reshaped}
+          onCompleteItem={v2CompleteItem}
+          onSkipItem={v2SkipItem}
+        />
+      </div>
+    );
+  }
+
   // Empty / Creator / Loading — no header chrome; they own the full viewport
   if (mode === "v1" && step === "empty") {
     return (

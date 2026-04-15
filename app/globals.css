@@ -380,6 +380,11 @@
   animation: pac-celebrate-spin 500ms ease-out;
 }
 
+@keyframes pac-typing {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30%           { opacity: 1;   transform: translateY(-2px); }
+}
+
 /* Keep Pac sharp and brand-red even in grayscale skeleton mode */
 [data-grayscale="on"] .pac-avatar,
 [data-grayscale="on"] .pac-avatar svg,
