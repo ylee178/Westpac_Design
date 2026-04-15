@@ -135,7 +135,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
 
   return (
     <aside
-      className="flex flex-col min-w-0 h-full"
+      className="flex flex-col min-w-0 w-full h-full"
       style={{
         background: "var(--theme-page-bg)",
         borderLeft: "1px solid var(--theme-border)",
@@ -143,7 +143,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
     >
       {/* ——— Header: Pac status strip + collapsible briefing ——— */}
       <div
-        className="shrink-0"
+        className="shrink-0 w-full min-w-0"
         style={{
           background: "var(--theme-card-bg)",
           borderBottom: "1px solid var(--theme-border)",
@@ -276,6 +276,65 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   );
 }
 
+/** Hook: mouse drag-to-scroll for a horizontal overflow container.
+ *  Trackpad and touch already scroll horizontally natively; this
+ *  makes desktop mouse users able to grab-and-drag the pill row.
+ *  If the pointer moves more than a few px during a drag, we
+ *  suppress the subsequent click so dragging doesn't accidentally
+ *  fire a suggestion. */
+function useHorizontalDragScroll() {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let isDown = false;
+    let moved = false;
+    let startX = 0;
+    let startScroll = 0;
+    const DRAG_THRESHOLD = 4;
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return; // native touch scroll handles this
+      isDown = true;
+      moved = false;
+      startX = e.clientX;
+      startScroll = el.scrollLeft;
+    };
+    const onPointerMove = (e: PointerEvent) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      if (Math.abs(dx) > DRAG_THRESHOLD) {
+        moved = true;
+        el.scrollLeft = startScroll - dx;
+        e.preventDefault();
+      }
+    };
+    const endDrag = () => {
+      isDown = false;
+    };
+    const onClickCapture = (e: MouseEvent) => {
+      if (moved) {
+        e.stopPropagation();
+        e.preventDefault();
+        moved = false;
+      }
+    };
+    el.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", endDrag);
+    window.addEventListener("pointercancel", endDrag);
+    el.addEventListener("click", onClickCapture, true);
+    return () => {
+      el.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", endDrag);
+      window.removeEventListener("pointercancel", endDrag);
+      el.removeEventListener("click", onClickCapture, true);
+    };
+  }, []);
+  return ref;
+}
+
 // ——— Header briefing (collapsible) ———
 // Rendered inside the Pac panel header, below the status strip,
 // only when the banker opens the Briefing toggle. Holds the
@@ -293,16 +352,17 @@ function HeaderBriefing({
   suggestions: Suggestion[];
   onTapSuggestion: (s: Suggestion) => void;
 }) {
+  const pillScrollRef = useHorizontalDragScroll();
   return (
     <div
-      className="min-w-0"
+      className="w-full min-w-0"
       style={{
         background: "var(--westpac-primary-soft)",
         borderTop: "1px solid var(--westpac-primary-border)",
       }}
     >
-      <div className="px-4 pt-3 pb-3">
-        <div className="flex items-baseline gap-2 flex-wrap">
+      <div className="px-4 pt-3 pb-3 min-w-0">
+        <div className="flex items-baseline gap-2 flex-wrap min-w-0">
           <span
             className="text-[13px] font-semibold"
             style={{ color: "var(--theme-text-primary)" }}
@@ -345,13 +405,15 @@ function HeaderBriefing({
 
       {/* Common questions — swipable pill row nested inside the
           briefing card. Thin divider above, pills flow horizontally
-          with overflow scroll. */}
+          with overflow scroll. w-full + min-w-0 at every level so
+          the inner scroll row honours the 400px panel width instead
+          of expanding to fit content. */}
       <div
-        className="min-w-0"
+        className="w-full min-w-0"
         style={{ borderTop: "1px solid var(--westpac-primary-border)" }}
       >
         <div
-          className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5"
+          className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5 min-w-0"
           style={{
             color: "var(--theme-primary)",
             letterSpacing: "0.5px",
@@ -361,10 +423,13 @@ function HeaderBriefing({
           Common questions
         </div>
         <div
-          className="flex gap-2 px-4 pb-3 overflow-x-auto min-w-0 suggestion-pill-scroll"
+          ref={pillScrollRef}
+          className="flex flex-nowrap gap-2 px-4 pb-3 overflow-x-scroll min-w-0 w-full suggestion-pill-scroll cursor-grab active:cursor-grabbing"
           style={{
             scrollbarWidth: "none",
             WebkitOverflowScrolling: "touch",
+            touchAction: "pan-x",
+            maxWidth: "100%",
           }}
         >
           {suggestions.map((s, i) => (

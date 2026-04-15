@@ -565,6 +565,14 @@
 .suggestion-pill-scroll::-webkit-scrollbar {
   display: none;
 }
+.suggestion-pill-scroll {
+  -ms-overflow-style: none;
+  /* Scroll snap so pills align naturally when the user swipes */
+  scroll-snap-type: x proximity;
+}
+.suggestion-pill-scroll > button {
+  scroll-snap-align: start;
+}
 
 /* Pill label — pale maroon background for static uppercase labels
    (phase names, "Why this matters", etc.) so they can't be mistaken
