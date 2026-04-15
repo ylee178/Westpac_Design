@@ -5,15 +5,16 @@
  * Logo left, primary nav tabs, utility nav right. Below the masthead,
  * a compact deal meta strip shows customer, amount, mode, confidence.
  */
-import type { ConfidenceBreakdown, Deal } from "@/lib/types";
-import { ConfidenceTooltip } from "@/components/confidence-tooltip";
+import type { ReadinessBreakdown, Deal } from "@/lib/types";
+import { ReadyToSubmitDisplay } from "@/components/readiness-display";
 import { ModeIndicator } from "@/components/mode-indicator";
 import { WestpacLogo } from "@/components/westpac-logo";
+import { ModeToggle } from "@/components/mode-toggle";
 import { HelpCircle, LogOut } from "lucide-react";
 
 interface Props {
   deal: Deal;
-  breakdown: ConfidenceBreakdown;
+  breakdown: ReadinessBreakdown;
   hasRedFlag: boolean;
   redFlagLabel?: string;
   redFlagSubtitle?: string;
@@ -84,6 +85,7 @@ export function DealHeader({
 
         {/* Utility nav right */}
         <div className="flex items-center gap-4">
+          <ModeToggle />
           <button
             type="button"
             className="flex items-center gap-1.5 text-[12px] font-medium"
@@ -168,7 +170,7 @@ export function DealHeader({
           </div>
 
           <div className="shrink-0">
-            <ConfidenceTooltip
+            <ReadyToSubmitDisplay
               breakdown={breakdown}
               hasRedFlag={hasRedFlag}
               redFlagLabel={redFlagLabel}

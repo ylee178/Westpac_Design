@@ -1,11 +1,13 @@
 "use client";
 
 /**
- * D9 — Deal Confidence Score.
- * Meaningful: benchmark at current stage, specific red flag item,
- * actionable hint ("complete 3 banker items to reach ~85%").
+ * D9 — Ready to Submit display.
+ * Prominent score (30px mono numeral) with tier colour on the numeral
+ * only. Benchmark context, specific red flag item, banker action hint.
+ * Surrounding chrome stays in the muted theme tone.
  */
-import type { ConfidenceBreakdown } from "@/lib/types";
+import type { ReadinessBreakdown } from "@/lib/types";
+import { readinessToColor } from "@/lib/readiness-calc";
 import {
   Tooltip,
   TooltipContent,
@@ -14,7 +16,7 @@ import {
 import { AlertTriangle, TrendingUp } from "lucide-react";
 
 interface Props {
-  breakdown: ConfidenceBreakdown;
+  breakdown: ReadinessBreakdown;
   hasRedFlag?: boolean;
   redFlagLabel?: string;
   redFlagSubtitle?: string;
@@ -22,28 +24,11 @@ interface Props {
   projectedAfterActions?: number;
 }
 
-// Benchmark ranges per phase (rough rule-of-thumb for the demo)
 const BENCHMARK_LO = 60;
 const BENCHMARK_HI = 75;
 const SUBMIT_THRESHOLD = 90;
 
-function scoreTone(score: number, hasRedFlag: boolean) {
-  if (hasRedFlag) {
-    return { fg: "var(--theme-error)", label: "Red flag — review" };
-  }
-  if (score >= SUBMIT_THRESHOLD) {
-    return { fg: "var(--theme-success)", label: "Ready to submit" };
-  }
-  if (score >= BENCHMARK_LO) {
-    return { fg: "var(--theme-primary)", label: "On track" };
-  }
-  if (score >= 50) {
-    return { fg: "var(--theme-text-secondary)", label: "Needs attention" };
-  }
-  return { fg: "var(--theme-error)", label: "Significant gaps" };
-}
-
-export function ConfidenceTooltip({
+export function ReadyToSubmitDisplay({
   breakdown,
   hasRedFlag = false,
   redFlagLabel,
@@ -51,7 +36,8 @@ export function ConfidenceTooltip({
   bankerActionCount = 0,
   projectedAfterActions,
 }: Props) {
-  const tone = scoreTone(breakdown.total, hasRedFlag);
+  const tone = readinessToColor(breakdown.total);
+  const statusLabel = hasRedFlag ? "Red flag — review" : tone.label;
 
   return (
     <Tooltip>
@@ -68,7 +54,7 @@ export function ConfidenceTooltip({
             borderLeftWidth: hasRedFlag ? "3px" : "1px",
           }}
         >
-          {/* Top line: score + tone label */}
+          {/* Top line: score + status label */}
           <div className="flex items-end gap-3">
             <div className="flex flex-col leading-tight">
               <span
@@ -78,7 +64,7 @@ export function ConfidenceTooltip({
                   letterSpacing: "0.5px",
                 }}
               >
-                Deal Confidence
+                Ready to Submit
               </span>
               <span
                 className="text-[30px] font-semibold tabular-nums leading-none mt-0.5"
@@ -104,15 +90,17 @@ export function ConfidenceTooltip({
             <div className="flex flex-col justify-center leading-tight py-0.5">
               <span
                 className="text-[11px] font-semibold"
-                style={{ color: tone.fg }}
+                style={{
+                  color: hasRedFlag ? "var(--theme-error)" : "var(--theme-text-primary)",
+                }}
               >
-                {tone.label}
+                {statusLabel}
               </span>
               <span
                 className="text-[10px] mt-0.5"
                 style={{ color: "var(--theme-text-tertiary)" }}
               >
-                Typical at this stage: {BENCHMARK_LO}–{BENCHMARK_HI}% · Submit: {SUBMIT_THRESHOLD}%+
+                Typical: {BENCHMARK_LO}–{BENCHMARK_HI}% · Submit: {SUBMIT_THRESHOLD}%+
               </span>
             </div>
           </div>
@@ -146,7 +134,7 @@ export function ConfidenceTooltip({
             </div>
           ) : null}
 
-          {/* Action hint */}
+          {/* Banker action hint */}
           {bankerActionCount > 0 && projectedAfterActions ? (
             <div
               className="flex items-center gap-1.5 text-[11px] leading-[1.4] mt-1"
@@ -163,7 +151,7 @@ export function ConfidenceTooltip({
       <TooltipContent className="w-[340px] p-0" sideOffset={6}>
         <div className="px-4 py-3 border-b border-[#393939]">
           <div className="text-[10px] uppercase font-medium opacity-60">
-            Deal Confidence Score · D9
+            Ready to Submit · D9
           </div>
           <div
             className="text-[30px] font-semibold tabular-nums leading-none mt-1"
@@ -177,10 +165,10 @@ export function ConfidenceTooltip({
           </div>
         </div>
         <div className="divide-y divide-[#393939]">
-          <Row label="Checklist completion" value={breakdown.checklistCompletion} weight="40%" />
+          <Row label="Checklist completion" value={breakdown.checklistCompletion} weight="50%" />
           <Row label="Skip reason quality" value={breakdown.skipQuality} weight="20%" />
-          <Row label="Data provenance" value={breakdown.provenanceConfidence} weight="25%" />
-          <Row label="Mode alignment" value={breakdown.modeAlignment} weight="15%" />
+          <Row label="Data provenance" value={breakdown.provenanceConfidence} weight="20%" />
+          <Row label="Mode alignment" value={breakdown.modeAlignment} weight="10%" />
         </div>
         {hasRedFlag && redFlagLabel ? (
           <div className="px-4 py-2.5 text-[11px] leading-snug border-t border-[#fa4d56] text-[#fa4d56]">

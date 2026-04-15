@@ -9,7 +9,6 @@ import { Settings, Check } from "lucide-react";
 import {
   useDevMode,
   type AppTheme,
-  type AppVersion,
   type DemoProduct,
   type DemoEntity,
 } from "@/lib/dev-mode-context";
@@ -18,11 +17,6 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-const VERSIONS: { id: AppVersion; label: string }[] = [
-  { id: "v1", label: "V1 · Structured rules" },
-  { id: "v2", label: "V2 · AI teammate" },
-];
 
 const THEMES: { id: AppTheme; label: string }[] = [
   { id: "ibm", label: "IBM Carbon" },
@@ -45,8 +39,6 @@ const ENTITIES: { id: DemoEntity; label: string }[] = [
 
 export function DevPanel() {
   const {
-    version,
-    setVersion,
     theme,
     setTheme,
     grayscale,
@@ -108,18 +100,6 @@ export function DevPanel() {
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto">
-            <SectionLabel>Version</SectionLabel>
-            <div className="px-2 pb-2 space-y-1">
-              {VERSIONS.map((v) => (
-                <OptionButton
-                  key={v.id}
-                  selected={version === v.id}
-                  label={v.label}
-                  onClick={() => setVersion(v.id)}
-                />
-              ))}
-            </div>
-
             <SectionLabel>Grayscale</SectionLabel>
             <div className="px-2 pb-2">
               <OptionButton

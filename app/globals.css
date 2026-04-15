@@ -359,6 +359,35 @@
   box-shadow: var(--theme-shadow-card);
 }
 
+/* ============================================================
+   Pac avatar animations — always brand red, theme-independent.
+   ============================================================ */
+@keyframes pac-idle-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-2px); }
+}
+
+@keyframes pac-celebrate-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.pac-avatar.pac-idle {
+  animation: pac-idle-bob 1.5s ease-in-out infinite;
+}
+
+.pac-avatar.pac-celebrate {
+  animation: pac-celebrate-spin 500ms ease-out;
+}
+
+/* Keep Pac sharp and brand-red even in grayscale skeleton mode */
+[data-grayscale="on"] .pac-avatar,
+[data-grayscale="on"] .pac-avatar svg,
+[data-grayscale="on"] .pac-avatar svg rect {
+  filter: none !important;
+  opacity: 1 !important;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

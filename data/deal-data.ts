@@ -182,61 +182,7 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
   // IDENTIFICATION phase — AUSTRAC CDD
   // ═══════════════════════════════════════════════════════════════
 
-  // 1. Verify ABN (system, auto-filled, provenance — D6 demo)
-  {
-    id: "item-01",
-    label: "Verify ABN against ABN Lookup",
-    description:
-      "Confirm the customer's ABN is active, not cancelled, and matches the trading name on file.",
-    owner: "system",
-    status: "complete",
-    phase: "identification",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: true,
-    category: "customer-id",
-    knowledge: {
-      what: "A programmatic check against the ATO's ABN Lookup register.",
-      why:
-        "AUSTRAC requires verification of business entity identity as part of initial CDD. An inactive or cancelled ABN blocks onboarding.",
-      example:
-        "ABN 68 134 876 221 → ATO register confirms 'Meridian Logistics Pty Ltd', active, GST-registered since 2009.",
-      policyLink: "Westpac Policy § 4.2.1 — Business entity verification",
-    },
-    provenance: {
-      source: "ABN Lookup (ATO)",
-      timestamp: "2026-04-14 09:12 AEST",
-      confidence: "high",
-    },
-  },
-
-  // 2. Verify company registration (system, ASIC)
-  {
-    id: "item-02",
-    label: "Verify company registration with ASIC",
-    description:
-      "Confirm ACN, registered office, directors, and company status via ASIC search.",
-    owner: "system",
-    status: "complete",
-    phase: "identification",
-    appliesTo: { product: null, entity: ["company"] },
-    legallyMandatory: true,
-    category: "entity-verification",
-    knowledge: {
-      what: "Automated ASIC company extract request.",
-      why:
-        "For body-corporate customers, AUSTRAC requires verification of registration, registered office, and at least two directors where applicable.",
-      example:
-        "ASIC extract returns ACN 134 876 221, registered office in Chullora NSW, 2 directors, status 'Registered'.",
-      policyLink: "Westpac Policy § 4.2.3 — Body corporate customers",
-    },
-    provenance: {
-      source: "ASIC Company Search",
-      timestamp: "2026-04-14 09:14 AEST",
-      confidence: "high",
-    },
-  },
-
-  // 3. Identify beneficial owners — in-progress, legally mandatory, RED FLAG in default state
+  // 1. Identify beneficial owners — in-progress, legally mandatory, RED FLAG in default state
   {
     id: "item-03",
     label: "Identify beneficial owners (≥25%)",
@@ -346,27 +292,7 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     },
   },
 
-  // 8. Customer signature on T&Cs (customer, customer portal, pending)
-  {
-    id: "item-08",
-    label: "Customer signs product T&Cs",
-    description:
-      "Customer review and e-signature of product-specific terms and conditions via the BizEdge customer portal.",
-    owner: "customer",
-    status: "pending",
-    phase: "identification",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "E-signature request sent to the customer portal; customer reviews and signs on their device.",
-      why:
-        "Customer-owned task; banker cannot complete this step. D7 three-way ownership filters this out of 'my actions' when the filter is active.",
-    },
-  },
-
-  // 9. Risk rating assessment (banker)
+  // 5. Risk rating assessment (banker)
   {
     id: "item-09",
     label: "Assess customer risk rating",
@@ -386,14 +312,15 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     },
   },
 
-  // 10. PEP + sanctions screen (system, mandatory)
+  // 6. PEP + sanctions screen — system, mandatory, auto-completes on entry.
+  // Rendered as already-complete with provenance to show instant result.
   {
     id: "item-12",
-    label: "PEP and sanctions screen",
+    label: "PEP and sanctions screening",
     description:
       "Automated screen of directors and beneficial owners against politically-exposed-person lists and international sanctions registers.",
     owner: "system",
-    status: "pending",
+    status: "complete",
     phase: "identification",
     appliesTo: { product: null, entity: null },
     legallyMandatory: true,
@@ -405,163 +332,10 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
         "Any hit triggers enhanced due diligence and possible escalation to MLRO. A missed hit is a regulatory breach.",
       policyLink: "AUSTRAC — PEP and sanctions screening",
     },
-  },
-
-  // 11. Authorised signatories capture (banker)
-  {
-    id: "item-13",
-    label: "Capture authorised signatories",
-    description:
-      "Record the people authorised to sign on behalf of the customer entity for this facility. Includes position, ID, and scope of authority.",
-    owner: "banker",
-    status: "pending",
-    phase: "identification",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "List of named individuals authorised to execute drawdowns, amendments, and correspondence on this facility.",
-      why:
-        "Downstream documentation and settlement depend on accurate signatory records. Missing this step causes rework at the settlement phase.",
-    },
-  },
-
-  // 10. Credit memo draft (banker, Credit phase — shows spine progression)
-  {
-    id: "item-10",
-    label: "Draft credit memo",
-    description:
-      "Summary of financials, serviceability, security, and recommended structure for credit approval.",
-    owner: "banker",
-    status: "pending",
-    phase: "credit",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "The structured narrative the banker writes to justify the credit decision: purpose, borrower history, financials, serviceability, security, conditions.",
-      why:
-        "Credit memo quality directly impacts approval turnaround. A thin memo triggers follow-up questions and rework.",
-    },
-  },
-
-  // 11. Financial statements upload (customer)
-  {
-    id: "item-11",
-    label: "Upload latest financial statements",
-    description:
-      "Customer uploads last 2 years of audited financial statements via the customer portal.",
-    owner: "customer",
-    status: "pending",
-    phase: "credit",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Audited P&L, balance sheet, and cashflow statements for FY24 and FY25.",
-      why:
-        "Credit assessment cannot proceed without financials. This is a customer-owned task — banker cannot complete it directly.",
-    },
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // APPROVAL phase
-  // ═══════════════════════════════════════════════════════════════
-  {
-    id: "approval-01",
-    label: "Credit decision — recommend to approver",
-    description:
-      "Banker formally recommends approval with stated conditions; decision routed to the credit approver queue.",
-    owner: "banker",
-    status: "pending",
-    phase: "approval",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Formal recommendation object with conditions, repayment structure, pricing, and security.",
-      why:
-        "Credit decisioning needs a structured recommendation object, not just a narrative. Missing fields block the approver's workflow.",
-    },
-  },
-  {
-    id: "approval-02",
-    label: "Approver sign-off",
-    description:
-      "Credit approver reviews the recommendation, credit memo, and risk rating; signs off or requests revisions.",
-    owner: "system",
-    status: "pending",
-    phase: "approval",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Approver e-signature on the credit decision. For auto-decisioned deals this is skipped.",
-      why:
-        "Human approver review is required for deals above automated decisioning thresholds.",
-    },
-  },
-  {
-    id: "approval-03",
-    label: "Customer accepts conditions",
-    description:
-      "Customer reviews final conditions, pricing, and security requirements; e-signs acceptance.",
-    owner: "customer",
-    status: "pending",
-    phase: "approval",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Customer-facing conditions document, e-signed on the customer portal.",
-      why:
-        "Formal acceptance creates the enforceable contract and unlocks settlement.",
-    },
-  },
-
-  // ═══════════════════════════════════════════════════════════════
-  // SETTLEMENT phase
-  // ═══════════════════════════════════════════════════════════════
-  {
-    id: "settle-01",
-    label: "Generate loan documentation",
-    description:
-      "Auto-generate loan documentation pack (facility agreement, security docs, guarantee paper for bank-guarantee products).",
-    owner: "system",
-    status: "pending",
-    phase: "settlement",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Templated loan docs populated from deal data. For bank guarantees, this includes the physical paper printed at a branch.",
-      why:
-        "Missing or wrong doc templates are a top rework driver at settlement. Templated generation reduces that failure mode.",
-    },
-  },
-  {
-    id: "settle-02",
-    label: "Book facility on core banking",
-    description:
-      "Facility is booked on the core banking system and the drawdown account is provisioned.",
-    owner: "system",
-    status: "pending",
-    phase: "settlement",
-    appliesTo: { product: null, entity: null },
-    legallyMandatory: false,
-    category: "docs",
-    knowledge: {
-      what:
-        "Core banking integration — facility account creation and initial balance set.",
-      why:
-        "This is the final handoff from origination to servicing. Once booked, the deal moves out of BizEdge into the live portfolio.",
+    provenance: {
+      source: "Dow Jones Risk Center",
+      timestamp: "2026-04-14 09:18 AEST",
+      confidence: "high",
     },
   },
 ];

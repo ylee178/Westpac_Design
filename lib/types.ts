@@ -119,8 +119,10 @@ export interface SkipReasonOption {
   description?: string;
 }
 
-// ——— Confidence score (D9) ———
-export interface ConfidenceBreakdown {
+// ——— Ready to Submit score (D9) ———
+// Formerly "Deal Confidence". Renamed to reflect the metric's actual
+// semantics: how close is this deal to being submission-ready?
+export interface ReadinessBreakdown {
   checklistCompletion: number;  // 0–100
   skipQuality: number;          // 0–100
   provenanceConfidence: number; // 0–100

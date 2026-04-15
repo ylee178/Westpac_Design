@@ -15,12 +15,13 @@ import type {
   Phase,
 } from "@/lib/types";
 import { INITIAL_CHECKLIST, PHASES, SAMPLE_DEAL } from "@/data/deal-data";
-import { calculateConfidence } from "@/lib/confidence-calc";
+import { calculateReadiness } from "@/lib/readiness-calc";
 import {
   reshapeChecklist,
   itemsForPhase,
 } from "@/lib/checklist-reshape";
 import { useDevMode } from "@/lib/dev-mode-context";
+import { useFlowMode } from "@/lib/flow-mode-context";
 
 import { DealHeader } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
@@ -37,8 +38,9 @@ export default function Page() {
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const { version, product: demoProduct, entity: demoEntity } = useDevMode();
-  const isV2 = version === "v2";
+  const { product: demoProduct, entity: demoEntity } = useDevMode();
+  const { mode } = useFlowMode();
+  const isV2 = mode === "v2";
 
   // Dev panel overrides the product × entity axes for D1 reshape demo.
   const deal: Deal = useMemo(
@@ -88,7 +90,7 @@ export default function Page() {
 
   // D9: confidence score — calculated from the full reshaped library, not just phase
   const breakdown = useMemo(
-    () => calculateConfidence(reshaped, deal),
+    () => calculateReadiness(reshaped, deal),
     [reshaped, deal],
   );
 
@@ -249,7 +251,7 @@ export default function Page() {
               V2 · AI teammate active
             </span>
             <span style={{ color: "var(--theme-text-tertiary)" }}>
-              · contributing a 5th input to Deal Confidence · surfacing rare
+              · contributing a 5th input to Ready to Submit · surfacing rare
               combinations · drafting skip reason hints
             </span>
           </div>

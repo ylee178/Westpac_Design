@@ -1,10 +1,13 @@
 "use client";
 
 /**
- * Dev mode context — drives the floating dev panel's 3 toggles.
- * - version: V1 (structured rules only) vs V2 (AI teammate layer active)
+ * Dev mode context — drives the floating dev panel's toggles.
  * - theme: IBM Carbon vs Stripe (swappable via data-theme on <html>)
- * - grayscale: CSS filter overlay for a11y demo
+ * - grayscale: CSS filter overlay for lo-fi skeleton demo
+ * - product / entity: D1 reshape demo axes
+ *
+ * NOTE: V1/V2 mode moved to flow-mode-context — the user-facing
+ * header toggle owns that state.
  *
  * State lives in a single Context so any component can read it without
  * prop-drilling, and the provider also writes data-attrs to <html>
@@ -19,14 +22,11 @@ import {
   type ReactNode,
 } from "react";
 
-export type AppVersion = "v1" | "v2";
 export type AppTheme = "ibm" | "stripe";
 export type DemoProduct = "bank-guarantee" | "term-loan" | "overdraft" | "trust-lending";
 export type DemoEntity = "sole-trader" | "company" | "trust" | "partnership";
 
 interface DevMode {
-  version: AppVersion;
-  setVersion: (v: AppVersion) => void;
   theme: AppTheme;
   setTheme: (t: AppTheme) => void;
   grayscale: boolean;
@@ -40,7 +40,6 @@ interface DevMode {
 const DevModeContext = createContext<DevMode | null>(null);
 
 export function DevModeProvider({ children }: { children: ReactNode }) {
-  const [version, setVersion] = useState<AppVersion>("v1");
   const [theme, setTheme] = useState<AppTheme>("ibm");
   const [grayscale, setGrayscale] = useState(false);
   const [product, setProduct] = useState<DemoProduct>("bank-guarantee");
@@ -50,14 +49,11 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
   useLayoutEffect(() => {
     const el = document.documentElement;
     el.dataset.theme = theme;
-    el.dataset.version = version;
     el.dataset.grayscale = grayscale ? "on" : "off";
-  }, [theme, version, grayscale]);
+  }, [theme, grayscale]);
 
   const value = useMemo<DevMode>(
     () => ({
-      version,
-      setVersion,
       theme,
       setTheme,
       grayscale,
@@ -67,7 +63,7 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
       entity,
       setEntity,
     }),
-    [version, theme, grayscale, product, entity],
+    [theme, grayscale, product, entity],
   );
 
   return (

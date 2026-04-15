@@ -23,7 +23,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useDevMode } from "@/lib/dev-mode-context";
+import { useFlowMode } from "@/lib/flow-mode-context";
 
 interface Props {
   item: CI | null;
@@ -31,8 +31,8 @@ interface Props {
 }
 
 export function ChecklistDetail({ item, onRequestSkip }: Props) {
-  const { version } = useDevMode();
-  const isV2 = version === "v2";
+  const { mode } = useFlowMode();
+  const isV2 = mode === "v2";
 
   if (!item) {
     return (
