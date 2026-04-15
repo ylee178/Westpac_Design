@@ -16,7 +16,9 @@ import {
   useContext,
   useMemo,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 
 export type V1Step =
@@ -52,7 +54,7 @@ interface FlowMode {
   resetDraft: () => void;
 
   focusedIndex: number;
-  setFocusedIndex: (i: number) => void;
+  setFocusedIndex: Dispatch<SetStateAction<number>>;
 }
 
 const EMPTY_DRAFT: DealDraft = {

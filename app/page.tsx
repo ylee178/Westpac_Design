@@ -1,11 +1,14 @@
 "use client";
 
 /**
- * Main page — BizEdge Deal Workspace.
+ * Main page — Westpac BizEdge deal workspace.
  *
- * This single page composes all 9 design decisions and drives the
- * 11-step interactive demo flow. State lives here; child components
- * are presentation + event handlers only.
+ * Two top-level modes share state:
+ *  - V1: Guided progressive checklist (empty → creator → loading →
+ *        focused → showAll → complete)
+ *  - V2: AI teammate (scripted chat, Phase 3 placeholder for now)
+ *
+ * Header + progress spine + Ready to Submit score are shared.
  */
 import { useMemo, useState } from "react";
 import type {
@@ -27,9 +30,13 @@ import { DealHeader } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
 import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
-import { ChecklistDetail } from "@/components/checklist-detail";
 import { SkipDialog } from "@/components/skip-dialog";
-import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
+import { V1EmptyState } from "@/components/v1-empty-state";
+import { V1DealContextForm } from "@/components/v1-deal-context-form";
+import { V1DynamicLoading } from "@/components/v1-dynamic-loading";
+import { V1FocusedCard } from "@/components/v1-focused-card";
+import { V1PhaseTransition } from "@/components/v1-phase-transition";
+import { ArrowRight, ArrowLeft, LayoutList, ListChecks, Sparkles } from "lucide-react";
 
 export default function Page() {
   // ——— State ———
@@ -37,37 +44,51 @@ export default function Page() {
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const { product: demoProduct, entity: demoEntity } = useDevMode();
-  const { mode } = useFlowMode();
+  const {
+    mode,
+    step,
+    setStep,
+    draft,
+    resetDraft,
+    focusedIndex,
+    setFocusedIndex,
+  } = useFlowMode();
   const isV2 = mode === "v2";
 
-  // Dev panel overrides the product × entity axes for D1 reshape demo.
+  // Dev panel overrides product × entity for D1 reshape demo, AND the
+  // empty-state card selector writes the same values so the deal reflects
+  // whichever is current.
   const deal: Deal = useMemo(
     () => ({
       ...baseDeal,
       product: demoProduct as Deal["product"],
       entity: demoEntity as Deal["entity"],
+      customerName:
+        draft.customerName.trim().length > 0
+          ? draft.customerName.trim()
+          : baseDeal.customerName,
+      amount: (() => {
+        const parsed = parseInt(draft.amount.replace(/[^0-9]/g, ""), 10);
+        return Number.isFinite(parsed) && parsed > 0 ? parsed : baseDeal.amount;
+      })(),
+      jurisdiction:
+        (draft.jurisdiction as Deal["jurisdiction"]) || baseDeal.jurisdiction,
     }),
-    [baseDeal, demoProduct, demoEntity],
+    [baseDeal, demoProduct, demoEntity, draft],
   );
 
-  const setDeal = setBaseDeal;
-
-  // ——— Derived (computed during render — no useEffect for this) ———
-  // D1: reshape by product × entity
+  // ——— Derived ———
   const reshaped = useMemo(
     () => reshapeChecklist(library, deal),
     [library, deal],
   );
 
-  // D5: items for the current phase only
   const currentPhaseItems = useMemo(
     () => itemsForPhase(reshaped, deal.phase),
     [reshaped, deal.phase],
   );
 
-  // D7: apply owner filter on top of reshaped+phase items
   const visibleItems = useMemo(
     () =>
       ownerFilter === "all"
@@ -76,7 +97,6 @@ export default function Page() {
     [currentPhaseItems, ownerFilter],
   );
 
-  // Owner counts (shown next to filter buttons)
   const ownerCounts = useMemo<Record<OF, number>>(() => {
     const counts: Record<OF, number> = {
       all: currentPhaseItems.length,
@@ -88,14 +108,11 @@ export default function Page() {
     return counts;
   }, [currentPhaseItems]);
 
-  // D9: confidence score — calculated from the full reshaped library, not just phase
   const breakdown = useMemo(
     () => calculateReadiness(reshaped, deal),
     [reshaped, deal],
   );
 
-  // Red flag: the first legally mandatory item that is not complete or skipped.
-  // Exposes the specific item label for the confidence indicator.
   const redFlagItem = useMemo(
     () =>
       reshaped.find(
@@ -108,8 +125,6 @@ export default function Page() {
   );
   const hasRedFlag = redFlagItem !== null;
 
-  // Count of banker-owned pending items across all phases — used for the
-  // "complete N banker items to reach X%" hint.
   const bankerPending = useMemo(
     () =>
       reshaped.filter(
@@ -121,8 +136,6 @@ export default function Page() {
     [reshaped],
   );
 
-  // Projected score after the banker completes all their pending items.
-  // Naive model: assume checklist completion rises proportionally.
   const projectedAfterActions = useMemo(() => {
     if (bankerPending === 0) return breakdown.total;
     const resolved = reshaped.filter(
@@ -132,68 +145,66 @@ export default function Page() {
       ((resolved + bankerPending) / reshaped.length) * 100,
     );
     const newTotal = Math.round(
-      newCompletion * 0.4 +
+      newCompletion * 0.5 +
         breakdown.skipQuality * 0.2 +
-        breakdown.provenanceConfidence * 0.25 +
-        breakdown.modeAlignment * 0.15,
+        breakdown.provenanceConfidence * 0.2 +
+        breakdown.modeAlignment * 0.1,
     );
     return Math.min(98, newTotal);
   }, [reshaped, bankerPending, breakdown]);
 
-  // V2 — AI adds a 5th input to the confidence score.
-  // Simple model: AI signal reads deal profile and contributes a flat "high" value
-  // when the product × entity combination is a common one, lower when rare.
-  // Here we just pick 92 for the demo so V2 visibly bumps the score.
   const v2Breakdown = useMemo(() => {
     if (!isV2) return breakdown;
     const aiSignal = 92;
-    // Reweight: checklist 35, skip 15, provenance 22, mode 13, ai 15 → 100
     const total = Math.round(
-      breakdown.checklistCompletion * 0.35 +
+      breakdown.checklistCompletion * 0.4 +
         breakdown.skipQuality * 0.15 +
-        breakdown.provenanceConfidence * 0.22 +
-        breakdown.modeAlignment * 0.13 +
+        breakdown.provenanceConfidence * 0.2 +
+        breakdown.modeAlignment * 0.1 +
         aiSignal * 0.15,
     );
     return { ...breakdown, total };
   }, [breakdown, isV2]);
   const effectiveBreakdown = isV2 ? v2Breakdown : breakdown;
 
-  // Master-detail: selected item derived from id + visible list.
-  // Default to the first INCOMPLETE item when selection is stale — the
-  // banker should land on something they can act on, not a completed row.
-  const selectedItem = useMemo(() => {
-    const byId = visibleItems.find((i) => i.id === selectedItemId);
-    if (byId) return byId;
-    const firstIncomplete = visibleItems.find(
-      (i) => i.status !== "complete" && i.status !== "skipped",
-    );
-    return firstIncomplete ?? visibleItems[0] ?? null;
-  }, [visibleItems, selectedItemId]);
-
-  // Phase completion detector — all items in current phase are resolved?
-  const currentPhaseComplete = useMemo(
+  // ——— V1 handlers ———
+  const identificationItems = useMemo(
     () =>
-      currentPhaseItems.length > 0 &&
-      currentPhaseItems.every(
-        (i) => i.status === "complete" || i.status === "skipped",
+      reshaped.filter(
+        (i) => i.phase === "identification",
       ),
-    [currentPhaseItems],
+    [reshaped],
   );
 
-  // Phase navigation — next/prev phase
-  const currentPhaseIdx = PHASES.findIndex((p) => p.id === deal.phase);
-  const prevPhase: Phase | null =
-    currentPhaseIdx > 0 ? PHASES[currentPhaseIdx - 1].id : null;
-  const nextPhase: Phase | null =
-    currentPhaseIdx < PHASES.length - 1
-      ? PHASES[currentPhaseIdx + 1].id
-      : null;
-  const nextPhaseLabel = nextPhase
-    ? PHASES.find((p) => p.id === nextPhase)?.label
-    : null;
+  // In focused mode we walk through items that are NOT yet resolved.
+  const actionableIdentification = useMemo(
+    () =>
+      identificationItems.filter(
+        (i) => i.status !== "complete" && i.status !== "skipped",
+      ),
+    [identificationItems],
+  );
 
-  // ——— Handlers ———
+  const currentFocusedItem =
+    actionableIdentification[focusedIndex] ?? null;
+
+  const phaseAllResolved =
+    identificationItems.length > 0 &&
+    identificationItems.every(
+      (i) => i.status === "complete" || i.status === "skipped",
+    );
+
+  function handleCompleteItem(item: CI) {
+    setLibrary((prev) =>
+      prev.map((i) =>
+        i.id === item.id ? { ...i, status: "complete" } : i,
+      ),
+    );
+    // Stay on same index — the list shrinks underneath us so the "next"
+    // item slides in automatically. If we're past the end, clamp.
+    setFocusedIndex((idx) => Math.max(0, Math.min(idx, actionableIdentification.length - 2)));
+  }
+
   function handleRequestSkip(item: CI) {
     setSkipTarget(item);
   }
@@ -208,21 +219,65 @@ export default function Page() {
       ),
     );
     setSkipTarget(null);
+    setFocusedIndex((idx) => Math.max(0, Math.min(idx, actionableIdentification.length - 2)));
   }
 
   function handleSkipCancel() {
     setSkipTarget(null);
   }
 
-  function handlePhaseChange(phase: Phase) {
-    setDeal((d) => ({ ...d, phase }));
+  function handleRestart() {
+    resetDraft();
+    setStep("empty");
+    setFocusedIndex(0);
+    setLibrary(INITIAL_CHECKLIST); // reset completed states
   }
 
-  const currentPhaseMeta = PHASES.find((p) => p.id === deal.phase);
+  // Auto-advance to complete state when phase is fully resolved in focused step
+  const shouldShowComplete =
+    step === "focused" && phaseAllResolved;
 
+  // ——— Render ———
+  // Empty / Creator / Loading — no header chrome; they own the full viewport
+  if (mode === "v1" && step === "empty") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <MinimalHeader />
+        <V1EmptyState />
+      </div>
+    );
+  }
+
+  if (mode === "v1" && step === "creator") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <MinimalHeader />
+        <V1DealContextForm />
+      </div>
+    );
+  }
+
+  if (mode === "v1" && step === "loading") {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <DealHeader
+          deal={deal}
+          breakdown={effectiveBreakdown}
+          hasRedFlag={hasRedFlag}
+          redFlagLabel={redFlagItem?.label}
+          redFlagSubtitle={redFlagItem?.subtitle}
+          bankerActionCount={bankerPending}
+          projectedAfterActions={projectedAfterActions}
+        />
+        <ProgressSpine currentPhase="setup" />
+        <V1DynamicLoading />
+      </div>
+    );
+  }
+
+  // Focused / ShowAll — full header + spine + V1 content
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header — customer, amount, D8 mode, D9 confidence */}
       <DealHeader
         deal={deal}
         breakdown={effectiveBreakdown}
@@ -232,225 +287,51 @@ export default function Page() {
         bankerActionCount={bankerPending}
         projectedAfterActions={projectedAfterActions}
       />
+      <ProgressSpine currentPhase={deal.phase} />
 
-      {/* V2 — AI teammate banner */}
-      {isV2 ? (
-        <div
-          className="border-b"
-          style={{
-            background: "var(--theme-card-bg)",
-            borderColor: "var(--theme-border)",
-          }}
-        >
-          <div
-            className="max-w-[1584px] mx-auto px-6 md:px-8 py-1.5 flex items-center gap-2 text-[11px]"
-            style={{ color: "var(--theme-primary)" }}
-          >
-            <Sparkles size={11} strokeWidth={2.2} />
-            <span className="font-semibold tracking-[0.32px] uppercase">
-              V2 · AI teammate active
-            </span>
-            <span style={{ color: "var(--theme-text-tertiary)" }}>
-              · contributing a 5th input to Ready to Submit · surfacing rare
-              combinations · drafting skip reason hints
-            </span>
-          </div>
-        </div>
-      ) : null}
-
-      {/* D5 — Progress spine (click to jump between phases) */}
-      <ProgressSpine currentPhase={deal.phase} onPhaseChange={handlePhaseChange} />
-
-      {/* Main workspace — table-first, quiet */}
       <main
         className="flex-1"
         style={{ background: "var(--theme-page-bg)" }}
       >
-        <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-5">
-          {/* Inline filter bar — real UI: owner filter only */}
-          <div
-            className="flex items-end justify-end gap-4 flex-wrap mb-4 pb-4"
-            style={{ borderBottom: "1px solid var(--theme-border-subtle)" }}
-          >
-            <div className="flex flex-col gap-1">
-              <span
-                className="text-[10px] uppercase font-medium"
-                style={{
-                  color: "var(--theme-text-tertiary)",
-                  letterSpacing: "0.32px",
-                }}
-              >
-                Owner filter
-              </span>
-              <OwnerFilter
-                value={ownerFilter}
-                onChange={setOwnerFilter}
-                counts={ownerCounts}
-              />
-            </div>
-          </div>
-
-          {/* Phase-complete banner */}
-          {currentPhaseComplete && nextPhase ? (
-            <div
-              className="mb-4 p-3 flex items-center gap-3 flex-wrap"
-              style={{
-                background: "#f0f9f2",
-                border: "1px solid #bfe4c6",
-                borderLeft: "3px solid var(--theme-success)",
-                borderRadius: "var(--theme-radius)",
+        <div className="max-w-[1280px] mx-auto px-6 md:px-8 py-6">
+          {shouldShowComplete ? (
+            <V1PhaseTransition
+              completedPhase="identification"
+              onRestart={handleRestart}
+            />
+          ) : step === "showAll" ? (
+            <ShowAllView
+              visibleItems={visibleItems}
+              currentPhaseItems={currentPhaseItems}
+              ownerFilter={ownerFilter}
+              setOwnerFilter={setOwnerFilter}
+              ownerCounts={ownerCounts}
+              onReturn={() => setStep("focused")}
+              selectedItemId={currentFocusedItem?.id ?? null}
+              onSelectItem={(item) => {
+                const idx = actionableIdentification.findIndex(
+                  (i) => i.id === item.id,
+                );
+                if (idx >= 0) setFocusedIndex(idx);
+                setStep("focused");
               }}
-            >
-              <Sparkles
-                size={14}
-                strokeWidth={2.2}
-                style={{ color: "var(--theme-success)" }}
-              />
-              <div className="flex-1 min-w-0 text-[12px]">
-                <span
-                  className="font-semibold"
-                  style={{ color: "var(--theme-text-primary)" }}
-                >
-                  {currentPhaseMeta?.label} phase complete
-                </span>
-                <span style={{ color: "var(--theme-text-secondary)" }}>
-                  {" "}— Continue to {nextPhaseLabel}:{" "}
-                  {itemsForPhase(reshaped, nextPhase).length} items waiting (
-                  {
-                    itemsForPhase(reshaped, nextPhase).filter(
-                      (i) => i.owner === "banker",
-                    ).length
-                  }{" "}
-                  need your action)
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => handlePhaseChange(nextPhase)}
-                className="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white"
-                style={{
-                  background: "var(--theme-primary)",
-                  borderRadius: "var(--theme-radius)",
-                }}
-              >
-                Continue to {nextPhaseLabel}
-                <ArrowRight size={12} strokeWidth={2.2} />
-              </button>
-            </div>
-          ) : null}
-
-          {/* Section heading — quiet */}
-          <div className="mb-2 flex items-baseline justify-between flex-wrap gap-2">
-            <h2
-              className="text-[15px] leading-[1.4] font-semibold"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              {currentPhaseMeta?.label} phase — checklist
-            </h2>
-            <div
-              className="text-[11px]"
-              style={{ color: "var(--theme-text-tertiary)" }}
-            >
-              Showing {visibleItems.length} of {currentPhaseItems.length} items
-              · reshape: {deal.product} × {deal.entity}
-            </div>
-          </div>
-
-          {/* Master-detail split — list left, detail right */}
-          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_440px] gap-5">
-            {/* Master list */}
-            <div className="min-w-0">
-              {visibleItems.length > 0 ? (
-                <div
-                  style={{
-                    background: "var(--theme-card-bg)",
-                    border: "1px solid var(--theme-border)",
-                    borderRadius: "var(--theme-radius)",
-                    overflow: "hidden",
-                  }}
-                >
-                  <ul>
-                    {visibleItems.map((item) => (
-                      <ChecklistListRow
-                        key={item.id}
-                        item={item}
-                        selected={selectedItem?.id === item.id}
-                        onSelect={(i) => setSelectedItemId(i.id)}
-                      />
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div
-                  className="py-12 text-center text-[12px]"
-                  style={{
-                    background: "var(--theme-card-bg)",
-                    border: "1px solid var(--theme-border)",
-                    color: "var(--theme-text-tertiary)",
-                    borderRadius: "var(--theme-radius)",
-                  }}
-                >
-                  No items match the current filter. Change Owner filter back
-                  to "All".
-                </div>
-              )}
-            </div>
-
-            {/* Detail panel — sticky on lg+ */}
-            <div className="min-w-0">
-              <ChecklistDetail
-                item={selectedItem}
-                onRequestSkip={handleRequestSkip}
-              />
-            </div>
-          </div>
-
-          {/* Phase navigation — prev / next primary button */}
-          <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
-            <button
-              type="button"
-              onClick={() => prevPhase && handlePhaseChange(prevPhase)}
-              disabled={!prevPhase}
-              className="inline-flex items-center gap-1.5 h-9 px-4 text-[13px] font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--theme-card-bg)",
-                borderColor: "var(--theme-border-strong)",
-                color: "var(--theme-text-secondary)",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              <ArrowLeft size={13} strokeWidth={2.2} />
-              {prevPhase
-                ? `Previous: ${PHASES.find((p) => p.id === prevPhase)?.label}`
-                : "No previous phase"}
-            </button>
-
-            <div
-              className="text-[11px] text-center flex-1 min-w-0"
-              style={{ color: "var(--theme-text-tertiary)" }}
-            >
-              Phase {currentPhaseIdx + 1} of {PHASES.length} ·{" "}
-              {currentPhaseItems.filter((i) => i.status === "complete" || i.status === "skipped").length}
-              /{currentPhaseItems.length} items resolved
-            </div>
-
-            <button
-              type="button"
-              onClick={() => nextPhase && handlePhaseChange(nextPhase)}
-              disabled={!nextPhase}
-              className="inline-flex items-center gap-1.5 h-9 px-4 text-[13px] font-semibold text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: "var(--theme-primary)",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              {nextPhase
-                ? `Continue to ${nextPhaseLabel}`
-                : "Deal complete"}
-              <ArrowRight size={13} strokeWidth={2.2} />
-            </button>
-          </div>
-
+              onRequestSkip={handleRequestSkip}
+            />
+          ) : currentFocusedItem ? (
+            <FocusedView
+              item={currentFocusedItem}
+              total={actionableIdentification.length}
+              index={focusedIndex}
+              onComplete={handleCompleteItem}
+              onRequestSkip={handleRequestSkip}
+              onShowAll={() => setStep("showAll")}
+            />
+          ) : (
+            <V1PhaseTransition
+              completedPhase="identification"
+              onRestart={handleRestart}
+            />
+          )}
         </div>
       </main>
 
@@ -461,7 +342,182 @@ export default function Page() {
         onCancel={handleSkipCancel}
         onConfirm={handleSkipConfirm}
       />
-      {/* Dev panel is mounted in layout.tsx — outside the filter target */}
+    </div>
+  );
+}
+
+/** Minimal header for empty/creator steps — just brand + V1/V2 toggle */
+function MinimalHeader() {
+  // Lazy: delegate to DealHeader with a placeholder deal — but empty state
+  // shouldn't leak deal info. For V1 step 1-2, hide the deal meta strip.
+  // Implementing as a stripped-down bar:
+  return (
+    <header
+      className="w-full"
+      style={{
+        background: "var(--theme-header-bg)",
+        borderBottom: "1px solid var(--theme-border)",
+      }}
+    >
+      <div className="max-w-[1584px] mx-auto px-6 md:px-8 h-[56px] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <span className="inline-block">
+            <WestpacWordmark />
+          </span>
+          <span
+            className="text-[13px] font-semibold"
+            style={{ color: "var(--theme-text-primary)" }}
+          >
+            BizEdge
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+// Inline wordmark to avoid circular import with DealHeader
+function WestpacWordmark() {
+  return (
+    <img
+      src="/westpac-logo.png"
+      alt="Westpac"
+      width={40}
+      height={22}
+      style={{ height: "22px", width: "40px", objectFit: "contain" }}
+    />
+  );
+}
+
+/** V1 focused single-item view with show-all affordance at bottom */
+function FocusedView({
+  item,
+  total,
+  index,
+  onComplete,
+  onRequestSkip,
+  onShowAll,
+}: {
+  item: CI;
+  total: number;
+  index: number;
+  onComplete: (item: CI) => void;
+  onRequestSkip: (item: CI) => void;
+  onShowAll: () => void;
+}) {
+  return (
+    <div>
+      <V1FocusedCard
+        item={item}
+        index={index}
+        total={total}
+        phaseLabel="Identification"
+        onComplete={onComplete}
+        onRequestSkip={onRequestSkip}
+      />
+
+      <div className="mt-6 flex items-center justify-center gap-2">
+        <span
+          className="text-[12px]"
+          style={{ color: "var(--theme-text-tertiary)" }}
+        >
+          Guided mode
+        </span>
+        <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
+        <button
+          type="button"
+          onClick={onShowAll}
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+          style={{ color: "var(--theme-primary)" }}
+        >
+          <LayoutList size={12} strokeWidth={2.2} />
+          Show all {total} items
+          <ArrowRight size={12} strokeWidth={2.2} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** V1 show-all flat list view — D4 progressive disclosure */
+function ShowAllView({
+  visibleItems,
+  currentPhaseItems,
+  ownerFilter,
+  setOwnerFilter,
+  ownerCounts,
+  onReturn,
+  selectedItemId,
+  onSelectItem,
+  onRequestSkip,
+}: {
+  visibleItems: CI[];
+  currentPhaseItems: CI[];
+  ownerFilter: OF;
+  setOwnerFilter: (v: OF) => void;
+  ownerCounts: Record<OF, number>;
+  onReturn: () => void;
+  selectedItemId: string | null;
+  onSelectItem: (item: CI) => void;
+  onRequestSkip: (item: CI) => void;
+}) {
+  return (
+    <div className="max-w-[960px] mx-auto">
+      <button
+        type="button"
+        onClick={onReturn}
+        className="inline-flex items-center gap-1.5 text-[12px] font-medium mb-4"
+        style={{ color: "var(--theme-primary)" }}
+      >
+        <ArrowLeft size={12} strokeWidth={2.2} />
+        Return to guided mode
+      </button>
+
+      <div className="flex items-end justify-between gap-4 flex-wrap mb-4 pb-4"
+        style={{ borderBottom: "1px solid var(--theme-border-subtle)" }}>
+        <h2
+          className="text-[18px] font-semibold"
+          style={{ color: "var(--theme-text-primary)" }}
+        >
+          Identification phase — all items
+        </h2>
+        <div className="flex flex-col gap-1">
+          <span
+            className="text-[10px] uppercase font-medium"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.32px",
+            }}
+          >
+            Owner filter
+          </span>
+          <OwnerFilter
+            value={ownerFilter}
+            onChange={setOwnerFilter}
+            counts={ownerCounts}
+          />
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: "var(--theme-card-bg)",
+          border: "1px solid var(--theme-border)",
+          borderRadius: "var(--theme-radius)",
+          overflow: "hidden",
+        }}
+      >
+        <ul>
+          {visibleItems.map((item) => (
+            <ChecklistListRow
+              key={item.id}
+              item={item}
+              selected={selectedItemId === item.id}
+              onSelect={onSelectItem}
+            />
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
