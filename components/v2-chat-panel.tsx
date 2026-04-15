@@ -195,12 +195,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
           </button>
         </div>
         {briefingOpen ? (
-          <HeaderBriefing
-            briefing={briefing}
-            firstName={firstName}
-            suggestions={suggestions}
-            onTapSuggestion={handlePillTap}
-          />
+          <HeaderBriefing briefing={briefing} firstName={firstName} />
         ) : null}
       </div>
 
@@ -236,6 +231,13 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         )}
         {pacTyping ? <TypingIndicator /> : null}
       </div>
+
+      {/* ——— Common questions — swipable pill shelf directly above
+             the input, on a pale-gray surface. */}
+      <SuggestionShelf
+        suggestions={suggestions}
+        onTap={handlePillTap}
+      />
 
       {/* ——— Input ——— */}
       <form
@@ -336,32 +338,30 @@ function useHorizontalDragScroll() {
 }
 
 // ——— Header briefing (collapsible) ———
-// Rendered inside the Pac panel header, below the status strip,
-// only when the banker opens the Briefing toggle. Holds the
-// reference bullets AND the common-question pills — the pills are
-// now a sub-section of the briefing card rather than a separate
-// shelf above the input.
+// Lives inside the Pac panel header. The outer wrapper matches the
+// header background (white) so the header appears to grow taller
+// when expanded and collapses flush when hidden. The briefing
+// content itself is rendered on a pale-gray card inset.
 function HeaderBriefing({
   briefing,
   firstName,
-  suggestions,
-  onTapSuggestion,
 }: {
   briefing: ReturnType<typeof getBriefing>;
   firstName: string;
-  suggestions: Suggestion[];
-  onTapSuggestion: (s: Suggestion) => void;
 }) {
-  const pillScrollRef = useHorizontalDragScroll();
   return (
     <div
-      className="w-full min-w-0"
-      style={{
-        background: "var(--westpac-primary-soft)",
-        borderTop: "1px solid var(--westpac-primary-border)",
-      }}
+      className="w-full min-w-0 px-4 pb-3"
+      style={{ background: "var(--theme-card-bg)" }}
     >
-      <div className="px-4 pt-3 pb-3 min-w-0">
+      <div
+        className="px-3 py-3 w-full min-w-0"
+        style={{
+          background: "#ededed",
+          border: "1px solid var(--theme-border)",
+          borderRadius: "var(--theme-radius-lg)",
+        }}
+      >
         <div className="flex items-baseline gap-2 flex-wrap min-w-0">
           <span
             className="text-[13px] font-semibold"
@@ -402,53 +402,75 @@ function HeaderBriefing({
           ))}
         </ul>
       </div>
+    </div>
+  );
+}
 
-      {/* Common questions — swipable pill row nested inside the
-          briefing card. Thin divider above, pills flow horizontally
-          with overflow scroll. w-full + min-w-0 at every level so
-          the inner scroll row honours the 400px panel width instead
-          of expanding to fit content. */}
+// ——— Suggestion shelf ———
+// Swipable pill row sitting directly above the input on a pale-gray
+// surface. Horizontal padding lives on the inner scroll content
+// (first/last pill get side gutters via margin) so the left padding
+// is never "covered" by a pill sliding underneath it when scrolled.
+function SuggestionShelf({
+  suggestions,
+  onTap,
+}: {
+  suggestions: Suggestion[];
+  onTap: (s: Suggestion) => void;
+}) {
+  const pillScrollRef = useHorizontalDragScroll();
+  return (
+    <div
+      className="shrink-0 w-full min-w-0"
+      style={{
+        background: "#ededed",
+        borderTop: "1px solid var(--theme-border)",
+      }}
+    >
       <div
-        className="w-full min-w-0"
-        style={{ borderTop: "1px solid var(--westpac-primary-border)" }}
+        className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          letterSpacing: "0.5px",
+        }}
       >
-        <div
-          className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5 min-w-0"
-          style={{
-            color: "var(--theme-primary)",
-            letterSpacing: "0.5px",
-            opacity: 0.75,
-          }}
-        >
-          Common questions
-        </div>
-        <div
-          ref={pillScrollRef}
-          className="flex flex-nowrap gap-2 px-4 pb-3 overflow-x-scroll min-w-0 w-full suggestion-pill-scroll cursor-grab active:cursor-grabbing"
-          style={{
-            scrollbarWidth: "none",
-            WebkitOverflowScrolling: "touch",
-            touchAction: "pan-x",
-            maxWidth: "100%",
-          }}
-        >
-          {suggestions.map((s, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => onTapSuggestion(s)}
-              className="interactive-pill shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[12px] leading-[1.3] font-medium cursor-pointer"
-              style={{
-                background: "var(--theme-card-bg)",
-                color: "var(--theme-primary)",
-                border: "1px solid var(--westpac-primary-border)",
-                borderRadius: "999px",
-              }}
-            >
-              {s.question}
-            </button>
-          ))}
-        </div>
+        Common questions
+      </div>
+      <div
+        ref={pillScrollRef}
+        // No horizontal padding on the scroll container — instead
+        // the first and last pills take side margin. That way the
+        // 16px side gutter is a property of the content, not the
+        // container, so pills never scroll underneath a clipping
+        // padding edge.
+        className="flex flex-nowrap gap-2 pb-3 overflow-x-scroll min-w-0 w-full suggestion-pill-scroll cursor-grab active:cursor-grabbing"
+        style={{
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
+          touchAction: "pan-x",
+          maxWidth: "100%",
+          scrollPaddingLeft: "16px",
+          scrollPaddingRight: "16px",
+        }}
+      >
+        {suggestions.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onTap(s)}
+            className="interactive-pill shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[12px] leading-[1.3] font-medium cursor-pointer"
+            style={{
+              background: "var(--theme-card-bg)",
+              color: "var(--theme-primary)",
+              border: "1px solid var(--westpac-primary-border)",
+              borderRadius: "999px",
+              marginLeft: i === 0 ? 16 : 0,
+              marginRight: i === suggestions.length - 1 ? 16 : 0,
+            }}
+          >
+            {s.question}
+          </button>
+        ))}
       </div>
     </div>
   );
