@@ -36,6 +36,7 @@ import { V1DealContextForm } from "@/components/v1-deal-context-form";
 import { V1DynamicLoading } from "@/components/v1-dynamic-loading";
 import { V1FocusedCard } from "@/components/v1-focused-card";
 import { V1PhaseTransition } from "@/components/v1-phase-transition";
+import { V1PhaseReadonly } from "@/components/v1-phase-readonly";
 import { V2Chat } from "@/components/v2-chat";
 import { ArrowRight, ArrowLeft, LayoutList, ListChecks, Sparkles } from "lucide-react";
 
@@ -88,6 +89,13 @@ export default function Page() {
   const currentPhaseItems = useMemo(
     () => itemsForPhase(reshaped, deal.phase),
     [reshaped, deal.phase],
+  );
+
+  // Items for the Setup phase — used by the read-only view when the
+  // banker clicks back to the completed Setup tab in the spine.
+  const setupPhaseItems = useMemo(
+    () => reshaped.filter((i) => i.phase === "setup"),
+    [reshaped],
   );
 
   const visibleItems = useMemo(
@@ -335,7 +343,13 @@ export default function Page() {
         style={{ background: "var(--theme-page-bg)" }}
       >
         <div className="max-w-[1280px] mx-auto px-6 md:px-8 py-6">
-          {shouldShowComplete ? (
+          {deal.phase === "setup" ? (
+            <V1PhaseReadonly
+              phaseLabel="Setup"
+              items={setupPhaseItems}
+              onReturn={() => setBaseDeal((d) => ({ ...d, phase: "identification" }))}
+            />
+          ) : shouldShowComplete ? (
             <V1PhaseTransition
               completedPhase="identification"
               onRestart={handleRestart}

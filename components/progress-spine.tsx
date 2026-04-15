@@ -2,10 +2,10 @@
 
 /**
  * D5 — Progress spine as guided workflow surface.
- * Quiet financial-UI treatment: inline phase tabs, subtle maroon
- * underline on the active phase, muted text otherwise. No big
- * circles, no bold colors — it sits below the deal header like
- * a secondary nav row.
+ * All 5 phase tabs are always visible. Completed phases keep their
+ * number label AND gain a green checkmark prefix — the banker should
+ * always know where they came from. Future phases show the number
+ * muted. Current phase gets the maroon underline + bold label.
  */
 import type { Phase } from "@/lib/types";
 import { PHASES } from "@/data/deal-data";
@@ -37,6 +37,16 @@ export function ProgressSpine({ currentPhase, onPhaseChange }: Props) {
         {PHASES.map((phase) => {
           const isCurrent = phase.id === currentPhase;
           const isComplete = phase.order < currentOrder;
+          const isFuture = phase.order > currentOrder;
+
+          const labelColor = isCurrent
+            ? "var(--theme-primary)"
+            : isComplete
+              ? "var(--theme-text-secondary)"
+              : "var(--theme-text-tertiary)";
+
+          const labelWeight = isCurrent ? 600 : isComplete ? 500 : 400;
+
           return (
             <li key={phase.id}>
               <Tooltip>
@@ -44,36 +54,67 @@ export function ProgressSpine({ currentPhase, onPhaseChange }: Props) {
                   <button
                     type="button"
                     onClick={() => onPhaseChange?.(phase.id)}
-                    className="relative flex items-center gap-2 h-11 px-4 transition-colors"
+                    disabled={isFuture}
+                    className="relative flex items-center gap-2 h-12 px-4 transition-colors"
                     style={{
-                      color: isCurrent
-                        ? "var(--theme-primary)"
-                        : "var(--theme-text-secondary)",
-                      cursor: onPhaseChange ? "pointer" : "help",
+                      cursor:
+                        isFuture || !onPhaseChange ? "help" : "pointer",
+                      opacity: isFuture ? 0.55 : 1,
                     }}
                   >
+                    {/* Left status ornament — checkmark for complete, pulse dot for current */}
+                    {isComplete ? (
+                      <span
+                        className="inline-flex items-center justify-center w-4 h-4 shrink-0"
+                        style={{
+                          background: "#2e7d32",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <Check size={9} strokeWidth={3} color="white" />
+                      </span>
+                    ) : isCurrent ? (
+                      <span
+                        className="inline-block w-2 h-2 shrink-0"
+                        style={{
+                          background: "var(--theme-primary)",
+                          borderRadius: "50%",
+                          animation: "pac-typing 1.4s ease-in-out infinite",
+                        }}
+                      />
+                    ) : (
+                      <span
+                        className="inline-block w-2 h-2 shrink-0"
+                        style={{
+                          background: "var(--theme-border-strong)",
+                          borderRadius: "50%",
+                        }}
+                      />
+                    )}
+
+                    {/* Number label — always visible */}
                     <span
                       className="text-[11px] tabular-nums"
                       style={{
-                        color: isCurrent
-                          ? "var(--theme-primary)"
-                          : "var(--theme-text-tertiary)",
+                        color: "var(--theme-text-tertiary)",
                         fontFamily: "var(--theme-font-mono)",
                       }}
                     >
-                      {isComplete ? (
-                        <Check size={12} strokeWidth={2.5} style={{ color: "var(--theme-success)" }} />
-                      ) : (
-                        String(phase.order).padStart(2, "0")
-                      )}
+                      {String(phase.order).padStart(2, "0")}
                     </span>
+
+                    {/* Phase name */}
                     <span
-                      className={`text-[13px] ${isCurrent ? "font-semibold" : "font-medium"}`}
+                      className="text-[13px]"
+                      style={{
+                        color: labelColor,
+                        fontWeight: labelWeight,
+                      }}
                     >
                       {phase.label}
                     </span>
 
-                    {/* Active phase underline — subtle maroon */}
+                    {/* Active phase underline */}
                     {isCurrent ? (
                       <span
                         className="absolute left-3 right-3 bottom-0 h-[2px]"
@@ -90,7 +131,11 @@ export function ProgressSpine({ currentPhase, onPhaseChange }: Props) {
                       letterSpacing: "0.5px",
                     }}
                   >
-                    {isCurrent ? "Current" : isComplete ? "Complete" : "Upcoming"}
+                    {isCurrent
+                      ? "Current"
+                      : isComplete
+                        ? "Complete — click to revisit"
+                        : "Coming soon"}
                   </div>
                   <div className="font-semibold text-[13px]">{phase.label}</div>
                   <div className="text-[11px] mt-1 leading-snug opacity-80">
