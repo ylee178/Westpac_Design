@@ -233,12 +233,13 @@ function Field({
           style={commonStyle}
         >
           <span
-            className="flex items-center justify-center pl-3 pr-1 text-[13px] font-semibold select-none"
+            className="flex items-center justify-center pl-3 pr-1 text-[13px] select-none"
             style={{
               color: "var(--theme-text-primary)",
               fontFamily: mono
                 ? "var(--theme-font-mono)"
                 : "var(--theme-font-sans)",
+              fontWeight: 400,
             }}
           >
             {prefix}

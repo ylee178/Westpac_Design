@@ -165,20 +165,30 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         </div>
       </div>
 
-      {/* ——— Briefing card (reactive, not chat) ——— */}
-      <BriefingCard briefing={briefing} firstName={firstName} />
+      {/* ——— Common questions — sits directly above the chat screen
+             on the page-bg surface so there's no white-card boundary. */}
+      <SuggestionPills
+        suggestions={suggestions}
+        onTap={handlePillTap}
+      />
 
       {/* ——— Chat thread ——— */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+        className="flex-1 overflow-y-auto px-4 pt-3 pb-3 space-y-3"
+        style={{ background: "var(--theme-page-bg)" }}
       >
+        {/* Briefing is the first element INSIDE the chat scroll, on
+            a surface that reads as a shade darker than the chat
+            background so it stands out without needing a white card. */}
+        <BriefingCard briefing={briefing} firstName={firstName} />
+
         {timeline.length === 0 && !pacTyping ? (
           <div
-            className="text-center text-[11px] py-4"
+            className="text-center text-[11px] pt-2"
             style={{ color: "var(--theme-text-tertiary)" }}
           >
-            Tap a question below, or ask me anything.
+            Tap a common question above, or ask me anything.
           </div>
         ) : (
           timeline.map((msg, i) => {
@@ -199,12 +209,6 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         )}
         {pacTyping ? <TypingIndicator /> : null}
       </div>
-
-      {/* ——— Suggestion pills (reactive) ——— */}
-      <SuggestionPills
-        suggestions={suggestions}
-        onTap={handlePillTap}
-      />
 
       {/* ——— Input ——— */}
       <form
@@ -254,65 +258,59 @@ function BriefingCard({
   firstName: string;
 }) {
   return (
-    <section
-      className="shrink-0 px-4 pt-3 pb-3"
+    <div
+      className="flex items-start gap-3 p-3"
       style={{
-        background: "var(--theme-card-bg)",
-        borderBottom: "1px solid var(--theme-border)",
+        // One shade darker than the chat-scroll page bg (#f5f5f5) so
+        // the briefing reads as an inset note without needing its
+        // own white card.
+        background: "#e9e9e9",
+        borderRadius: "var(--theme-radius-lg)",
       }}
     >
-      <div
-        className="flex items-start gap-3 p-3"
-        style={{
-          background: "var(--westpac-primary-soft)",
-          border: "1px solid var(--westpac-primary-border)",
-          borderRadius: "var(--theme-radius-lg)",
-        }}
-      >
-        <PacAvatar size={28} state="idle" />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span
-              className="text-[13px] font-semibold"
+      <PacAvatar size={28} state="idle" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span
+            className="text-[13px] font-semibold"
+            style={{ color: "var(--theme-text-primary)" }}
+          >
+            {briefing.title}
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "var(--theme-text-secondary)" }}
+          >
+            {briefing.subtitle}
+          </span>
+        </div>
+        <ul className="mt-2 space-y-1.5">
+          {briefing.bullets.map((b, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2 text-[11px] leading-[1.45]"
               style={{ color: "var(--theme-text-primary)" }}
             >
-              {briefing.title}
-            </span>
-            <span
-              className="text-[11px]"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              {briefing.subtitle}
-            </span>
-          </div>
-          <ul className="mt-2 space-y-1.5">
-            {briefing.bullets.map((b, i) => (
-              <li
-                key={i}
-                className="flex items-start gap-2 text-[11px] leading-[1.45]"
-                style={{ color: "var(--theme-text-primary)" }}
-              >
-                <span
-                  className="inline-block w-1 h-1 mt-[6px] shrink-0"
-                  style={{
-                    background: "var(--theme-primary)",
-                    borderRadius: "50%",
-                  }}
-                />
-                <span
-                  dangerouslySetInnerHTML={{
-                    __html: b.replace(
-                      /^(Hi)\b/,
-                      `Hi ${escapeHtml(firstName)},`,
-                    ),
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
+              <span
+                className="inline-block w-1 h-1 mt-[6px] shrink-0"
+                style={{
+                  background: "var(--theme-primary)",
+                  borderRadius: "50%",
+                }}
+              />
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: b.replace(
+                    /^(Hi)\b/,
+                    `Hi ${escapeHtml(firstName)},`,
+                  ),
+                }}
+              />
+            </li>
+          ))}
+        </ul>
       </div>
-    </section>
+    </div>
   );
 }
 
@@ -326,14 +324,14 @@ function SuggestionPills({
 }) {
   return (
     <div
-      className="shrink-0 px-3 py-2.5"
+      className="shrink-0 px-4 pt-3 pb-2"
       style={{
-        background: "var(--theme-card-bg)",
-        borderTop: "1px solid var(--theme-border)",
+        background: "var(--theme-page-bg)",
+        borderBottom: "1px solid var(--theme-border-subtle)",
       }}
     >
       <div
-        className="text-[9px] uppercase font-semibold mb-2 px-1"
+        className="text-[9px] uppercase font-semibold mb-2"
         style={{
           color: "var(--theme-text-tertiary)",
           letterSpacing: "0.5px",
@@ -349,9 +347,9 @@ function SuggestionPills({
             onClick={() => onTap(s)}
             className="interactive-pill text-left px-3 py-2 text-[11.5px] leading-[1.35] font-medium cursor-pointer"
             style={{
-              background: "var(--theme-card-bg)",
-              color: "var(--theme-text-primary)",
-              border: "1px solid var(--theme-border-strong)",
+              background: "transparent",
+              color: "var(--theme-primary)",
+              border: "1px solid var(--westpac-primary-border)",
               borderRadius: "var(--theme-radius)",
             }}
           >

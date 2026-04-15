@@ -358,7 +358,7 @@ export function V1EmptyState() {
           </div>
         )}
 
-        <div className="flex items-center justify-center">
+        <div className="flex items-center justify-end">
           <button
             type="button"
             onClick={handleCreate}
