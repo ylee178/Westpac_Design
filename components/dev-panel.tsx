@@ -1,11 +1,9 @@
 "use client";
 
 /**
- * Floating dev panel — bottom-right gear button that opens a popover
- * with 3 controls: version (V1/V2), theme (IBM/Stripe), grayscale on/off.
- *
- * Used to demo the same prototype under different design-system bases
- * while the Westpac brand overlay stays constant.
+ * Floating dev panel — bottom-right gear button.
+ * Compact popover: 3 stacked option groups, no subtexts, tight gaps.
+ * Height capped to viewport; body scrolls if content overflows.
  */
 import { Settings, Check } from "lucide-react";
 import { useDevMode, type AppTheme, type AppVersion } from "@/lib/dev-mode-context";
@@ -15,30 +13,14 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const VERSIONS: { id: AppVersion; label: string; sub: string }[] = [
-  {
-    id: "v1",
-    label: "V1",
-    sub: "Structured rules · checklist + skip picker + mode indicators",
-  },
-  {
-    id: "v2",
-    label: "V2",
-    sub: "AI teammate layer · smart ordering + AI confidence input",
-  },
+const VERSIONS: { id: AppVersion; label: string }[] = [
+  { id: "v1", label: "V1 · Structured rules" },
+  { id: "v2", label: "V2 · AI teammate" },
 ];
 
-const THEMES: { id: AppTheme; label: string; sub: string }[] = [
-  {
-    id: "ibm",
-    label: "IBM Carbon",
-    sub: "Rectangular · flat · Plex Sans · background layering",
-  },
-  {
-    id: "stripe",
-    label: "Stripe",
-    sub: "Rounded · shadows · Inter · airy spacing",
-  },
+const THEMES: { id: AppTheme; label: string }[] = [
+  { id: "ibm", label: "IBM Carbon" },
+  { id: "stripe", label: "Stripe" },
 ];
 
 export function DevPanel() {
@@ -69,141 +51,65 @@ export function DevPanel() {
         <PopoverContent
           align="end"
           side="top"
-          sideOffset={12}
-          className="w-[340px] p-0 rounded-none border"
+          sideOffset={10}
+          collisionPadding={12}
+          className="w-[260px] p-0 overflow-hidden flex flex-col"
           style={{
             background: "var(--theme-card-bg)",
             borderColor: "var(--theme-border-strong)",
             color: "var(--theme-text-primary)",
             borderRadius: "var(--theme-radius-lg)",
             boxShadow: "var(--theme-shadow-float)",
+            maxHeight: "calc(100vh - 120px)",
           }}
         >
-          {/* Header */}
+          {/* Tiny header */}
           <div
-            className="px-4 py-3 border-b"
-            style={{
-              borderColor: "var(--theme-border)",
-              background: "var(--theme-surface-subtle)",
-            }}
+            className="px-3 py-2 shrink-0"
+            style={{ borderBottom: "1px solid var(--theme-border)" }}
           >
             <div
-              className="text-[10px] uppercase tracking-[0.5px] font-semibold"
-              style={{ color: "var(--westpac-brand-maroon)" }}
+              className="text-[10px] uppercase font-semibold tracking-[0.5px]"
+              style={{ color: "var(--theme-text-tertiary)" }}
             >
               Dev panel
             </div>
-            <div
-              className="text-[13px] font-semibold mt-0.5"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              Prototype controls
+          </div>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto">
+            <SectionLabel>Version</SectionLabel>
+            <div className="px-2 pb-2 space-y-1">
+              {VERSIONS.map((v) => (
+                <OptionButton
+                  key={v.id}
+                  selected={version === v.id}
+                  label={v.label}
+                  onClick={() => setVersion(v.id)}
+                />
+              ))}
             </div>
-            <div
-              className="text-[11px] mt-1 leading-snug"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              Swap the underlying design system; the Westpac brand overlay
-              stays constant.
+
+            <SectionLabel>Grayscale</SectionLabel>
+            <div className="px-2 pb-2">
+              <OptionButton
+                selected={grayscale}
+                label={grayscale ? "Skeleton mode · on" : "Skeleton mode · off"}
+                onClick={() => setGrayscale(!grayscale)}
+              />
             </div>
-          </div>
 
-          {/* Section 1 — Version */}
-          <SectionLabel>1 · Version</SectionLabel>
-          <div className="px-3 pb-3 space-y-1.5">
-            {VERSIONS.map((v) => (
-              <OptionButton
-                key={v.id}
-                selected={version === v.id}
-                label={v.label}
-                sub={v.sub}
-                onClick={() => setVersion(v.id)}
-              />
-            ))}
-          </div>
-
-          {/* Section 2 — Grayscale */}
-          <SectionLabel>2 · Grayscale filter</SectionLabel>
-          <div className="px-3 pb-3">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={grayscale}
-              onClick={() => setGrayscale(!grayscale)}
-              className="w-full flex items-center justify-between px-3 py-2.5 border transition-colors"
-              style={{
-                background: grayscale
-                  ? "var(--westpac-brand-maroon-soft)"
-                  : "var(--theme-card-bg)",
-                borderColor: grayscale
-                  ? "var(--westpac-brand-maroon)"
-                  : "var(--theme-border)",
-                borderWidth: grayscale ? "2px" : "1px",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              <div className="text-left">
-                <div
-                  className="text-[12px] font-semibold"
-                  style={{ color: "var(--theme-text-primary)" }}
-                >
-                  Grayscale filter
-                </div>
-                <div
-                  className="text-[10px] mt-0.5 leading-tight"
-                  style={{ color: "var(--theme-text-secondary)" }}
-                >
-                  Off = full colour. Toggle to verify the UI still reads without hue.
-                </div>
-              </div>
-              <span
-                className="text-[10px] uppercase tracking-[0.5px] font-semibold px-2 py-1 border"
-                style={{
-                  color: grayscale
-                    ? "var(--westpac-brand-maroon)"
-                    : "var(--theme-text-tertiary)",
-                  borderColor: grayscale
-                    ? "var(--westpac-brand-maroon)"
-                    : "var(--theme-border)",
-                  background: grayscale
-                    ? "var(--theme-card-bg)"
-                    : "var(--theme-surface-subtle)",
-                }}
-              >
-                {grayscale ? "ON" : "OFF"}
-              </span>
-            </button>
-          </div>
-
-          {/* Section 3 — Design system */}
-          <SectionLabel>3 · Design system base</SectionLabel>
-          <div className="px-3 pb-3 space-y-1.5">
-            {THEMES.map((t) => (
-              <OptionButton
-                key={t.id}
-                selected={theme === t.id}
-                label={t.label}
-                sub={t.sub}
-                onClick={() => setTheme(t.id)}
-              />
-            ))}
-          </div>
-
-          {/* Brand note */}
-          <div
-            className="px-4 py-2.5 border-t text-[10px] leading-snug"
-            style={{
-              borderColor: "var(--theme-border)",
-              background: "var(--theme-surface-subtle)",
-              color: "var(--theme-text-secondary)",
-            }}
-          >
-            <span
-              className="inline-block w-2 h-2 align-middle mr-1.5"
-              style={{ background: "var(--westpac-brand-red)" }}
-            />
-            Westpac brand (red · maroon · W-mark) is applied as an overlay on
-            top of the chosen design system.
+            <SectionLabel>Design system</SectionLabel>
+            <div className="px-2 pb-2 space-y-1">
+              {THEMES.map((t) => (
+                <OptionButton
+                  key={t.id}
+                  selected={theme === t.id}
+                  label={t.label}
+                  onClick={() => setTheme(t.id)}
+                />
+              ))}
+            </div>
           </div>
         </PopoverContent>
       </Popover>
@@ -214,7 +120,7 @@ export function DevPanel() {
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="px-4 pt-3 pb-1.5 text-[10px] uppercase tracking-[0.5px] font-semibold"
+      className="px-3 pt-2.5 pb-1 text-[9px] uppercase font-semibold tracking-[0.5px]"
       style={{ color: "var(--theme-text-tertiary)" }}
     >
       {children}
@@ -225,58 +131,45 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function OptionButton({
   selected,
   label,
-  sub,
   onClick,
 }: {
   selected: boolean;
   label: string;
-  sub: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="w-full flex items-start gap-2.5 px-3 py-2.5 border text-left transition-colors"
+      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
       style={{
         background: selected
-          ? "var(--westpac-brand-maroon-soft)"
-          : "var(--theme-card-bg)",
-        borderColor: selected
-          ? "var(--westpac-brand-maroon)"
-          : "var(--theme-border)",
-        borderWidth: selected ? "2px" : "1px",
+          ? "var(--westpac-primary-soft)"
+          : "transparent",
+        border: selected
+          ? "1px solid var(--theme-primary)"
+          : "1px solid transparent",
         borderRadius: "var(--theme-radius)",
       }}
     >
       <div
-        className="flex items-center justify-center w-4 h-4 mt-0.5 shrink-0"
+        className="flex items-center justify-center w-3.5 h-3.5 shrink-0"
         style={{
-          background: selected
-            ? "var(--westpac-brand-maroon)"
-            : "transparent",
+          background: selected ? "var(--theme-primary)" : "transparent",
           border: selected
             ? "none"
             : "1px solid var(--theme-border-strong)",
           borderRadius: "50%",
         }}
       >
-        {selected ? <Check size={10} strokeWidth={3} color="white" /> : null}
+        {selected ? <Check size={9} strokeWidth={3.5} color="white" /> : null}
       </div>
-      <div className="min-w-0 flex-1">
-        <div
-          className="text-[12px] font-semibold"
-          style={{ color: "var(--theme-text-primary)" }}
-        >
-          {label}
-        </div>
-        <div
-          className="text-[10px] mt-0.5 leading-tight"
-          style={{ color: "var(--theme-text-secondary)" }}
-        >
-          {sub}
-        </div>
-      </div>
+      <span
+        className="text-[12px] font-medium"
+        style={{ color: "var(--theme-text-primary)" }}
+      >
+        {label}
+      </span>
     </button>
   );
 }
