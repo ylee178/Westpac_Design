@@ -63,7 +63,7 @@ export function V1DealContextForm() {
         <button
           type="button"
           onClick={() => setStep("empty")}
-          className="inline-flex items-center gap-1.5 text-[12px] mb-4 font-medium cursor-pointer"
+          className="interactive-subtle inline-flex items-center gap-1.5 text-[12px] mb-4 font-medium cursor-pointer"
           style={{ color: "var(--theme-text-secondary)" }}
         >
           <ArrowLeft size={12} strokeWidth={2.2} />
@@ -124,7 +124,7 @@ export function V1DealContextForm() {
             type="button"
             onClick={() => canContinue && setStep("loading")}
             disabled={!canContinue}
-            className="inline-flex items-center gap-2 h-11 px-5 text-[13px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            className="interactive-primary inline-flex items-center gap-2 h-11 px-5 text-[13px] font-semibold text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--theme-primary)",
               borderRadius: "var(--theme-radius)",

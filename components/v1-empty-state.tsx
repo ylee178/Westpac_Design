@@ -322,7 +322,7 @@ export function V1EmptyState() {
                       key={j}
                       type="button"
                       onClick={() => setDraft({ jurisdiction: j })}
-                      className="inline-flex items-center gap-1.5 h-10 px-4 text-[13px] font-semibold transition-colors cursor-pointer"
+                      className="interactive-pill inline-flex items-center gap-1.5 h-10 px-4 text-[13px] font-semibold cursor-pointer"
                       style={{
                         background:
                           draft.jurisdiction === j
@@ -363,7 +363,7 @@ export function V1EmptyState() {
             type="button"
             onClick={handleCreate}
             disabled={!allChosen}
-            className="inline-flex items-center gap-2 h-12 px-6 text-[14px] font-semibold text-white transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="interactive-primary inline-flex items-center gap-2 h-12 px-6 text-[14px] font-semibold text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--theme-primary)",
               borderRadius: "var(--theme-radius)",
@@ -415,7 +415,7 @@ function CardSelector({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex flex-col items-start text-left transition-all cursor-pointer ${compact ? "p-3" : "p-4"}`}
+      className={`interactive-card w-full flex flex-col items-start text-left cursor-pointer ${compact ? "p-3" : "p-4"}`}
       style={{
         background: selected
           ? "var(--westpac-primary-soft)"
@@ -472,7 +472,7 @@ function PillSelector({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center h-10 px-4 text-[13px] font-semibold transition-colors cursor-pointer"
+      className="interactive-pill inline-flex items-center h-10 px-4 text-[13px] font-semibold cursor-pointer"
       style={{
         background: selected
           ? "var(--theme-primary)"

@@ -185,18 +185,21 @@
   /* Borders — light, thin */
   --theme-border: #e3e3e3;
   --theme-border-subtle: #f0f0f0;
-  --theme-border-strong: #d4d4d4;
+  --theme-border-strong: #c7c7c7;
 
-  /* Text — soft, not heavy black */
+  /* Text — WCAG 2.1 AA compliant on #ffffff AND #f5f5f5 page bg.
+     #1a1a1a  → 15.3:1  AAA
+     #555555  → 7.45:1  AAA  (secondary)
+     #6b6b6b  → 4.97:1  AA   (tertiary — still passes small-text AA) */
   --theme-text-primary: #1a1a1a;
-  --theme-text-secondary: #6b6b6b;
-  --theme-text-tertiary: #9a9a9a;
+  --theme-text-secondary: #555555;
+  --theme-text-tertiary: #6b6b6b;
 
   /* Light bank-style header */
   --theme-header-bg: #ffffff;
   --theme-header-subtle: #ffffff;
   --theme-header-fg: #1a1a1a;
-  --theme-header-muted: #6b6b6b;
+  --theme-header-muted: #555555;
 
   /* Progress spine — subtle, inline */
   --theme-spine-bg: #ffffff;
@@ -240,16 +243,16 @@
 
   --theme-border: #e3e3e3;
   --theme-border-subtle: #f0f0f0;
-  --theme-border-strong: #d4d4d4;
+  --theme-border-strong: #c7c7c7;
 
   --theme-text-primary: #1a1a1a;
-  --theme-text-secondary: #6b6b6b;
-  --theme-text-tertiary: #9a9a9a;
+  --theme-text-secondary: #555555;
+  --theme-text-tertiary: #6b6b6b;
 
   --theme-header-bg: #ffffff;
   --theme-header-subtle: #ffffff;
   --theme-header-fg: #1a1a1a;
-  --theme-header-muted: #6b6b6b;
+  --theme-header-muted: #555555;
 
   --theme-spine-bg: #ffffff;
   --theme-spine-current: #ffffff;
@@ -466,6 +469,75 @@
   -webkit-text-fill-color: transparent;
   color: transparent;
   animation: shimmer-once 850ms linear 1 forwards;
+}
+
+/* ============================================================
+   Interactive hover states — shared affordance language.
+   Use these classes on <button> / card elements so every
+   actionable surface lifts or brightens the same way on hover.
+   Inline styles keep their static appearance; these rules
+   only kick in on :hover via !important.
+   ============================================================ */
+.interactive-card {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+.interactive-card:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(122, 30, 58, 0.14) !important;
+  border-color: var(--theme-primary) !important;
+}
+.interactive-card:not(:disabled):active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(122, 30, 58, 0.10) !important;
+}
+
+.interactive-pill {
+  transition:
+    transform 120ms ease,
+    filter 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+}
+.interactive-pill:not(:disabled):hover {
+  filter: brightness(0.97);
+  border-color: var(--theme-primary) !important;
+  box-shadow: 0 3px 10px rgba(122, 30, 58, 0.14) !important;
+}
+.interactive-pill:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.interactive-primary {
+  transition:
+    transform 120ms ease,
+    filter 160ms ease,
+    box-shadow 200ms ease;
+}
+.interactive-primary:not(:disabled):hover {
+  filter: brightness(0.92);
+  box-shadow: 0 8px 22px rgba(122, 30, 58, 0.35) !important;
+  transform: translateY(-1px);
+}
+.interactive-primary:not(:disabled):active {
+  transform: translateY(0);
+  filter: brightness(0.88);
+}
+
+.interactive-subtle {
+  transition: color 140ms ease, background-color 140ms ease;
+}
+.interactive-subtle:not(:disabled):hover {
+  color: var(--theme-primary) !important;
+}
+
+.interactive-row {
+  transition: background-color 140ms ease;
+}
+.interactive-row:not(:disabled):hover {
+  background-color: var(--westpac-primary-soft) !important;
 }
 
 /* ============================================================

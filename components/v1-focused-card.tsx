@@ -175,7 +175,7 @@ export function V1FocusedCard({
         <button
           type="button"
           onClick={() => onComplete(item)}
-          className="inline-flex items-center gap-2 h-11 px-5 text-[13px] font-semibold text-white transition-colors"
+          className="interactive-primary inline-flex items-center gap-2 h-11 px-5 text-[13px] font-semibold text-white cursor-pointer"
           style={{
             background: "var(--theme-primary)",
             borderRadius: "var(--theme-radius)",
@@ -198,7 +198,7 @@ export function V1FocusedCard({
           <button
             type="button"
             onClick={() => onRequestSkip(item)}
-            className="inline-flex items-center gap-1.5 h-11 px-4 text-[12px] font-medium transition-colors"
+            className="interactive-pill inline-flex items-center gap-1.5 h-11 px-4 text-[12px] font-medium cursor-pointer"
             style={{
               color: "var(--theme-text-secondary)",
               background: "var(--theme-card-bg)",

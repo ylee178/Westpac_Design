@@ -26,9 +26,12 @@ interface Props {
   onSelect: (item: CI) => void;
 }
 
+// Owner accent bars are decorative (3:1 not required for non-text),
+// but we bump the system gray slightly so it reads as intentional
+// rather than disabled.
 const OWNER_BAR: Record<Owner, string> = {
   banker: "#7a1e3a",   // maroon
-  system: "#9a9a9a",   // gray
+  system: "#6b6b6b",   // gray — same as text-tertiary, WCAG-safe
   customer: "#b45309", // amber
 };
 
