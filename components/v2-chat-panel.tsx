@@ -18,7 +18,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ChecklistItem as CI, Deal } from "@/lib/types";
 import { PacAvatar } from "@/components/pac-avatar";
-import { Send } from "lucide-react";
+import { ChevronDown, Send } from "lucide-react";
 import { useFlowMode } from "@/lib/flow-mode-context";
 import {
   getBriefing,
@@ -63,6 +63,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
   const [freeText, setFreeText] = useState("");
   const [pacTyping, setPacTyping] = useState(false);
+  const [briefingOpen, setBriefingOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Briefing + pills are DERIVED directly from current product/step.
@@ -137,32 +138,62 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         borderLeft: "1px solid var(--theme-border)",
       }}
     >
-      {/* ——— Header: Pac status strip ——— */}
+      {/* ——— Header: Pac status strip + collapsible briefing ——— */}
       <div
-        className="px-4 py-3 flex items-center gap-3 shrink-0"
+        className="shrink-0"
         style={{
           background: "var(--theme-card-bg)",
           borderBottom: "1px solid var(--theme-border)",
         }}
       >
-        <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
-        <div className="min-w-0">
-          <div
-            className="text-[13px] font-semibold leading-tight"
-            style={{ color: "var(--theme-text-primary)" }}
+        <div className="px-4 py-3 flex items-center gap-3">
+          <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
+          <div className="min-w-0 flex-1">
+            <div
+              className="text-[13px] font-semibold leading-tight"
+              style={{ color: "var(--theme-text-primary)" }}
+            >
+              Pac
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px]">
+              <span
+                className="inline-block w-1.5 h-1.5"
+                style={{ background: "#2e7d32", borderRadius: "50%" }}
+              />
+              <span style={{ color: "var(--theme-text-secondary)" }}>
+                Active · Westpac AI teammate
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => setBriefingOpen((v) => !v)}
+            aria-expanded={briefingOpen}
+            aria-label={
+              briefingOpen ? "Hide product briefing" : "Show product briefing"
+            }
+            className="interactive-pill inline-flex items-center gap-1 px-2.5 h-7 text-[11px] font-medium cursor-pointer"
+            style={{
+              color: "var(--theme-primary)",
+              background: "var(--westpac-primary-soft)",
+              border: "1px solid var(--westpac-primary-border)",
+              borderRadius: "999px",
+            }}
           >
-            Pac
-          </div>
-          <div className="flex items-center gap-1.5 text-[10px]">
-            <span
-              className="inline-block w-1.5 h-1.5"
-              style={{ background: "#2e7d32", borderRadius: "50%" }}
+            {briefingOpen ? "Hide briefing" : "Briefing"}
+            <ChevronDown
+              size={12}
+              strokeWidth={2.4}
+              style={{
+                transform: briefingOpen ? "rotate(180deg)" : "rotate(0deg)",
+                transition: "transform 180ms ease",
+              }}
             />
-            <span style={{ color: "var(--theme-text-secondary)" }}>
-              Active · Westpac AI teammate
-            </span>
-          </div>
+          </button>
         </div>
+        {briefingOpen ? (
+          <HeaderBriefing briefing={briefing} firstName={firstName} />
+        ) : null}
       </div>
 
       {/* ——— Chat thread ——— */}
@@ -171,11 +202,6 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         className="flex-1 overflow-y-auto px-4 pt-3 pb-3 space-y-3"
         style={{ background: "var(--theme-page-bg)" }}
       >
-        {/* Briefing is the first element INSIDE the chat scroll, on
-            a surface that reads as a shade darker than the chat
-            background so it stands out without needing a white card. */}
-        <BriefingCard briefing={briefing} firstName={firstName} />
-
         {timeline.length === 0 && !pacTyping ? (
           <div
             className="text-center text-[11px] pt-2"
@@ -250,8 +276,11 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   );
 }
 
-// ——— Briefing card ———
-function BriefingCard({
+// ——— Header briefing (collapsible) ———
+// Rendered inside the Pac panel header, below the status strip,
+// only when the banker opens the Briefing toggle. No Pac avatar —
+// the avatar already sits in the header status strip.
+function HeaderBriefing({
   briefing,
   firstName,
 }: {
@@ -260,57 +289,51 @@ function BriefingCard({
 }) {
   return (
     <div
-      className="flex items-start gap-3 p-3"
+      className="px-4 py-3"
       style={{
-        // One shade darker than the chat-scroll page bg (#f5f5f5) so
-        // the briefing reads as an inset note without needing its
-        // own white card.
-        background: "#e9e9e9",
-        borderRadius: "var(--theme-radius-lg)",
+        background: "var(--westpac-primary-soft)",
+        borderTop: "1px solid var(--westpac-primary-border)",
       }}
     >
-      <PacAvatar size={28} state="idle" />
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span
-            className="text-[13px] font-semibold"
+      <div className="flex items-baseline gap-2 flex-wrap">
+        <span
+          className="text-[13px] font-semibold"
+          style={{ color: "var(--theme-text-primary)" }}
+        >
+          {briefing.title}
+        </span>
+        <span
+          className="text-[11px]"
+          style={{ color: "var(--theme-text-secondary)" }}
+        >
+          {briefing.subtitle}
+        </span>
+      </div>
+      <ul className="mt-2 space-y-1.5">
+        {briefing.bullets.map((b, i) => (
+          <li
+            key={i}
+            className="flex items-start gap-2 text-[11px] leading-[1.45]"
             style={{ color: "var(--theme-text-primary)" }}
           >
-            {briefing.title}
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            {briefing.subtitle}
-          </span>
-        </div>
-        <ul className="mt-2 space-y-1.5">
-          {briefing.bullets.map((b, i) => (
-            <li
-              key={i}
-              className="flex items-start gap-2 text-[11px] leading-[1.45]"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              <span
-                className="inline-block w-1 h-1 mt-[6px] shrink-0"
-                style={{
-                  background: "var(--theme-primary)",
-                  borderRadius: "50%",
-                }}
-              />
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: b.replace(
-                    /^(Hi)\b/,
-                    `Hi ${escapeHtml(firstName)},`,
-                  ),
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      </div>
+            <span
+              className="inline-block w-1 h-1 mt-[6px] shrink-0"
+              style={{
+                background: "var(--theme-primary)",
+                borderRadius: "50%",
+              }}
+            />
+            <span
+              dangerouslySetInnerHTML={{
+                __html: b.replace(
+                  /^(Hi)\b/,
+                  `Hi ${escapeHtml(firstName)},`,
+                ),
+              }}
+            />
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
