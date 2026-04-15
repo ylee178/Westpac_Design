@@ -15,6 +15,10 @@ interface Props {
   deal: Deal;
   breakdown: ConfidenceBreakdown;
   hasRedFlag: boolean;
+  redFlagLabel?: string;
+  redFlagSubtitle?: string;
+  bankerActionCount?: number;
+  projectedAfterActions?: number;
 }
 
 const currency = new Intl.NumberFormat("en-AU", {
@@ -30,7 +34,15 @@ const NAV = [
   { label: "Reports", active: false },
 ];
 
-export function DealHeader({ deal, breakdown, hasRedFlag }: Props) {
+export function DealHeader({
+  deal,
+  breakdown,
+  hasRedFlag,
+  redFlagLabel,
+  redFlagSubtitle,
+  bankerActionCount,
+  projectedAfterActions,
+}: Props) {
   return (
     <header
       className="w-full"
@@ -156,7 +168,14 @@ export function DealHeader({ deal, breakdown, hasRedFlag }: Props) {
           </div>
 
           <div className="shrink-0">
-            <ConfidenceTooltip breakdown={breakdown} hasRedFlag={hasRedFlag} />
+            <ConfidenceTooltip
+              breakdown={breakdown}
+              hasRedFlag={hasRedFlag}
+              redFlagLabel={redFlagLabel}
+              redFlagSubtitle={redFlagSubtitle}
+              bankerActionCount={bankerActionCount}
+              projectedAfterActions={projectedAfterActions}
+            />
           </div>
         </div>
       </div>

@@ -83,17 +83,51 @@ export default function Page() {
     [reshaped, deal],
   );
 
-  // Red flag: any legally mandatory item in the reshaped list is not complete
-  const hasRedFlag = useMemo(
+  // Red flag: the first legally mandatory item that is not complete or skipped.
+  // Exposes the specific item label for the confidence indicator.
+  const redFlagItem = useMemo(
     () =>
-      reshaped.some(
+      reshaped.find(
         (i) =>
           i.legallyMandatory &&
           i.status !== "complete" &&
           i.status !== "skipped",
-      ),
+      ) ?? null,
     [reshaped],
   );
+  const hasRedFlag = redFlagItem !== null;
+
+  // Count of banker-owned pending items across all phases — used for the
+  // "complete N banker items to reach X%" hint.
+  const bankerPending = useMemo(
+    () =>
+      reshaped.filter(
+        (i) =>
+          i.owner === "banker" &&
+          i.status !== "complete" &&
+          i.status !== "skipped",
+      ).length,
+    [reshaped],
+  );
+
+  // Projected score after the banker completes all their pending items.
+  // Naive model: assume checklist completion rises proportionally.
+  const projectedAfterActions = useMemo(() => {
+    if (bankerPending === 0) return breakdown.total;
+    const resolved = reshaped.filter(
+      (i) => i.status === "complete" || i.status === "skipped",
+    ).length;
+    const newCompletion = Math.round(
+      ((resolved + bankerPending) / reshaped.length) * 100,
+    );
+    const newTotal = Math.round(
+      newCompletion * 0.4 +
+        breakdown.skipQuality * 0.2 +
+        breakdown.provenanceConfidence * 0.25 +
+        breakdown.modeAlignment * 0.15,
+    );
+    return Math.min(98, newTotal);
+  }, [reshaped, bankerPending, breakdown]);
 
   // V2 — AI adds a 5th input to the confidence score.
   // Simple model: AI signal reads deal profile and contributes a flat "high" value
@@ -114,12 +148,27 @@ export default function Page() {
   }, [breakdown, isV2]);
   const effectiveBreakdown = isV2 ? v2Breakdown : breakdown;
 
-  // Master-detail: selected item derived from id + visible list, auto-selecting
-  // the first visible item whenever selection falls out of the current view.
+  // Master-detail: selected item derived from id + visible list.
+  // Default to the first INCOMPLETE item when selection is stale — the
+  // banker should land on something they can act on, not a completed row.
   const selectedItem = useMemo(() => {
     const byId = visibleItems.find((i) => i.id === selectedItemId);
-    return byId ?? visibleItems[0] ?? null;
+    if (byId) return byId;
+    const firstIncomplete = visibleItems.find(
+      (i) => i.status !== "complete" && i.status !== "skipped",
+    );
+    return firstIncomplete ?? visibleItems[0] ?? null;
   }, [visibleItems, selectedItemId]);
+
+  // Phase completion detector — all items in current phase are resolved?
+  const currentPhaseComplete = useMemo(
+    () =>
+      currentPhaseItems.length > 0 &&
+      currentPhaseItems.every(
+        (i) => i.status === "complete" || i.status === "skipped",
+      ),
+    [currentPhaseItems],
+  );
 
   // Phase navigation — next/prev phase
   const currentPhaseIdx = PHASES.findIndex((p) => p.id === deal.phase);
@@ -175,6 +224,10 @@ export default function Page() {
         deal={deal}
         breakdown={effectiveBreakdown}
         hasRedFlag={hasRedFlag}
+        redFlagLabel={redFlagItem?.label}
+        redFlagSubtitle={redFlagItem?.subtitle}
+        bankerActionCount={bankerPending}
+        projectedAfterActions={projectedAfterActions}
       />
 
       {/* V2 — AI teammate banner */}
@@ -211,18 +264,11 @@ export default function Page() {
         style={{ background: "var(--theme-page-bg)" }}
       >
         <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-5">
-          {/* Inline filter bar — dense, bank-style */}
+          {/* Inline filter bar — real UI: owner filter only */}
           <div
-            className="flex items-end justify-between gap-4 flex-wrap mb-4 pb-4"
+            className="flex items-end justify-end gap-4 flex-wrap mb-4 pb-4"
             style={{ borderBottom: "1px solid var(--theme-border-subtle)" }}
           >
-            <ProductEntitySwitcher
-              product={deal.product}
-              entity={deal.entity}
-              onProductChange={handleProductChange}
-              onEntityChange={handleEntityChange}
-            />
-
             <div className="flex flex-col gap-1">
               <span
                 className="text-[10px] uppercase font-medium"
@@ -240,6 +286,55 @@ export default function Page() {
               />
             </div>
           </div>
+
+          {/* Phase-complete banner */}
+          {currentPhaseComplete && nextPhase ? (
+            <div
+              className="mb-4 p-3 flex items-center gap-3 flex-wrap"
+              style={{
+                background: "#f0f9f2",
+                border: "1px solid #bfe4c6",
+                borderLeft: "3px solid var(--theme-success)",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              <Sparkles
+                size={14}
+                strokeWidth={2.2}
+                style={{ color: "var(--theme-success)" }}
+              />
+              <div className="flex-1 min-w-0 text-[12px]">
+                <span
+                  className="font-semibold"
+                  style={{ color: "var(--theme-text-primary)" }}
+                >
+                  {currentPhaseMeta?.label} phase complete
+                </span>
+                <span style={{ color: "var(--theme-text-secondary)" }}>
+                  {" "}— Continue to {nextPhaseLabel}:{" "}
+                  {itemsForPhase(reshaped, nextPhase).length} items waiting (
+                  {
+                    itemsForPhase(reshaped, nextPhase).filter(
+                      (i) => i.owner === "banker",
+                    ).length
+                  }{" "}
+                  need your action)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handlePhaseChange(nextPhase)}
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-[12px] font-semibold text-white"
+                style={{
+                  background: "var(--theme-primary)",
+                  borderRadius: "var(--theme-radius)",
+                }}
+              >
+                Continue to {nextPhaseLabel}
+                <ArrowRight size={12} strokeWidth={2.2} />
+              </button>
+            </div>
+          ) : null}
 
           {/* Section heading — quiet */}
           <div className="mb-2 flex items-baseline justify-between flex-wrap gap-2">
@@ -305,6 +400,37 @@ export default function Page() {
                 onRequestSkip={handleRequestSkip}
               />
             </div>
+          </div>
+
+          {/* D1 demo controls — visually distinct, clearly not part of real UI */}
+          <div
+            className="mt-5 p-3 flex items-center gap-3 flex-wrap"
+            style={{
+              background: "repeating-linear-gradient(45deg, #fafafa, #fafafa 6px, #f4f4f4 6px, #f4f4f4 12px)",
+              border: "1px dashed var(--theme-border-strong)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
+            <div
+              className="text-[10px] uppercase font-semibold tracking-[0.5px] shrink-0"
+              style={{ color: "var(--theme-text-tertiary)" }}
+            >
+              Demo controls · D1 reshape
+            </div>
+            <div
+              className="text-[11px] shrink-0"
+              style={{ color: "var(--theme-text-tertiary)" }}
+            >
+              Not part of the real UI — switch product / entity to see the
+              checklist reshape
+            </div>
+            <div className="flex-1 min-w-[200px]" />
+            <ProductEntitySwitcher
+              product={deal.product}
+              entity={deal.entity}
+              onProductChange={handleProductChange}
+              onEntityChange={handleEntityChange}
+            />
           </div>
 
           {/* Phase navigation — prev / next primary button */}

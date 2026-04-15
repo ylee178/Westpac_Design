@@ -124,6 +124,14 @@ export function ChecklistDetail({ item, onRequestSkip }: Props) {
         >
           {item.label}
         </h3>
+        {item.subtitle ? (
+          <div
+            className="text-[12px] mt-1 font-medium"
+            style={{ color: "var(--theme-primary)" }}
+          >
+            {item.subtitle}
+          </div>
+        ) : null}
         <div className="flex items-center gap-3 mt-2.5 flex-wrap">
           <OwnerBadge owner={item.owner} />
           {item.legallyMandatory ? (

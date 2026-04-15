@@ -75,6 +75,8 @@ export interface KnowledgeCard {
 export interface ChecklistItem {
   id: string;
   label: string;
+  /** Optional sub-line under the label — e.g., "2 of 3 verified". */
+  subtitle?: string;
   description: string;
   owner: Owner;
   status: ItemStatus;

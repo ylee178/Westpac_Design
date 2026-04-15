@@ -65,7 +65,7 @@ export const SAMPLE_DEAL: Deal = {
   jurisdiction: "NSW",
   amount: 850_000,
   currency: "AUD",
-  phase: "setup",
+  phase: "identification",
   cddMode: "reform-cdd",
   banker: {
     name: "Sarah Nguyen",
@@ -236,17 +236,18 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     },
   },
 
-  // 3. Identify beneficial owners (banker) — D2 skip demo candidate (item #8 in demo flow)
+  // 3. Identify beneficial owners — in-progress, legally mandatory, RED FLAG in default state
   {
     id: "item-03",
     label: "Identify beneficial owners (≥25%)",
+    subtitle: "2 of 3 verified · 1 outstanding",
     description:
-      "Document each natural person who ultimately owns or controls 25% or more of the entity, with verified identity evidence.",
-    owner: "banker",
-    status: "pending",
+      "Document each natural person who ultimately owns or controls 25% or more of the entity, with verified identity evidence. Two directors have been verified; the corporate-trustee chain still requires identification of the Chen Family Trust beneficiary (Mr Wei Chen, adult beneficiary).",
+    owner: "customer",
+    status: "in-progress",
     phase: "identification",
     appliesTo: { product: null, entity: ["company", "trust", "partnership"] },
-    legallyMandatory: false,
+    legallyMandatory: true,
     category: "entity-verification",
     knowledge: {
       what:
@@ -345,14 +346,14 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     },
   },
 
-  // 8. Customer signature on T&Cs (customer, customer portal)
+  // 8. Customer signature on T&Cs (customer, customer portal, pending)
   {
     id: "item-08",
     label: "Customer signs product T&Cs",
     description:
       "Customer review and e-signature of product-specific terms and conditions via the BizEdge customer portal.",
     owner: "customer",
-    status: "in-progress",
+    status: "pending",
     phase: "identification",
     appliesTo: { product: null, entity: null },
     legallyMandatory: false,
@@ -362,11 +363,6 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
         "E-signature request sent to the customer portal; customer reviews and signs on their device.",
       why:
         "Customer-owned task; banker cannot complete this step. D7 three-way ownership filters this out of 'my actions' when the filter is active.",
-    },
-    provenance: {
-      source: "BizEdge customer portal",
-      timestamp: "2026-04-14 11:03 AEST",
-      confidence: "medium",
     },
   },
 
@@ -387,6 +383,47 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
         "A banker judgment call on the ML/TF risk of this customer, documented with reasoning on 'reasonable grounds'.",
       why:
         "Under reform CDD, risk rating drives whether standard or enhanced due diligence applies. A wrong rating here cascades into compliance gaps downstream.",
+    },
+  },
+
+  // 10. PEP + sanctions screen (system, mandatory)
+  {
+    id: "item-12",
+    label: "PEP and sanctions screen",
+    description:
+      "Automated screen of directors and beneficial owners against politically-exposed-person lists and international sanctions registers.",
+    owner: "system",
+    status: "pending",
+    phase: "identification",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: true,
+    category: "risk",
+    knowledge: {
+      what:
+        "Real-time check against AUSTRAC PEP watchlist, DFAT sanctions, OFAC, and UN consolidated list.",
+      why:
+        "Any hit triggers enhanced due diligence and possible escalation to MLRO. A missed hit is a regulatory breach.",
+      policyLink: "AUSTRAC — PEP and sanctions screening",
+    },
+  },
+
+  // 11. Authorised signatories capture (banker)
+  {
+    id: "item-13",
+    label: "Capture authorised signatories",
+    description:
+      "Record the people authorised to sign on behalf of the customer entity for this facility. Includes position, ID, and scope of authority.",
+    owner: "banker",
+    status: "pending",
+    phase: "identification",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what:
+        "List of named individuals authorised to execute drawdowns, amendments, and correspondence on this facility.",
+      why:
+        "Downstream documentation and settlement depend on accurate signatory records. Missing this step causes rework at the settlement phase.",
     },
   },
 
