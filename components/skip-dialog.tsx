@@ -12,11 +12,9 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle } from "lucide-react";
@@ -59,15 +57,21 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : handleCancel())}>
       <DialogContent
-        className="max-w-[560px] p-0"
+        showCloseButton={false}
+        // Override the Dialog primitive's sm:max-w-sm (384px) and grid
+        // gap via inline style so our 560px width + flush-edge layout
+        // win regardless of Tailwind specificity order.
+        className="p-0 gap-0 block"
         style={{
           background: "var(--theme-card-bg)",
           borderColor: "var(--theme-border-strong)",
           borderRadius: "var(--theme-radius-lg)",
+          maxWidth: "560px",
+          width: "calc(100% - 2rem)",
         }}
       >
         <DialogHeader
-          className="px-6 pt-5 pb-3"
+          className="px-6 pt-5 pb-3 relative"
           style={{ borderBottom: "1px solid var(--theme-border)" }}
         >
           <div
@@ -103,7 +107,7 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
                 key={opt.id}
                 type="button"
                 onClick={() => setSelectedId(opt.id)}
-                className="w-full text-left px-4 py-3 border transition-colors"
+                className="interactive-card w-full text-left px-4 py-3 border cursor-pointer"
                 style={{
                   backgroundColor: selected
                     ? "var(--theme-accent-bg)"
@@ -116,12 +120,16 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
                 }}
               >
                 <div
-                  className="text-[13px] font-semibold leading-[1.3] text-[#161616]"
+                  className="text-[13px] font-semibold leading-[1.3]"
+                  style={{ color: "var(--theme-text-primary)" }}
                 >
                   {opt.label}
                 </div>
                 {opt.description ? (
-                  <div className="text-[12px] text-[#525252] mt-1 leading-[1.4] tracking-[0.16px]">
+                  <div
+                    className="text-[12px] mt-1 leading-[1.4]"
+                    style={{ color: "var(--theme-text-secondary)" }}
+                  >
                     {opt.description}
                   </div>
                 ) : null}
@@ -133,7 +141,8 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
             <div className="pt-2">
               <Label
                 htmlFor="skip-freetext"
-                className="text-[11px] uppercase tracking-[0.5px] text-[#525252] font-normal"
+                className="text-[11px] uppercase tracking-[0.5px] font-normal"
+                style={{ color: "var(--theme-text-secondary)" }}
               >
                 Describe the reason
               </Label>
@@ -153,22 +162,28 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
           ) : null}
         </div>
 
-        <DialogFooter
-          className="px-0 py-0 flex-row gap-0 sm:gap-0"
+        {/* Footer — plain div so the Dialog primitive's -mx-4 -mb-4 doesn't
+            collide with our p-0 layout */}
+        <div
+          className="flex flex-row"
           style={{ borderTop: "1px solid var(--theme-border)" }}
         >
-          <Button
-            variant="ghost"
+          <button
+            type="button"
             onClick={handleCancel}
-            className="flex-1 h-11 rounded-none text-[13px] font-medium"
-            style={{ color: "var(--theme-text-primary)" }}
+            className="interactive-subtle flex-1 h-11 text-[13px] font-medium cursor-pointer"
+            style={{
+              color: "var(--theme-text-primary)",
+              background: "var(--theme-card-bg)",
+            }}
           >
             Cancel
-          </Button>
-          <Button
+          </button>
+          <button
+            type="button"
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="flex-1 h-11 rounded-none text-[13px] font-medium text-white"
+            className="interactive-primary flex-1 h-11 text-[13px] font-medium text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: canSubmit
                 ? "var(--theme-primary)"
@@ -177,8 +192,8 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
             }}
           >
             Skip with reason
-          </Button>
-        </DialogFooter>
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );

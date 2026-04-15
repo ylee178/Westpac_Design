@@ -64,15 +64,7 @@ export function V1FocusedCard({
         >
           Item {index + 1} of {total}
         </div>
-        <div
-          className="text-[11px] uppercase font-semibold"
-          style={{
-            color: "var(--theme-primary)",
-            letterSpacing: "0.5px",
-          }}
-        >
-          {phaseLabel} phase
-        </div>
+        <span className="brand-pill">{phaseLabel} phase</span>
       </div>
 
       {/* Badges */}
@@ -112,7 +104,7 @@ export function V1FocusedCard({
       {item.subtitle ? (
         <div
           className="text-[13px] mt-1 font-medium"
-          style={{ color: "var(--theme-primary)" }}
+          style={{ color: "var(--theme-text-secondary)" }}
         >
           {item.subtitle}
         </div>
@@ -137,14 +129,8 @@ export function V1FocusedCard({
           borderRadius: "var(--theme-radius)",
         }}
       >
-        <div
-          className="text-[10px] uppercase font-bold mb-3"
-          style={{
-            color: "var(--theme-primary)",
-            letterSpacing: "0.6px",
-          }}
-        >
-          Why this matters
+        <div className="mb-3">
+          <span className="brand-pill">Why this matters</span>
         </div>
 
         <KnowledgeRow label="What" value={item.knowledge.what} />
@@ -160,12 +146,15 @@ export function V1FocusedCard({
         {item.knowledge.policyLink ? (
           <div
             className="mt-3 pt-3 text-[12px] border-t"
-            style={{
-              color: "var(--theme-primary)",
-              borderColor: "var(--theme-border-subtle)",
-            }}
+            style={{ borderColor: "var(--theme-border-subtle)" }}
           >
-            → {item.knowledge.policyLink}
+            <button
+              type="button"
+              className="interactive-link cursor-pointer"
+              style={{ color: "var(--theme-primary)" }}
+            >
+              → {item.knowledge.policyLink}
+            </button>
           </div>
         ) : null}
       </div>

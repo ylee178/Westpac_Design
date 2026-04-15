@@ -79,7 +79,7 @@ export function ProgressSpine({ currentPhase, onPhaseChange }: Props) {
                         style={{
                           background: "var(--theme-primary)",
                           borderRadius: "50%",
-                          animation: "pac-typing 1.4s ease-in-out infinite",
+                          animation: "pulse-dot 2.2s ease-in-out infinite",
                         }}
                       />
                     ) : (

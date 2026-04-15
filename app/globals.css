@@ -397,6 +397,13 @@
   30%           { opacity: 1;   transform: translateY(-2px); }
 }
 
+/* Opacity-only pulse for the current-step dot in the progress spine —
+   no vertical jump. */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
 /* Shimmering status text — a red light beam sweeping through
    muted gray letters. Used by the Pac typing indicator. */
 .shimmer-text {
@@ -531,6 +538,43 @@
 }
 .interactive-subtle:not(:disabled):hover {
   color: var(--theme-primary) !important;
+  background-color: var(--westpac-primary-soft) !important;
+}
+
+/* Text-button "link" style — maroon with underline so it reads as
+   interactive. Use this for in-flow link buttons (Show all, Return
+   to guided mode, Back, Policy link). Static maroon text should
+   NOT use this class; that's the whole point of the distinction. */
+.interactive-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  transition: color 140ms ease, text-decoration-color 140ms ease;
+}
+.interactive-link:not(:disabled):hover {
+  color: var(--westpac-primary-hover) !important;
+  text-decoration-thickness: 2px;
+}
+.interactive-link:not(:disabled):active {
+  color: var(--westpac-primary-active) !important;
+}
+
+/* Pill label — pale maroon background for static uppercase labels
+   (phase names, "Why this matters", etc.) so they can't be mistaken
+   for a text button. Not interactive. */
+.brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: var(--westpac-primary-soft);
+  color: var(--theme-primary);
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.4;
 }
 
 .interactive-row {

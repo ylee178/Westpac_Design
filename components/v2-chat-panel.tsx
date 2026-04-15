@@ -3,35 +3,37 @@
 /**
  * V2 — Pac AI teammate side panel.
  *
- * Always-visible 400px sidebar alongside the V1 main work area.
- * Event-driven: reacts to state changes in the main area (step,
- * focused item, completion, skip) by appending new Pac messages to
- * the chat timeline.
+ * Three fixed zones:
+ *   1. Header     — Pac avatar + status
+ *   2. Briefing   — product+stage-aware context card (reactive, NOT chat)
+ *   3. Chat area  — empty until the banker types or taps a suggestion
+ *   4. Pills      — common questions that update with product / stage
+ *   5. Input      — free text
  *
- * Chat threading pattern:
- *   - First Pac message = full intro card with big avatar + name
- *   - Subsequent Pac messages = compact 28px avatar on the left
- *   - Same-speaker continuation within 30s = avatar omitted, text
- *     aligned into the avatar column
- *   - Banker messages = right-aligned maroon bubble + small 'S' avatar
+ * Pac no longer auto-announces every click. The briefing + pill
+ * questions refresh silently when the product or the flow step
+ * changes. A chat message is only appended when the banker actually
+ * asks something (free text) or taps a suggested question pill.
  */
 import { useEffect, useRef, useState } from "react";
 import type { ChecklistItem as CI, Deal } from "@/lib/types";
 import { PacAvatar } from "@/components/pac-avatar";
-import { Send, UserCircle2 } from "lucide-react";
-import { productLabel } from "@/data/product-options";
+import { Send } from "lucide-react";
 import { useFlowMode } from "@/lib/flow-mode-context";
+import {
+  getBriefing,
+  getSuggestions,
+  type Suggestion,
+} from "@/data/pac-briefings";
 
 // ——— Message types ———
-type Sender = "pac" | "banker" | "system";
+type Sender = "pac" | "banker";
 
 interface TimelineMessage {
   id: string;
   sender: Sender;
   /** HTML-ish content — string-based for speed */
   content: string;
-  /** If true this is a full intro card (first Pac message) */
-  intro?: boolean;
   /** Milliseconds at which the message was created */
   createdAt: number;
 }
@@ -52,64 +54,36 @@ const STATUS_VERBS = [
   "Calibrating risk context",
 ];
 
-function buildIntro(bankerFirstName: string): TimelineMessage {
-  return {
-    id: "intro",
-    sender: "pac",
-    intro: true,
-    createdAt: Date.now(),
-    content:
-      `Hi ${bankerFirstName}. I'm watching this deal alongside you. ` +
-      `I'll surface contextual guidance as you go — checking what's ` +
-      `legally mandatory, flagging rare-product risks, and explaining ` +
-      `the AUSTRAC reform moves.`,
-  };
-}
-
 const PAC_HUMAN_GAP_MS = 30_000;
 
-export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props) {
+export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   const { step, draft } = useFlowMode();
   const firstName = deal.banker.name.split(" ")[0] || "there";
 
-  // Start EMPTY — the first Pac message only appears once the banker
-  // does something in the main area (or types here). That way the
-  // panel opens with the welcome splash instead of a pre-loaded greeting.
   const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
   const [freeText, setFreeText] = useState("");
   const [pacTyping, setPacTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // ——— Event detection refs ———
-  // We track the last value of each tracked piece of state so the
-  // useEffect only appends a new message when something truly changes.
-  const lastProduct = useRef(draft.product);
-  const lastStep = useRef(step);
-  const lastFocusedItemId = useRef<string | null>(null);
-  const lastCompletedItemId = useRef<string | null>(null);
-  const lastSkippedItemId = useRef<string | null>(null);
+  // Briefing + pills are DERIVED directly from current product/step.
+  // No effects, no auto-push, no side effects.
+  const briefing = getBriefing(draft.product, step);
+  const suggestions = getSuggestions(draft.product, step);
 
-  // Push a Pac message with a brief typing delay so it feels alive.
-  // On the very first message we also prepend the intro card so the
-  // banker sees the "Pac · Westpac AI teammate" introduction.
   function pushPac(content: string) {
     setPacTyping(true);
     setTimeout(() => {
-      setTimeline((t) => {
-        const base =
-          t.length === 0 ? [buildIntro(firstName)] : t;
-        return [
-          ...base,
-          {
-            id: `pac-${Date.now()}-${Math.random()}`,
-            sender: "pac",
-            content,
-            createdAt: Date.now(),
-          },
-        ];
-      });
+      setTimeline((t) => [
+        ...t,
+        {
+          id: `pac-${Date.now()}-${Math.random()}`,
+          sender: "pac",
+          content,
+          createdAt: Date.now(),
+        },
+      ]);
       setPacTyping(false);
-    }, 1100);
+    }, 900);
   }
 
   function pushBanker(content: string) {
@@ -124,82 +98,10 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
     ]);
   }
 
-  // ——— Sync reaction 1: product selection in empty state ———
-  useEffect(() => {
-    if (step !== "empty") return;
-    if (draft.product && draft.product !== lastProduct.current) {
-      lastProduct.current = draft.product;
-      const label = productLabel(draft.product);
-      pushPac(
-        `<strong>${label}</strong> — good choice. I'll surface the ` +
-        `entity-specific requirements as you configure. Let me know if ` +
-        `you want context on the rare-product items.`,
-      );
-    }
-  }, [draft.product, step]);
-
-  // ——— Sync reaction 2: step transitions ———
-  useEffect(() => {
-    if (step === lastStep.current) return;
-    const prev = lastStep.current;
-    lastStep.current = step;
-
-    if (step === "creator") {
-      pushPac(
-        `Once you submit the customer details, I'll build out the ` +
-        `checklist and watch for items that need a second pair of eyes.`,
-      );
-    } else if (step === "loading") {
-      pushPac(
-        `Building your checklist. I'm auto-verifying the Setup items ` +
-        `against system sources — you'll see them resolve in order with ` +
-        `provenance tags. That's <strong>D6</strong> at work.`,
-      );
-    } else if (step === "focused" && prev === "loading") {
-      pushPac(
-        `Setup done — 3 items auto-verified. <strong>Ready to Submit: 12%</strong>. ` +
-        `Now we're in <strong>Identification</strong> — 6 items, 3 need your input. ` +
-        `First up is beneficial owners, which is legally mandatory under ` +
-        `the AUSTRAC reform.`,
-      );
-    } else if (step === "showAll") {
-      pushPac(
-        `Showing all items in the current phase. Click any row to ` +
-        `focus it. The list shows owner and status at a glance.`,
-      );
-    } else if (step === "focused" && prev === "showAll") {
-      pushPac(`Back to guided mode. Let me know if you need context.`);
-    }
-  }, [step]);
-
-  // ——— Sync reaction 3: focused item changes ———
-  useEffect(() => {
-    if (!currentFocusedItem) {
-      lastFocusedItemId.current = null;
-      return;
-    }
-    if (currentFocusedItem.id === lastFocusedItemId.current) return;
-    lastFocusedItemId.current = currentFocusedItem.id;
-    // Only announce focus changes AFTER the initial entry to focused step
-    if (step !== "focused") return;
-    if (timeline.length < 3) return; // skip the very first auto-selection
-
-    const mandatory = currentFocusedItem.legallyMandatory
-      ? "🔒 <strong>Legally mandatory</strong> — can't skip this one."
-      : "Optional if you have a valid reason to skip.";
-    pushPac(
-      `Next up: <strong>${currentFocusedItem.label}</strong>.<br/>${mandatory}`,
-    );
-  }, [currentFocusedItem?.id, step]);
-
-  // ——— Auto-scroll on new entries ———
-  useEffect(() => {
-    if (!scrollRef.current) return;
-    scrollRef.current.scrollTo({
-      top: scrollRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  }, [timeline, pacTyping]);
+  function handlePillTap(s: Suggestion) {
+    pushBanker(s.question);
+    setTimeout(() => pushPac(s.answer), 200);
+  }
 
   function handleSendFreeText(e: React.FormEvent) {
     e.preventDefault();
@@ -209,12 +111,21 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
     setFreeText("");
     setTimeout(() => {
       pushPac(
-        `Understood. <em>This is a demo — in production I'd parse ` +
-        `natural language here. For the interview, the pill buttons ` +
-        `drive the actual interactions.</em>`,
+        `Understood. <em>Demo note — in production I'd parse natural ` +
+          `language here. For this interview prototype the pill buttons ` +
+          `drive the scripted flow.</em>`,
       );
     }, 300);
   }
+
+  // Auto-scroll chat on new entries.
+  useEffect(() => {
+    if (!scrollRef.current) return;
+    scrollRef.current.scrollTo({
+      top: scrollRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, [timeline, pacTyping]);
 
   return (
     <aside
@@ -224,7 +135,7 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
         borderLeft: "1px solid var(--theme-border)",
       }}
     >
-      {/* Panel header — Pac status */}
+      {/* ——— Header: Pac status strip ——— */}
       <div
         className="px-4 py-3 flex items-center gap-3 shrink-0"
         style={{
@@ -232,7 +143,7 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
           borderBottom: "1px solid var(--theme-border)",
         }}
       >
-        <PacAvatar size={32} state="idle" />
+        <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
         <div className="min-w-0">
           <div
             className="text-[13px] font-semibold leading-tight"
@@ -243,10 +154,7 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
           <div className="flex items-center gap-1.5 text-[10px]">
             <span
               className="inline-block w-1.5 h-1.5"
-              style={{
-                background: "#2e7d32",
-                borderRadius: "50%",
-              }}
+              style={{ background: "#2e7d32", borderRadius: "50%" }}
             />
             <span style={{ color: "var(--theme-text-secondary)" }}>
               Active · Westpac AI teammate
@@ -255,15 +163,23 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
         </div>
       </div>
 
-      {/* Scrollable chat — empty state or thread */}
-      {timeline.length === 0 && !pacTyping ? (
-        <EmptyChatState />
-      ) : (
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
-        >
-          {timeline.map((msg, i) => {
+      {/* ——— Briefing card (reactive, not chat) ——— */}
+      <BriefingCard briefing={briefing} firstName={firstName} />
+
+      {/* ——— Chat thread ——— */}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto px-4 py-3 space-y-3"
+      >
+        {timeline.length === 0 && !pacTyping ? (
+          <div
+            className="text-center text-[11px] py-4"
+            style={{ color: "var(--theme-text-tertiary)" }}
+          >
+            Tap a question below, or ask me anything.
+          </div>
+        ) : (
+          timeline.map((msg, i) => {
             const prev = timeline[i - 1];
             const sameSpeakerContinuation =
               prev &&
@@ -277,16 +193,25 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
                 firstName={firstName}
               />
             );
-          })}
-          {pacTyping ? <TypingIndicator /> : null}
-        </div>
-      )}
+          })
+        )}
+        {pacTyping ? <TypingIndicator /> : null}
+      </div>
 
-      {/* Input */}
+      {/* ——— Suggestion pills (reactive) ——— */}
+      <SuggestionPills
+        suggestions={suggestions}
+        onTap={handlePillTap}
+      />
+
+      {/* ——— Input ——— */}
       <form
         onSubmit={handleSendFreeText}
         className="shrink-0 p-3 flex items-center gap-2"
-        style={{ borderTop: "1px solid var(--theme-border)" }}
+        style={{
+          borderTop: "1px solid var(--theme-border)",
+          background: "var(--theme-card-bg)",
+        }}
       >
         <input
           type="text"
@@ -304,7 +229,7 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
         <button
           type="submit"
           disabled={!freeText.trim()}
-          className="inline-flex items-center justify-center w-9 h-9 text-white disabled:opacity-40"
+          className="interactive-primary inline-flex items-center justify-center w-9 h-9 text-white disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
           style={{
             background: "var(--theme-primary)",
             borderRadius: "var(--theme-radius)",
@@ -318,6 +243,124 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
   );
 }
 
+// ——— Briefing card ———
+function BriefingCard({
+  briefing,
+  firstName,
+}: {
+  briefing: ReturnType<typeof getBriefing>;
+  firstName: string;
+}) {
+  return (
+    <section
+      className="shrink-0 px-4 pt-3 pb-3"
+      style={{
+        background: "var(--theme-card-bg)",
+        borderBottom: "1px solid var(--theme-border)",
+      }}
+    >
+      <div
+        className="flex items-start gap-3 p-3"
+        style={{
+          background: "var(--westpac-primary-soft)",
+          border: "1px solid var(--westpac-primary-border)",
+          borderRadius: "var(--theme-radius-lg)",
+        }}
+      >
+        <PacAvatar size={28} state="idle" />
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span
+              className="text-[13px] font-semibold"
+              style={{ color: "var(--theme-text-primary)" }}
+            >
+              {briefing.title}
+            </span>
+            <span
+              className="text-[11px]"
+              style={{ color: "var(--theme-text-secondary)" }}
+            >
+              {briefing.subtitle}
+            </span>
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {briefing.bullets.map((b, i) => (
+              <li
+                key={i}
+                className="flex items-start gap-2 text-[11px] leading-[1.45]"
+                style={{ color: "var(--theme-text-primary)" }}
+              >
+                <span
+                  className="inline-block w-1 h-1 mt-[6px] shrink-0"
+                  style={{
+                    background: "var(--theme-primary)",
+                    borderRadius: "50%",
+                  }}
+                />
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: b.replace(
+                      /^(Hi)\b/,
+                      `Hi ${escapeHtml(firstName)},`,
+                    ),
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ——— Suggestion pills ———
+function SuggestionPills({
+  suggestions,
+  onTap,
+}: {
+  suggestions: Suggestion[];
+  onTap: (s: Suggestion) => void;
+}) {
+  return (
+    <div
+      className="shrink-0 px-3 py-2.5"
+      style={{
+        background: "var(--theme-card-bg)",
+        borderTop: "1px solid var(--theme-border)",
+      }}
+    >
+      <div
+        className="text-[9px] uppercase font-semibold mb-2 px-1"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          letterSpacing: "0.5px",
+        }}
+      >
+        Common questions
+      </div>
+      <div className="flex flex-col gap-1.5">
+        {suggestions.map((s, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => onTap(s)}
+            className="interactive-pill text-left px-3 py-2 text-[11.5px] leading-[1.35] font-medium cursor-pointer"
+            style={{
+              background: "var(--theme-card-bg)",
+              color: "var(--theme-text-primary)",
+              border: "1px solid var(--theme-border-strong)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
+            {s.question}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ——— Message rendering ———
 function MessageBubble({
   message,
@@ -328,30 +371,6 @@ function MessageBubble({
   compactContinuation: boolean;
   firstName: string;
 }) {
-  // Mouth animation fires briefly on mount for new Pac bubbles only.
-  const [pacAvatarState, setPacAvatarState] = useState<"idle" | "speaking">(
-    message.sender === "pac" ? "speaking" : "idle",
-  );
-  useEffect(() => {
-    if (message.sender !== "pac") return;
-    const t = setTimeout(() => setPacAvatarState("idle"), 900);
-    return () => clearTimeout(t);
-  }, [message.sender]);
-
-  if (message.sender === "system") {
-    return (
-      <div
-        className="text-center text-[10px] uppercase font-semibold py-1"
-        style={{
-          color: "var(--theme-text-tertiary)",
-          letterSpacing: "0.5px",
-        }}
-      >
-        {message.content}
-      </div>
-    );
-  }
-
   if (message.sender === "banker") {
     return (
       <div className="flex items-start gap-2 justify-end">
@@ -364,7 +383,7 @@ function MessageBubble({
           }}
         >
           <span
-            className="text-[12px] leading-[1.5] shimmer-once-banker"
+            className="text-[12px] leading-[1.5] block"
             style={{ color: "#ffffff" }}
             dangerouslySetInnerHTML={{ __html: message.content }}
           />
@@ -382,56 +401,14 @@ function MessageBubble({
     );
   }
 
-  // Pac message
-  if (message.intro) {
-    return (
-      <div
-        className="p-4 flex flex-col gap-2"
-        style={{
-          background: "var(--theme-card-bg)",
-          border: "1px solid var(--theme-border)",
-          borderRadius: "var(--theme-radius-lg)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <PacAvatar size={42} state={pacAvatarState} />
-          <div className="leading-tight">
-            <div
-              className="text-[14px] font-semibold"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              Pac
-            </div>
-            <div
-              className="text-[10px] uppercase font-medium mt-0.5"
-              style={{
-                color: "var(--theme-text-tertiary)",
-                letterSpacing: "0.5px",
-              }}
-            >
-              Westpac AI teammate
-            </div>
-          </div>
-        </div>
-        <div className="mt-1">
-          <span
-            className="text-[12px] leading-[1.55] shimmer-once-pac"
-            style={{ color: "var(--theme-text-primary)" }}
-            dangerouslySetInnerHTML={{ __html: message.content }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Compact pac message
+  // Compact Pac message
   return (
     <div className="flex items-start gap-2">
       {compactContinuation ? (
         <div className="w-7 shrink-0" aria-hidden="true" />
       ) : (
         <div className="shrink-0 pt-0.5">
-          <PacAvatar size={26} state={pacAvatarState} />
+          <PacAvatar size={26} state="idle" />
         </div>
       )}
       <div
@@ -440,11 +417,13 @@ function MessageBubble({
           background: "var(--theme-card-bg)",
           border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
-          borderTopLeftRadius: compactContinuation ? "var(--theme-radius-lg)" : "4px",
+          borderTopLeftRadius: compactContinuation
+            ? "var(--theme-radius-lg)"
+            : "4px",
         }}
       >
         <span
-          className="text-[12px] leading-[1.55] shimmer-once-pac"
+          className="text-[12px] leading-[1.55] block"
           style={{ color: "var(--theme-text-primary)" }}
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
@@ -483,32 +462,6 @@ function TypingIndicator() {
         >
           {STATUS_VERBS[verbIdx]}…
         </span>
-      </div>
-    </div>
-  );
-}
-
-function EmptyChatState() {
-  return (
-    <div
-      className="flex-1 flex flex-col items-center justify-center gap-4 px-6 text-center"
-      style={{ background: "var(--theme-page-bg)" }}
-    >
-      <PacAvatar size={68} state="idle" />
-      <div>
-        <div
-          className="text-[14px] font-semibold mb-1"
-          style={{ color: "var(--theme-text-primary)" }}
-        >
-          Pac · Westpac AI teammate
-        </div>
-        <div
-          className="text-[12px] max-w-[260px] leading-[1.5]"
-          style={{ color: "var(--theme-text-secondary)" }}
-        >
-          What would you like to do first? Ask about this deal, or I
-          can walk you through the checklist.
-        </div>
       </div>
     </div>
   );

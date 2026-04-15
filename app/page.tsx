@@ -334,9 +334,10 @@ export default function Page() {
     );
   })();
 
-  // Header + spine are visible for every step EXCEPT the very-empty
-  // "empty" and "creator" states where the banker hasn't committed to
-  // a deal yet. Those show MinimalHeader.
+  // DealHeader (with live deal metadata) is visible once the banker has
+  // committed to a deal. Before that — empty/creator — we show a
+  // MinimalHeader. The ProgressSpine is ALWAYS visible as a sub-header
+  // so the five-phase lifecycle is never hidden from the banker.
   const showFullHeader = step !== "empty" && step !== "creator";
 
   return (
@@ -344,33 +345,37 @@ export default function Page() {
       {/* Sticky header + spine group */}
       <div className="shrink-0">
         {showFullHeader ? (
-          <>
-            <DealHeader
-              deal={deal}
-              breakdown={effectiveBreakdown}
-              hasRedFlag={hasRedFlag}
-              redFlagLabel={redFlagItem?.label}
-              redFlagSubtitle={redFlagItem?.subtitle}
-              bankerActionCount={bankerPending}
-              projectedAfterActions={projectedAfterActions}
-            />
-            <div
-              style={{
-                background: "#f5f5f5",
-                borderBottom: "1px solid var(--theme-border)",
-              }}
-            >
-              <ProgressSpine
-                currentPhase={step === "loading" ? "setup" : deal.phase}
-                onPhaseChange={(p) =>
-                  setBaseDeal((d) => ({ ...d, phase: p }))
-                }
-              />
-            </div>
-          </>
+          <DealHeader
+            deal={deal}
+            breakdown={effectiveBreakdown}
+            hasRedFlag={hasRedFlag}
+            redFlagLabel={redFlagItem?.label}
+            redFlagSubtitle={redFlagItem?.subtitle}
+            bankerActionCount={bankerPending}
+            projectedAfterActions={projectedAfterActions}
+          />
         ) : (
           <MinimalHeader />
         )}
+        <div
+          style={{
+            background: "#f5f5f5",
+            borderBottom: "1px solid var(--theme-border)",
+          }}
+        >
+          <ProgressSpine
+            currentPhase={
+              step === "empty" || step === "creator" || step === "loading"
+                ? "setup"
+                : deal.phase
+            }
+            onPhaseChange={
+              step === "empty" || step === "creator" || step === "loading"
+                ? undefined
+                : (p) => setBaseDeal((d) => ({ ...d, phase: p }))
+            }
+          />
+        </div>
       </div>
 
       {/* Main area + optional Pac panel */}
@@ -485,7 +490,7 @@ function FocusedView({
         <button
           type="button"
           onClick={onShowAll}
-          className="inline-flex items-center gap-1.5 text-[12px] font-medium"
+          className="interactive-link inline-flex items-center gap-1.5 text-[12px] font-medium cursor-pointer"
           style={{ color: "var(--theme-primary)" }}
         >
           <LayoutList size={12} strokeWidth={2.2} />
@@ -524,7 +529,7 @@ function ShowAllView({
       <button
         type="button"
         onClick={onReturn}
-        className="inline-flex items-center gap-1.5 text-[12px] font-medium mb-4"
+        className="interactive-link inline-flex items-center gap-1.5 text-[12px] font-medium mb-4 cursor-pointer"
         style={{ color: "var(--theme-primary)" }}
       >
         <ArrowLeft size={12} strokeWidth={2.2} />

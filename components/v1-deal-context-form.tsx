@@ -13,11 +13,12 @@
 import { useEffect, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
 import { Skeleton } from "@/components/skeleton";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 export function V1DealContextForm() {
   const { draft, setDraft, setStep } = useFlowMode();
   const [mounted, setMounted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 550);
@@ -25,6 +26,16 @@ export function V1DealContextForm() {
   }, []);
 
   const canContinue = draft.customerName.trim().length > 0 && draft.amount.trim().length > 0;
+
+  function handleSubmit() {
+    if (!canContinue || submitting) return;
+    setSubmitting(true);
+    // Short spinner beat so the submit feels committed before the
+    // dynamic-loading phase takes over.
+    setTimeout(() => {
+      setStep("loading");
+    }, 900);
+  }
 
   if (!mounted) {
     return (
@@ -122,16 +133,31 @@ export function V1DealContextForm() {
         <div className="mt-8 flex items-center justify-end">
           <button
             type="button"
-            onClick={() => canContinue && setStep("loading")}
-            disabled={!canContinue}
+            onClick={handleSubmit}
+            disabled={!canContinue || submitting}
             className="interactive-primary inline-flex items-center gap-2 h-11 px-5 text-[13px] font-semibold text-white cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--theme-primary)",
               borderRadius: "var(--theme-radius)",
+              minWidth: "146px",
+              justifyContent: "center",
             }}
           >
-            Set up deal
-            <ArrowRight size={13} strokeWidth={2.5} />
+            {submitting ? (
+              <>
+                <Loader2
+                  size={14}
+                  strokeWidth={2.8}
+                  className="animate-spin"
+                />
+                Setting up…
+              </>
+            ) : (
+              <>
+                Set up deal
+                <ArrowRight size={13} strokeWidth={2.5} />
+              </>
+            )}
           </button>
         </div>
       </div>
