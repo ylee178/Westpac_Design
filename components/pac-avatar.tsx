@@ -18,42 +18,45 @@ import { useEffect, useState } from "react";
 const BRAND_RED = "#DA1710";
 const EYE_WHITE = "#FFFFFF";
 
-// 14x14 pixel grid.
+// 14x14 pixel grid — square-bodied character inspired by Pac-Man
+// but deliberately blocky, not round. Chunky rectangular body with
+// single-pixel chamfers top/bottom and a wedge notch on the right
+// (the "mouth").
 //   X = red body pixel
 //   E = white eye pixel
 //   . = transparent
 const PAC_OPEN: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXXEEXXXX...",
-  "XXXXXEEXXX....",
-  "XXXXXXXXXX....",
-  "XXXXXXXX......",
-  "XXXXXX........",
-  "XXXXXX........",
-  "XXXXXXXX......",
-  "XXXXXXXXXX....",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
+  ".XXXXXXXXXX...",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXEEXXXXXXX..",
+  "XXXEEXXXXXX...",
+  "XXXXXXXXXXX...",
+  "XXXXXXXXX.....",
+  "XXXXXXX.......",
+  "XXXXXXX.......",
+  "XXXXXXXXX.....",
+  "XXXXXXXXXXX...",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  ".XXXXXXXXXX...",
 ];
 
 const PAC_CLOSED: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXXEEXXXXXX.",
-  "XXXXXEEXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
+  ".XXXXXXXXXX...",
   "XXXXXXXXXXXX..",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
   "XXXXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
+  "XXXEEXXXXXXX..",
+  "XXXEEXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  "XXXXXXXXXXXX..",
+  ".XXXXXXXXXX...",
 ];
 
 function renderGrid(grid: readonly string[], keyPrefix: string) {
