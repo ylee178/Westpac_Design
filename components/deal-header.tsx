@@ -9,6 +9,7 @@ import type { ReadinessBreakdown, Deal } from "@/lib/types";
 import { ReadyToSubmitDisplay } from "@/components/readiness-display";
 import { ModeIndicator } from "@/components/mode-indicator";
 import { WestpacLogo } from "@/components/westpac-logo";
+import { DevPanel } from "@/components/dev-panel";
 import { HelpCircle, LogOut } from "lucide-react";
 
 interface Props {
@@ -51,8 +52,10 @@ export function DealHeader({
         borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      {/* Top masthead — logo + nav + utilities */}
-      <div className="max-w-[1584px] mx-auto px-6 md:px-8 h-[56px] flex items-center justify-between">
+      {/* Top masthead — logo + nav + utilities.
+          NOTE: padding-right is removed so the DevPanel slot can flush
+          up against the right edge with its own left separator. */}
+      <div className="max-w-[1584px] mx-auto pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
         <div className="flex items-center gap-7 min-w-0">
           {/* Logo — real PNG */}
           <WestpacLogo size={26} />
@@ -83,40 +86,43 @@ export function DealHeader({
         </div>
 
         {/* Utility nav right */}
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            className="flex items-center gap-1.5 text-[12px] font-medium"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            <HelpCircle size={13} strokeWidth={2} />
-            Need help?
-          </button>
-          <div
-            className="hidden md:flex items-center gap-2 text-[12px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            <span className="font-medium" style={{ color: "var(--theme-text-primary)" }}>
-              {deal.banker.name}
-            </span>
-            <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
-            <span>
-              {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}
-            </span>
+        <div className="flex items-center self-stretch">
+          <div className="flex items-center gap-4 pr-4">
+            <button
+              type="button"
+              className="interactive-subtle flex items-center gap-1.5 text-[12px] font-medium cursor-pointer px-1"
+              style={{ color: "var(--theme-text-secondary)" }}
+            >
+              <HelpCircle size={13} strokeWidth={2} />
+              Need help?
+            </button>
+            <div
+              className="hidden md:flex items-center gap-2 text-[12px]"
+              style={{ color: "var(--theme-text-secondary)" }}
+            >
+              <span className="font-medium" style={{ color: "var(--theme-text-primary)" }}>
+                {deal.banker.name}
+              </span>
+              <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
+              <span>
+                {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}
+              </span>
+            </div>
+            <button
+              type="button"
+              className="interactive-pill flex items-center gap-1.5 px-3 h-8 text-[12px] font-medium border cursor-pointer"
+              style={{
+                background: "var(--theme-card-bg)",
+                color: "var(--theme-text-primary)",
+                borderColor: "var(--theme-border-strong)",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              <LogOut size={12} strokeWidth={2} />
+              Sign out
+            </button>
           </div>
-          <button
-            type="button"
-            className="flex items-center gap-1.5 px-3 h-8 text-[12px] font-medium border transition-colors hover:brightness-95"
-            style={{
-              background: "var(--theme-card-bg)",
-              color: "var(--theme-text-primary)",
-              borderColor: "var(--theme-border-strong)",
-              borderRadius: "var(--theme-radius)",
-            }}
-          >
-            <LogOut size={12} strokeWidth={2} />
-            Sign out
-          </button>
+          <DevPanel />
         </div>
       </div>
 

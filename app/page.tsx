@@ -27,6 +27,7 @@ import { useDevMode } from "@/lib/dev-mode-context";
 import { useFlowMode } from "@/lib/flow-mode-context";
 
 import { DealHeader } from "@/components/deal-header";
+import { DevPanel } from "@/components/dev-panel";
 import { ProgressSpine } from "@/components/progress-spine";
 import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
@@ -409,11 +410,8 @@ export default function Page() {
   );
 }
 
-/** Minimal header for empty/creator steps — just brand + V1/V2 toggle */
+/** Minimal header for empty/creator steps — just brand + dev panel */
 function MinimalHeader() {
-  // Lazy: delegate to DealHeader with a placeholder deal — but empty state
-  // shouldn't leak deal info. For V1 step 1-2, hide the deal meta strip.
-  // Implementing as a stripped-down bar:
   return (
     <header
       className="w-full"
@@ -422,7 +420,7 @@ function MinimalHeader() {
         borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      <div className="max-w-[1584px] mx-auto px-6 md:px-8 h-[56px] flex items-center justify-between">
+      <div className="max-w-[1584px] mx-auto pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="inline-block">
             <WestpacWordmark />
@@ -433,6 +431,9 @@ function MinimalHeader() {
           >
             BizEdge
           </span>
+        </div>
+        <div className="flex items-center self-stretch">
+          <DevPanel />
         </div>
       </div>
     </header>

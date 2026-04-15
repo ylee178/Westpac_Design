@@ -1,15 +1,14 @@
 "use client";
 
 /**
- * Dev panel — bottom-right gear button. Keeps exactly three demo
- * controls the interviewer (or Sean) can use during presentation:
+ * Dev panel — header-right gear button with a left separator so it
+ * reads as a dedicated utility-nav slot rather than floating over
+ * the page. Popover content portals to the document root so it
+ * escapes any grayscale filter stacking context on the content root.
  *
  *   1. Version — V1 (plain checklist) or V2 (Pac AI panel visible)
  *   2. Skeleton mode — toggles the lo-fi placeholder overlay
  *   3. Reset state — rewinds to the empty deal-creation screen
- *
- * Theme swap, D1 product/entity overrides, and any other knobs
- * have been removed to keep the panel focused.
  */
 import { Settings, Check, RotateCcw } from "lucide-react";
 import { useDevMode } from "@/lib/dev-mode-context";
@@ -25,24 +24,23 @@ export function DevPanel() {
   const { requestReset } = useFlowMode();
 
   return (
-    <div className="fixed bottom-5 right-5 z-[1000]">
+    <div
+      className="flex items-center self-stretch"
+      style={{ borderLeft: "1px solid var(--theme-border)" }}
+    >
       <Popover>
         <PopoverTrigger asChild>
           <button
+            type="button"
             aria-label="Open dev panel"
-            className="group flex items-center justify-center w-11 h-11 text-white transition-all hover:scale-105 active:scale-95"
+            className="interactive-subtle flex items-center justify-center w-14 h-full cursor-pointer"
             style={{
-              background: "#3f3f46",
-              borderRadius: "50%",
+              color: "var(--theme-text-secondary)",
+              background: "transparent",
               border: "none",
-              boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
             }}
           >
-            <Settings
-              size={18}
-              strokeWidth={2.2}
-              className="transition-transform group-hover:rotate-45"
-            />
+            <Settings size={16} strokeWidth={2.2} />
           </button>
         </PopoverTrigger>
         <PopoverContent

@@ -72,6 +72,8 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
 
   function pushPac(content: string) {
     setPacTyping(true);
+    // Long enough for the shimmer sweep to make at least one full
+    // visible cycle before Pac's reply lands.
     setTimeout(() => {
       setTimeline((t) => [
         ...t,
@@ -83,7 +85,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         },
       ]);
       setPacTyping(false);
-    }, 900);
+    }, 2000);
   }
 
   function pushBanker(content: string) {
@@ -441,6 +443,10 @@ function TypingIndicator() {
     );
     return () => clearInterval(t);
   }, []);
+  // NOTE: no `key` on the span — if React re-mounts the element on
+  // verb change, the shimmer-sweep animation restarts from zero and
+  // the user never sees a full cycle. Keeping the same span keeps
+  // the infinite animation running across verb swaps.
   return (
     <div className="flex items-start gap-2">
       <div className="shrink-0 pt-0.5">
@@ -456,10 +462,7 @@ function TypingIndicator() {
           minHeight: "32px",
         }}
       >
-        <span
-          className="shimmer-text text-[12px] tracking-[0.16px]"
-          key={verbIdx}
-        >
+        <span className="shimmer-text text-[12px] tracking-[0.16px]">
           {STATUS_VERBS[verbIdx]}…
         </span>
       </div>
