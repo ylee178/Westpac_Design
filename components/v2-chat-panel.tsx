@@ -63,7 +63,10 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
   const [freeText, setFreeText] = useState("");
   const [pacTyping, setPacTyping] = useState(false);
-  const [briefingOpen, setBriefingOpen] = useState(false);
+  // Open by default so the common-question pills (nested inside
+  // the briefing card) are immediately discoverable. Banker can
+  // collapse via the header toggle.
+  const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Briefing + pills are DERIVED directly from current product/step.
@@ -192,7 +195,12 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
           </button>
         </div>
         {briefingOpen ? (
-          <HeaderBriefing briefing={briefing} firstName={firstName} />
+          <HeaderBriefing
+            briefing={briefing}
+            firstName={firstName}
+            suggestions={suggestions}
+            onTapSuggestion={handlePillTap}
+          />
         ) : null}
       </div>
 
@@ -228,14 +236,6 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         )}
         {pacTyping ? <TypingIndicator /> : null}
       </div>
-
-      {/* ——— Common questions — swipable pill row just above the
-             input, on a pale maroon surface so the prompts read as
-             a prompting shelf rather than additional chrome. */}
-      <SuggestionPills
-        suggestions={suggestions}
-        onTap={handlePillTap}
-      />
 
       {/* ——— Input ——— */}
       <form
@@ -278,122 +278,112 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
 
 // ——— Header briefing (collapsible) ———
 // Rendered inside the Pac panel header, below the status strip,
-// only when the banker opens the Briefing toggle. No Pac avatar —
-// the avatar already sits in the header status strip.
+// only when the banker opens the Briefing toggle. Holds the
+// reference bullets AND the common-question pills — the pills are
+// now a sub-section of the briefing card rather than a separate
+// shelf above the input.
 function HeaderBriefing({
   briefing,
   firstName,
+  suggestions,
+  onTapSuggestion,
 }: {
   briefing: ReturnType<typeof getBriefing>;
   firstName: string;
+  suggestions: Suggestion[];
+  onTapSuggestion: (s: Suggestion) => void;
 }) {
   return (
     <div
-      className="px-4 py-3"
+      className="min-w-0"
       style={{
         background: "var(--westpac-primary-soft)",
         borderTop: "1px solid var(--westpac-primary-border)",
       }}
     >
-      <div className="flex items-baseline gap-2 flex-wrap">
-        <span
-          className="text-[13px] font-semibold"
-          style={{ color: "var(--theme-text-primary)" }}
-        >
-          {briefing.title}
-        </span>
-        <span
-          className="text-[11px]"
-          style={{ color: "var(--theme-text-secondary)" }}
-        >
-          {briefing.subtitle}
-        </span>
-      </div>
-      <ul className="mt-2 space-y-1.5">
-        {briefing.bullets.map((b, i) => (
-          <li
-            key={i}
-            className="flex items-start gap-2 text-[11px] leading-[1.45]"
+      <div className="px-4 pt-3 pb-3">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span
+            className="text-[13px] font-semibold"
             style={{ color: "var(--theme-text-primary)" }}
           >
-            <span
-              className="inline-block w-1 h-1 mt-[6px] shrink-0"
-              style={{
-                background: "var(--theme-primary)",
-                borderRadius: "50%",
-              }}
-            />
-            <span
-              dangerouslySetInnerHTML={{
-                __html: b.replace(
-                  /^(Hi)\b/,
-                  `Hi ${escapeHtml(firstName)},`,
-                ),
-              }}
-            />
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-// ——— Suggestion pills ———
-// Horizontal, swipable pill row sitting on a pale maroon surface
-// directly above the input. Pills don't wrap — they scroll out to
-// the right, giving the banker a quick "prompting shelf" of the
-// most common questions.
-function SuggestionPills({
-  suggestions,
-  onTap,
-}: {
-  suggestions: Suggestion[];
-  onTap: (s: Suggestion) => void;
-}) {
-  return (
-    <div
-      // min-w-0 is LOAD-BEARING: without it, this flex item's default
-      // min-width: auto lets the inner horizontal pill row expand to
-      // fit its content, which disables overflow-x scrolling.
-      className="shrink-0 min-w-0 w-full"
-      style={{
-        background: "var(--westpac-primary-soft)",
-        borderTop: "1px solid var(--westpac-primary-border)",
-      }}
-    >
-      <div
-        className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5"
-        style={{
-          color: "var(--theme-primary)",
-          letterSpacing: "0.5px",
-          opacity: 0.75,
-        }}
-      >
-        Common questions
-      </div>
-      <div
-        className="flex gap-2 px-4 pb-3 overflow-x-auto min-w-0 suggestion-pill-scroll"
-        style={{
-          scrollbarWidth: "none",
-          WebkitOverflowScrolling: "touch",
-        }}
-      >
-        {suggestions.map((s, i) => (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onTap(s)}
-            className="interactive-pill shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[12px] leading-[1.3] font-medium cursor-pointer"
-            style={{
-              background: "var(--theme-card-bg)",
-              color: "var(--theme-primary)",
-              border: "1px solid var(--westpac-primary-border)",
-              borderRadius: "999px",
-            }}
+            {briefing.title}
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "var(--theme-text-secondary)" }}
           >
-            {s.question}
-          </button>
-        ))}
+            {briefing.subtitle}
+          </span>
+        </div>
+        <ul className="mt-2 space-y-1.5">
+          {briefing.bullets.map((b, i) => (
+            <li
+              key={i}
+              className="flex items-start gap-2 text-[11px] leading-[1.45]"
+              style={{ color: "var(--theme-text-primary)" }}
+            >
+              <span
+                className="inline-block w-1 h-1 mt-[6px] shrink-0"
+                style={{
+                  background: "var(--theme-primary)",
+                  borderRadius: "50%",
+                }}
+              />
+              <span
+                dangerouslySetInnerHTML={{
+                  __html: b.replace(
+                    /^(Hi)\b/,
+                    `Hi ${escapeHtml(firstName)},`,
+                  ),
+                }}
+              />
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Common questions — swipable pill row nested inside the
+          briefing card. Thin divider above, pills flow horizontally
+          with overflow scroll. */}
+      <div
+        className="min-w-0"
+        style={{ borderTop: "1px solid var(--westpac-primary-border)" }}
+      >
+        <div
+          className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5"
+          style={{
+            color: "var(--theme-primary)",
+            letterSpacing: "0.5px",
+            opacity: 0.75,
+          }}
+        >
+          Common questions
+        </div>
+        <div
+          className="flex gap-2 px-4 pb-3 overflow-x-auto min-w-0 suggestion-pill-scroll"
+          style={{
+            scrollbarWidth: "none",
+            WebkitOverflowScrolling: "touch",
+          }}
+        >
+          {suggestions.map((s, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onTapSuggestion(s)}
+              className="interactive-pill shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[12px] leading-[1.3] font-medium cursor-pointer"
+              style={{
+                background: "var(--theme-card-bg)",
+                color: "var(--theme-primary)",
+                border: "1px solid var(--westpac-primary-border)",
+                borderRadius: "999px",
+              }}
+            >
+              {s.question}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
