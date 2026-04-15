@@ -415,6 +415,53 @@
   100% { background-position: -100% 0; }
 }
 
+/* One-shot shimmer for newly-arrived chat message text. A red light
+   beam sweeps through each message once (650ms) on mount, just like
+   Claude Code's streaming highlight. Uses background-clip: text so
+   only the glyph shapes are revealed. */
+@keyframes shimmer-once {
+  0%   { background-position: 220% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.shimmer-once-pac {
+  background: linear-gradient(
+    90deg,
+    #1a1a1a 0%,
+    #1a1a1a 40%,
+    #DA1710 48%,
+    #ffffff 50%,
+    #DA1710 52%,
+    #1a1a1a 60%,
+    #1a1a1a 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-once 650ms linear 1 forwards;
+}
+
+.shimmer-once-banker {
+  background: linear-gradient(
+    90deg,
+    #ffffff 0%,
+    #ffffff 40%,
+    rgba(255, 220, 210, 1) 48%,
+    #ffffff 50%,
+    rgba(255, 220, 210, 1) 52%,
+    #ffffff 60%,
+    #ffffff 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-once 650ms linear 1 forwards;
+}
+
 /* ============================================================
    Skeleton — shared placeholder language.
    Used by the <Skeleton /> component AND by grayscale dev mode

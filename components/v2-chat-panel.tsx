@@ -232,7 +232,7 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
           borderBottom: "1px solid var(--theme-border)",
         }}
       >
-        <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
+        <PacAvatar size={32} state="idle" />
         <div className="min-w-0">
           <div
             className="text-[13px] font-semibold leading-tight"
@@ -246,7 +246,6 @@ export function V2ChatPanel({ deal, currentFocusedItem, readinessScore }: Props)
               style={{
                 background: "#2e7d32",
                 borderRadius: "50%",
-                animation: "pac-typing 1.4s ease-in-out infinite",
               }}
             />
             <span style={{ color: "var(--theme-text-secondary)" }}>
@@ -329,6 +328,16 @@ function MessageBubble({
   compactContinuation: boolean;
   firstName: string;
 }) {
+  // Mouth animation fires briefly on mount for new Pac bubbles only.
+  const [pacAvatarState, setPacAvatarState] = useState<"idle" | "speaking">(
+    message.sender === "pac" ? "speaking" : "idle",
+  );
+  useEffect(() => {
+    if (message.sender !== "pac") return;
+    const t = setTimeout(() => setPacAvatarState("idle"), 900);
+    return () => clearTimeout(t);
+  }, [message.sender]);
+
   if (message.sender === "system") {
     return (
       <div
@@ -347,10 +356,9 @@ function MessageBubble({
     return (
       <div className="flex items-start gap-2 justify-end">
         <div
-          className="px-3 py-2 text-[12px] leading-[1.5] max-w-[260px]"
+          className="px-3 py-2 text-[12px] leading-[1.5] max-w-[260px] shimmer-once-banker"
           style={{
             background: "var(--theme-primary)",
-            color: "var(--theme-primary-fg)",
             borderRadius: "var(--theme-radius-lg)",
             borderTopRightRadius: "4px",
           }}
@@ -381,7 +389,7 @@ function MessageBubble({
         }}
       >
         <div className="flex items-center gap-3">
-          <PacAvatar size={42} state="idle" />
+          <PacAvatar size={42} state={pacAvatarState} />
           <div className="leading-tight">
             <div
               className="text-[14px] font-semibold"
@@ -401,8 +409,7 @@ function MessageBubble({
           </div>
         </div>
         <div
-          className="text-[12px] leading-[1.55] mt-1"
-          style={{ color: "var(--theme-text-primary)" }}
+          className="text-[12px] leading-[1.55] mt-1 shimmer-once-pac"
           dangerouslySetInnerHTML={{ __html: message.content }}
         />
       </div>
@@ -416,17 +423,16 @@ function MessageBubble({
         <div className="w-7 shrink-0" aria-hidden="true" />
       ) : (
         <div className="shrink-0 pt-0.5">
-          <PacAvatar size={26} state="idle" />
+          <PacAvatar size={26} state={pacAvatarState} />
         </div>
       )}
       <div
-        className="flex-1 min-w-0 px-3 py-2 text-[12px] leading-[1.55]"
+        className="flex-1 min-w-0 px-3 py-2 text-[12px] leading-[1.55] shimmer-once-pac"
         style={{
           background: "var(--theme-card-bg)",
           border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
           borderTopLeftRadius: compactContinuation ? "var(--theme-radius-lg)" : "4px",
-          color: "var(--theme-text-primary)",
         }}
         dangerouslySetInnerHTML={{ __html: message.content }}
       />
