@@ -352,7 +352,10 @@ function SuggestionPills({
 }) {
   return (
     <div
-      className="shrink-0"
+      // min-w-0 is LOAD-BEARING: without it, this flex item's default
+      // min-width: auto lets the inner horizontal pill row expand to
+      // fit its content, which disables overflow-x scrolling.
+      className="shrink-0 min-w-0 w-full"
       style={{
         background: "var(--westpac-primary-soft)",
         borderTop: "1px solid var(--westpac-primary-border)",
@@ -369,8 +372,11 @@ function SuggestionPills({
         Common questions
       </div>
       <div
-        className="flex gap-2 px-4 pb-3 overflow-x-auto suggestion-pill-scroll"
-        style={{ scrollbarWidth: "none" }}
+        className="flex gap-2 px-4 pb-3 overflow-x-auto min-w-0 suggestion-pill-scroll"
+        style={{
+          scrollbarWidth: "none",
+          WebkitOverflowScrolling: "touch",
+        }}
       >
         {suggestions.map((s, i) => (
           <button
