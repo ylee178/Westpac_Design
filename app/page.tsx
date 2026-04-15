@@ -31,7 +31,7 @@ import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
 import { ChecklistDetail } from "@/components/checklist-detail";
 import { SkipDialog } from "@/components/skip-dialog";
-import { ArrowRight, ArrowLeft, Info, Sparkles } from "lucide-react";
+import { ArrowRight, ArrowLeft, Sparkles } from "lucide-react";
 
 export default function Page() {
   // ——— State ———
@@ -353,41 +353,6 @@ export default function Page() {
             </button>
           </div>
 
-          {/* Footer hint — subtle, table-like */}
-          <aside
-            className="mt-6 p-3 flex items-start gap-2.5"
-            style={{
-              background: "var(--theme-card-bg)",
-              border: "1px solid var(--theme-border)",
-              borderLeft: "2px solid var(--theme-primary)",
-              borderRadius: "var(--theme-radius)",
-            }}
-          >
-            <Info
-              className="shrink-0 mt-0.5"
-              size={13}
-              style={{ color: "var(--theme-primary)" }}
-            />
-            <p
-              className="text-[11px] leading-[1.55]"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              <span
-                className="font-semibold"
-                style={{ color: "var(--theme-text-primary)" }}
-              >
-                Demo flow:
-              </span>{" "}
-              Switch product (Bank Guarantee → Term Loan) to see D1 reshape.
-              Click any row to select (D4 detail panel). Read the knowledge
-              card (D3) in the right panel, hover provenance (D6), filter by
-              owner (D7), try skipping a non-mandatory item (D2), and try
-              skipping "Source of funds declaration" to see the legally-
-              mandatory lock. Hover the Deal Confidence score (D9) for the
-              breakdown. Hover the CDD mode label (D8) for AUSTRAC reform
-              context.
-            </p>
-          </aside>
         </div>
       </main>
 
