@@ -338,4 +338,146 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
       confidence: "high",
     },
   },
+
+  // ═══════════════════════════════════════════════════════════════
+  // CREDIT phase — financial assessment, serviceability, risk rating
+  // Structure-only placeholders. Banker can navigate into this phase
+  // to see what's coming, but they're not interactive in the demo.
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "credit-01",
+    label: "Financial statements review",
+    description:
+      "2 years of audited financials + YTD management accounts, assessed against Westpac's commercial lending policy.",
+    owner: "banker",
+    status: "pending",
+    phase: "credit",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "risk",
+    knowledge: {
+      what: "Review of customer's financial health — profitability, leverage, liquidity.",
+      why: "Sets the baseline for serviceability and pricing. Westpac's commercial lending policy applies.",
+    },
+  },
+  {
+    id: "credit-02",
+    label: "Serviceability calculation",
+    description:
+      "Automated DSCR and cash-flow coverage calc using customer financials + the proposed facility structure.",
+    owner: "system",
+    status: "pending",
+    phase: "credit",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "risk",
+    knowledge: {
+      what: "Debt service coverage ratio (DSCR) and cash-flow coverage computed automatically.",
+      why: "Serviceability is a hard gate under Westpac lending policy — cannot be overridden by banker judgment alone.",
+    },
+  },
+  {
+    id: "credit-03",
+    label: "Risk-weighted pricing",
+    description:
+      "Apply Westpac's risk-based pricing matrix to the customer's risk rating and facility structure.",
+    owner: "banker",
+    status: "pending",
+    phase: "credit",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "risk",
+    knowledge: {
+      what: "Pricing derived from risk rating × facility type × tenor × security package.",
+      why: "Risk-based pricing is the credit engine's input. Wrong pricing → wrong economics → wrong decision.",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // APPROVAL phase — decisioning, conditions, sign-off
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "approval-01",
+    label: "Credit memo draft",
+    description:
+      "Auto-generated credit memo using deal data, financials, and risk assessment from Credit phase.",
+    owner: "system",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what: "Structured credit memo auto-generated from deal data — banker reviews and edits.",
+      why: "Standardised memo format ensures all credit committees see the same data shape across deals.",
+    },
+  },
+  {
+    id: "approval-02",
+    label: "Conditions precedent",
+    description:
+      "Banker specifies conditions that must be met before drawdown — e.g. executed guarantees, registered security.",
+    owner: "banker",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what: "Conditions precedent (CPs) — things that must happen before Westpac releases funds.",
+      why: "CPs protect the bank's position between approval and drawdown. Missing a CP is a common rework cause.",
+    },
+  },
+  {
+    id: "approval-03",
+    label: "Delegated authority sign-off",
+    description:
+      "Credit committee or delegated authority approval based on exposure and risk rating.",
+    owner: "banker",
+    status: "pending",
+    phase: "approval",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what: "Final approval step — either banker DA, team lead DA, or credit committee, depending on exposure.",
+      why: "Westpac's delegated authority framework determines who can sign off based on facility size and risk.",
+    },
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // SETTLEMENT phase — documentation, execution, booking
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: "settlement-01",
+    label: "Facility documentation execution",
+    description:
+      "Customer-signed facility agreement, guarantee schedules, and security documents.",
+    owner: "customer",
+    status: "pending",
+    phase: "settlement",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what: "Signed execution copies of all facility and security documentation.",
+      why: "Execution is the final binding step — facility does not exist legally until documentation is signed.",
+    },
+  },
+  {
+    id: "settlement-02",
+    label: "Booking and drawdown",
+    description:
+      "Facility booked in core banking system, drawdown instructions processed, funds released.",
+    owner: "system",
+    status: "pending",
+    phase: "settlement",
+    appliesTo: { product: null, entity: null },
+    legallyMandatory: false,
+    category: "docs",
+    knowledge: {
+      what: "Core banking booking + funds release to customer account.",
+      why: "This is the operational handover from BizEdge to Westpac's servicing systems.",
+    },
+  },
 ];
