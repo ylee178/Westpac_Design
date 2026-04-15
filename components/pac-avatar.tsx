@@ -3,59 +3,62 @@
 /**
  * Pac — Westpac AI teammate.
  *
- * 16-bit pixel sprite rendered as an SVG grid of <rect> pixels
- * (shape-rendering: crispEdges). Brand-red body, simple white
- * square eye (no pupil — friendlier than a "watching you" dot).
+ * 16x16 pixel creature: front-facing round body, two white square
+ * eyes, small arms sticking out at the sides, two legs with feet.
+ * Not Pac-Man — just a chunky pixel blob with brand-red fill.
  *
- * Static by default. The old idle bob was too noisy for small
- * chat avatars. Only the "speaking" state animates — it alternates
- * between two mouth frames every 200ms and is used inside the
- * typing indicator. "celebrate" still spins once for phase-complete
- * moments if ever needed.
+ * Animation states:
+ *   - idle:      static grid
+ *   - speaking:  blinks every 240ms (used briefly on new chat bubbles)
+ *   - celebrate: one-shot 360° spin (kept for phase-complete moments)
  */
 import { useEffect, useState } from "react";
 
 const BRAND_RED = "#DA1710";
 const EYE_WHITE = "#FFFFFF";
 
-// 14x14 pixel grid — Pac-Man inspired round body with 2x2 square
-// white eye (no pupil — friendlier than a "staring" dot). This is
-// the original pixel shape, just with the eye simplified.
+// 16x16 pixel grid.
 //   X = red body pixel
-//   E = white eye pixel
+//   E = white eye pixel (2x2 each, front-facing)
 //   . = transparent
 const PAC_OPEN: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXEEXXXXXX..",
-  "XXXXEEXXXXX...",
-  "XXXXXXXXXX....",
-  "XXXXXXXX......",
-  "XXXXXX........",
-  "XXXXXX........",
-  "XXXXXXXX......",
-  "XXXXXXXXXX....",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
+  ".....XXXXXX.....",
+  "...XXXXXXXXXX...",
+  "..XXXXXXXXXXXX..",
+  ".XXXEEXXXXEEXXX.",
+  ".XXXEEXXXXEEXXX.",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  "XX.XXXXXXXXXX.XX",
+  "XX.XXXXXXXXXX.XX",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  "..XXXXXXXXXXXX..",
+  "..XXXX....XXXX..",
+  "..XXXX....XXXX..",
+  ".XXXXX....XXXXX.",
 ];
 
-const PAC_CLOSED: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXEEXXXXXXX.",
-  "XXXXEEXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXX..",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
+// Speaking frame — eyes blink (disappear for a beat) so the new
+// bubble has a small "alive" signal without needing a mouth.
+const PAC_BLINK: readonly string[] = [
+  ".....XXXXXX.....",
+  "...XXXXXXXXXX...",
+  "..XXXXXXXXXXXX..",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  "XX.XXXXXXXXXX.XX",
+  "XX.XXXXXXXXXX.XX",
+  ".XXXXXXXXXXXXXX.",
+  ".XXXXXXXXXXXXXX.",
+  "..XXXXXXXXXXXX..",
+  "..XXXX....XXXX..",
+  "..XXXX....XXXX..",
+  ".XXXXX....XXXXX.",
 ];
 
 function renderGrid(grid: readonly string[], keyPrefix: string) {
@@ -100,23 +103,39 @@ interface Props {
 }
 
 export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) {
-  const [frame, setFrame] = useState<"open" | "closed">("open");
+  const [frame, setFrame] = useState<"open" | "blink">("open");
 
   useEffect(() => {
     if (state !== "speaking") {
       setFrame("open");
       return;
     }
-    const interval = setInterval(() => {
-      setFrame((f) => (f === "open" ? "closed" : "open"));
-    }, 200);
-    return () => clearInterval(interval);
+    // Eye blink cycle — mostly open, brief blink
+    let openPhase = true;
+    const tick = () => {
+      openPhase = !openPhase;
+      setFrame(openPhase ? "open" : "blink");
+    };
+    // Longer open phase than blink for natural feel
+    const openMs = 700;
+    const blinkMs = 140;
+    let timer: ReturnType<typeof setTimeout>;
+    const schedule = () => {
+      timer = setTimeout(
+        () => {
+          tick();
+          schedule();
+        },
+        openPhase ? openMs : blinkMs,
+      );
+    };
+    schedule();
+    return () => clearTimeout(timer);
   }, [state]);
 
-  const grid = frame === "open" ? PAC_OPEN : PAC_CLOSED;
+  const grid = frame === "open" ? PAC_OPEN : PAC_BLINK;
 
-  const animationClass =
-    state === "celebrate" ? "pac-celebrate" : "";
+  const animationClass = state === "celebrate" ? "pac-celebrate" : "";
 
   return (
     <span
@@ -129,7 +148,7 @@ export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) 
       }}
     >
       <svg
-        viewBox="0 0 14 14"
+        viewBox="0 0 16 16"
         width={size}
         height={size}
         shapeRendering="crispEdges"
