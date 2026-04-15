@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PRIMER — Westpac Business Lending Background Notes · BizEdge Interview</title>
+<style>
+  :root {
+    --yellow: #FFF4B8; --yellow-br: #E8D868; --yellow-label: #8A6F00;
+    --blue: #D8E9F7;   --blue-br: #A8C5E3;   --blue-label: #1A5F99;
+    --pink: #F8DDE7;   --pink-br: #E8B5C8;   --pink-label: #99144F;
+    --green: #DDEDCF;  --green-br: #B8D4A0;  --green-label: #3F7A1E;
+    --lav: #E8DFF5;    --lav-br: #C8B5E0;    --lav-label: #5A2E99;
+    --dark: #2D2D2D;
+    --text: #1A1A1A;
+    --subtle: #666;
+    --muted: #999;
+    --page-bg: #FAFAF7;
+    --card-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+    background: var(--page-bg);
+    margin: 0;
+    padding: 48px 32px 96px;
+    color: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .board { max-width: 1640px; margin: 0 auto; }
+
+  .header {
+    text-align: center;
+    padding: 24px 0 56px;
+    border-bottom: 2px dashed #CCC;
+    margin-bottom: 64px;
+  }
+  .header h1 {
+    font-size: 52px;
+    margin: 0 0 12px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .header .subtitle { font-size: 20px; color: var(--subtle); margin: 0 0 10px; }
+  .header .meta { font-size: 13px; color: var(--muted); letter-spacing: 0.3px; }
+  .header .badges { margin-top: 20px; }
+  .header .badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #FFF;
+    border: 1px solid #DDD;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #444;
+    margin: 0 4px;
+  }
+
+  .section { margin-bottom: 88px; }
+  .section-label {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--subtle);
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 34px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.3px; }
+  .section-sub { font-size: 17px; color: var(--subtle); margin: 0 0 36px; max-width: 900px; }
+
+  .card-grid { display: grid; gap: 24px; }
+  .grid-1 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .card {
+    padding: 26px 28px;
+    border-radius: 12px;
+    border: 1px solid;
+    box-shadow: var(--card-shadow);
+  }
+  .card .card-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+  .card h3 { font-size: 19px; margin: 0 0 14px; font-weight: 700; line-height: 1.35; }
+  .card p { font-size: 14.5px; margin: 0 0 10px; line-height: 1.6; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .source { font-size: 11.5px; color: #888; font-style: italic; margin-top: 14px; }
+  .card strong { font-weight: 700; }
+  .card em { font-style: italic; color: #333; }
+
+  .meta      { background: var(--yellow); border-color: var(--yellow-br); }
+  .meta .card-label { color: var(--yellow-label); }
+  .spatial   { background: var(--blue);   border-color: var(--blue-br); }
+  .spatial .card-label { color: var(--blue-label); }
+  .procedural{ background: var(--pink);   border-color: var(--pink-br); }
+  .procedural .card-label { color: var(--pink-label); }
+  .diagnostic{ background: var(--green);  border-color: var(--green-br); }
+  .diagnostic .card-label { color: var(--green-label); }
+  .strategic { background: var(--lav);    border-color: var(--lav-br); }
+  .strategic .card-label { color: var(--lav-label); }
+  .dark      { background: var(--dark);   border-color: var(--dark); color: #FFF; }
+  .dark .card-label { color: #FFC166; }
+  .dark .source { color: #AAA; }
+  .dark em { color: #EEE; }
+
+  .hero-card { border-width: 2px; padding: 30px 32px; }
+
+  .callout {
+    border-left: 4px solid #666;
+    padding: 16px 22px;
+    background: #F8F8F4;
+    margin: 24px 0 0;
+    font-size: 14px;
+    color: #555;
+    border-radius: 0 8px 8px 0;
+  }
+  .callout strong { color: #333; }
+
+  .card h4 {
+    font-size: 12px;
+    margin: 16px 0 6px;
+    color: var(--subtle);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .dark h4 { color: #FFC166; }
+
+  .stat-row {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 14px 0 4px;
+  }
+  .stat {
+    background: rgba(255,255,255,0.55);
+    border-radius: 8px;
+    padding: 10px 14px;
+    flex: 1 1 140px;
+    min-width: 130px;
+  }
+  .stat .num { font-size: 22px; font-weight: 800; display: block; line-height: 1.15; }
+  .stat .lbl { font-size: 11px; color: #555; letter-spacing: 0.3px; }
+
+  blockquote {
+    margin: 14px 0 10px;
+    padding: 12px 18px;
+    background: rgba(255,255,255,0.55);
+    border-left: 3px solid #888;
+    border-radius: 0 6px 6px 0;
+    font-size: 13.5px;
+    font-style: italic;
+    color: #333;
+    line-height: 1.55;
+  }
+  .dark blockquote {
+    background: rgba(255,255,255,0.08);
+    color: #DDD;
+    border-left-color: #FFC166;
+  }
+
+  .footer {
+    text-align: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px dashed #CCC;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.3px;
+  }
+
+  @media (max-width: 1100px) {
+    .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .header h1 { font-size: 34px; }
+    .section-title { font-size: 24px; }
+  }
+  @media print {
+    body { padding: 24px; background: #FFF; }
+    .card { box-shadow: none; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <!-- ════ HEADER ════ -->
+  <div class="header">
+    <h1>PRIMER — Background Notes</h1>
+    <p class="subtitle">Westpac Business Lending Design Challenge · Domain · Regulation · Pains · Decisions · Strategy</p>
+    <p class="meta">Personal background document for the Senior Experience Designer (Westpac) interview · April 2026</p>
+    <div class="badges">
+      <span class="badge">BizEdge</span>
+      <span class="badge">AUSTRAC reform 2026.3.31</span>
+      <span class="badge">Big Four</span>
+      <span class="badge">UNITE</span>
+      <span class="badge">22 Questions + 8 Decisions</span>
+    </div>
+  </div>
+
+  <!-- ════ CHAPTER 1 ════ -->
+  <div class="section">
+    <span class="section-label">CHAPTER 1 · THE STAGE</span>
+    <h2 class="section-title">Who · What · Where</h2>
+    <p class="section-sub">Westpac, its strategic moment, BizEdge, and the technology ecosystem the platform depends on (nCino · Rich Data Co · UNITE).</p>
+
+    <div class="card-grid grid-1">
+      <div class="card meta hero-card">
+        <div class="card-label">Q1 · WESTPAC — THIS MOMENT</div>
+        <h3>A 200-year-old Big Four bank clawing back share from 3rd place</h3>
+        <p>Founded 1817 in Sydney — Australia's oldest bank, 84 years older than the federation itself (1901). The Big Four (Westpac · CBA · NAB · ANZ) hold 75–80% of Australian banking. Business lending market share (July 2025, Reuters): <strong>NAB 21.6% / CBA 18.85% / Westpac 16.1%</strong>.</p>
+        <div class="stat-row">
+          <div class="stat"><span class="num">A$1.1B</span><span class="lbl">B&amp;W H1 FY25 profit</span></div>
+          <div class="stat"><span class="num">~33%</span><span class="lbl">of Group profit</span></div>
+          <div class="stat"><span class="num">16.1%</span><span class="lbl">business lending share</span></div>
+        </div>
+        <p>Business lending isn't a side bet — Paul Fowler (Chief Executive B&amp;W) publicly called it Westpac's <em>"shift in emphasis."</em> This role is strategic, not cosmetic. I'm designing for a bank with real regulatory scars, actively trying to reclaim a category it has publicly prioritised.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-3" style="margin-top: 24px;">
+      <div class="card spatial">
+        <div class="card-label">Q2 · BUSINESS vs PERSONAL</div>
+        <h3>Business lending is a different animal</h3>
+        <p>Personal lending is a bet on an individual's salary and credit score. Business lending is a bet on a business entity's cash generation — <strong>sole trader · company · partnership · trust · corporate</strong>.</p>
+        <p><strong>Why harder:</strong> ① legally complex structures (company-owned-by-family-trust) ② amounts are bigger and custom ($500K to tens of millions) ③ analysis reads financials, industry conditions, collateral, guarantees, even board composition — not a single credit score.</p>
+        <p>This is where banks compete hardest on relationships. A dedicated banker per customer is the norm — and BizEdge exists to support that depth at scale.</p>
+      </div>
+      <div class="card spatial">
+        <div class="card-label">Q3 · BIZEDGE BASICS</div>
+        <h3>Westpac's in-house origination platform</h3>
+        <p>Origination = loan creation (setup → credit analysis → approval → documentation → booking). The cockpit a banker lives in for most of the working day.</p>
+        <div class="stat-row">
+          <div class="stat"><span class="num">45%</span><span class="lbl">TTD reduction</span></div>
+          <div class="stat"><span class="num">75%+</span><span class="lbl">auto decisioning</span></div>
+          <div class="stat"><span class="num">&lt;4h</span><span class="lbl">simple deal settlement</span></div>
+          <div class="stat"><span class="num">$43bn</span><span class="lbl">Conditional Limit Offer</span></div>
+        </div>
+        <p class="source">Source: Westpac FY25 ASX release · 1Q26 update</p>
+      </div>
+      <div class="card spatial">
+        <div class="card-label">Q3 · THE SECOND SIDE</div>
+        <h3>Critical finding: BizEdge is a two-sided platform</h3>
+        <p>BizEdge is not purely a banker tool. It has a <strong>customer-facing surface</strong> where business customers pre-fill forms and track application status in real time. Rich Data Co describes its contribution verbatim:</p>
+        <blockquote>"a two-sided digital finance application form, which allows both customers and bankers to jointly work on an application."</blockquote>
+        <p>This finding grounds <strong>Decision 7 (three-way task ownership)</strong> — the "customer" actor is not an abstract design construct but a real surface inside the actual BizEdge architecture.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-3" style="margin-top: 24px;">
+      <div class="card spatial">
+        <div class="card-label">Q4 · WHAT IS A LOS</div>
+        <h3>The "operating system" a banker uses to create a loan</h3>
+        <p>Before modern LOS: bankers assembled loans across email, Word, spreadsheets, and legacy systems. McKinsey calls this <strong>"swivel chair work"</strong> — literally swiveling your chair to the next monitor to retype data. It's exactly how errors happen.</p>
+        <p>A modern LOS consolidates customer data, credit, approval, documents, and booking into one coordinated workspace. Major vendors: <strong>nCino (market leader), Moody's Lending Suite, Baker Hill, Hawthorn River</strong>. Westpac built BizEdge in-house but partners with Rich Data Co for AI.</p>
+      </div>
+      <div class="card spatial">
+        <div class="card-label">Q5 · NCINO — WHY IT KEEPS APPEARING</div>
+        <h3>Industry benchmark AND Westpac's co-investment partner</h3>
+        <p><strong>① Benchmark:</strong> "The Salesforce of commercial lending." Founded 2012, NASDAQ 2020, 1,200+ financial institutions. nCino's <strong>"single sheet method"</strong> is the industry pattern my progress spine borrows from.</p>
+        <p><strong>② Judo Bank uses it:</strong> the Australian SME challenger with NPS 70 built their platform on nCino — "human touch at scale" case study.</p>
+        <p><strong>③ Strategic signal:</strong> Westpac and nCino <strong>co-led Rich Data Co's US$17.5M Series B in November 2023</strong>. Designing in nCino's direction means designing where Westpac is already putting money.</p>
+      </div>
+      <div class="card spatial">
+        <div class="card-label">Q6 · RICH DATA CO (RDC)</div>
+        <h3>AI decisioning layer + evidence for two-sided architecture</h3>
+        <p>Partnered with Westpac in January 2023. Pattern-analyses customer transaction data and financial signals to pre-score deals, accelerating loan decisions.</p>
+        <p>Gordon Campbell (RDC, AWS Sydney) mentioned working on <em>"products to market that safely use agentic capability"</em> — direct through-line to my V2 AI teammate concept.</p>
+        <p class="source">The single most decisive finding — it turned Decision 7 from audit-flagged weakest to firmly evidence-backed.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-1" style="margin-top: 24px;">
+      <div class="card meta hero-card">
+        <div class="card-label">Q7 · UNITE — THE WAVE MY DESIGN RIDES</div>
+        <h3>Westpac's multi-year simplification program (2024–), with BizEdge inside it</h3>
+        <div class="stat-row">
+          <div class="stat"><span class="num">180+</span><span class="lbl">applications decommissioned</span></div>
+          <div class="stat"><span class="num">70%+</span><span class="lbl">products simplified</span></div>
+          <div class="stat"><span class="num">700+</span><span class="lbl">processes streamlined</span></div>
+          <div class="stat"><span class="num">on scope</span><span class="lbl">time &amp; budget (2026.3)</span></div>
+        </div>
+        <p>"My design rides the UNITE wave, not fights it" — this is the defensible answer to the hardest devil's-advocate attack ("UX can't fix a bank"). Specific (the numbers) and humble (doesn't over-claim UX impact). If UNITE were failing, my design would fail too; because UNITE is delivering, my design operationalises that progress at the banker's workstation.</p>
+        <p class="source">Source: Westpac FY25 · 1Q26 disclosures · UNITE acronym itself not publicly confirmed (see Uncertainty Flags)</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CHAPTER 2 ════ -->
+  <div class="section">
+    <span class="section-label">CHAPTER 2 · REGULATORY BACKDROP</span>
+    <h2 class="section-title">AUSTRAC, AML/CTF, 2026 reform, and Westpac's scar</h2>
+    <p class="section-sub">Westpac's regulatory history isn't neutral. It paid Australia's largest corporate fine, rebuilt its compliance backbone over five years, and the 2026 AUSTRAC reform commenced two weeks before this interview — all of which gives specific weight to my design.</p>
+
+    <div class="card-grid grid-1">
+      <div class="card diagnostic hero-card">
+        <div class="card-label">Q8 · AUSTRAC</div>
+        <h3>Australia's AML/CTF regulator — sets the rules, banks comply</h3>
+        <p>Australian Transaction Reports and Analysis Centre. Every Australian bank is a "reporting entity" required to identify customers, monitor transactions, report suspicious matters, keep records, and maintain an AML/CTF program. Banks don't negotiate.</p>
+        <p><strong>Analogy:</strong> AUSTRAC isn't the police arresting troublemakers — it's the regulator telling the nightclub how to check IDs, train bouncers, and flag suspicious activity. It supervises the <em>processes</em> banks use to keep criminals out of the financial system.</p>
+        <p>The issuer of Australia's largest-ever corporate civil penalty: <strong>A$1.3B against Westpac in 2020</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-3" style="margin-top: 24px;">
+      <div class="card diagnostic">
+        <div class="card-label">Q9 · AML/CTF BASICS</div>
+        <h3>"Forcing the bank to notice"</h3>
+        <p>Anti-Money Laundering / Counter-Terrorism Financing. Money laundering = obscuring the origin of illegal funds. Terrorism financing = moving (often small) amounts to fund violence. Both depend on the financial system not noticing.</p>
+        <p>In regulated banking, compliance and UX are not separate concerns — they're the same concern at different layers. Every deal-setup decision affects how evidence is captured, verified, and made available for audit.</p>
+      </div>
+      <div class="card diagnostic">
+        <div class="card-label">Q10 · CDD</div>
+        <h3>Customer Due Diligence — radically more complex for business</h3>
+        <p>"Do I really know who this customer is? Do I understand their ML risk?" Individual CDD is simple. Business CDD requires:</p>
+        <p>① Identify the entity (company/sole trader/trust/partnership) ② Identify the people acting (directors/signatories) ③ <strong>Identify beneficial owners</strong> (look-through to real humans) ④ Understand the nature/purpose of the relationship ⑤ Assess ML risk ⑥ Document evidence AND reasoning.</p>
+        <p>Under the 2026 reform, CDD splits into <strong>initial CDD (onboarding) and ongoing CDD (continuous monitoring)</strong> — the split that creates the transition trap (Q14).</p>
+      </div>
+      <div class="card diagnostic">
+        <div class="card-label">Q11 · BENEFICIAL OWNER</div>
+        <h3>Look through the corporate structure to real humans</h3>
+        <p><strong>Example:</strong> Sunrise Holdings Pty Ltd → Coastal Investments Ltd → Smith Family Trust → trustee → Mr Smith, wife, daughter. Stop at the first layer and you never know who's really in charge. AUSTRAC requires look-through for <strong>ownership or control above 25%</strong>.</p>
+        <p>For a senior banker who mostly handles sole traders, a trust with multiple beneficiaries is the exact rare case where muscle memory fails. Missing a beneficial owner is one of the most common senior-banker CDD errors — <strong>the scenario Pain 2 targets</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-2" style="margin-top: 24px;">
+      <div class="card diagnostic">
+        <div class="card-label">Q12 · ENTITY TYPE</div>
+        <h3>AUSTRAC's five categories ground Decision 1</h3>
+        <p>AUSTRAC's initial CDD guidance groups customers into: <strong>Individual · Sole trader · Body corporate / Partnership / Unincorporated association · Trust · Government body</strong>. Each type fundamentally changes what the banker must verify.</p>
+        <p>The regulator itself models the problem as "entity type drives required steps." A static checklist showing every possible step is overwhelming; one showing only common-case steps silently skips rare cases. <strong>Only a dynamic checklist that reshapes by product × entity × jurisdiction matches the regulator's own model.</strong></p>
+      </div>
+      <div class="card diagnostic">
+        <div class="card-label">Q13 · 2026 REFORM</div>
+        <h3>"From compliance-based to risk-based, outcomes-oriented"</h3>
+        <p>Commenced 31 March 2026 (two weeks before this interview). Old prescriptive tick-the-box regime → banks now assess each customer's risk and decide evidence sufficiency on <strong>"reasonable grounds."</strong> AUSTRAC's own words, verbatim:</p>
+        <blockquote>"from a compliance-based approach to a risk-based, outcomes-oriented approach."</blockquote>
+        <p><strong>Analogy:</strong> the old driving test scored 20 specific mechanical actions. The new test says "drive safely from A to B and document your judgments." Harder, not easier.</p>
+        <p>Senior banker muscle memory was partly invalidated two weeks ago — <strong>the direct source of Pain 2's urgency</strong>.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-2" style="margin-top: 24px;">
+      <div class="card diagnostic">
+        <div class="card-label">Q14 · TRANSITION TRAP</div>
+        <h3>A single deal can span two frameworks</h3>
+        <p><strong>Initial CDD:</strong> existing entities can keep using the pre-reform procedure ("legacy ACIP") until 31 March 2029. Three-year runway.</p>
+        <p><strong>Ongoing CDD:</strong> <em>no transition period.</em> New risk-based framework applies immediately from 31 March 2026.</p>
+        <p>A senior banker thinking "we have until 2029" is partly right and partly wrong — their initial CDD is fine, their ongoing monitoring is not. This is exactly where muscle memory becomes a liability. <strong>Decision 8 (legacy/reform mode indicator) addresses this directly.</strong></p>
+      </div>
+      <div class="card diagnostic">
+        <div class="card-label">Q15 · 2020 WESTPAC CASE</div>
+        <h3>Australia's largest corporate fine — A$1.3 Billion</h3>
+        <p>November 2019 AUSTRAC proceedings, 23M+ admitted contraventions. The core failures:</p>
+        <p>① <strong>19.5M+ IFTIs ($11B+ value) unreported</strong> over ~5 years ② Source-of-funds not passed to downstream banks ③ 76,000+ additional contraventions ④ <strong>Failure to monitor for child-exploitation-linked transactions</strong> (initially 12 customers, then 250 more identified).</p>
+        <p>21 October 2020: Federal Court orders <strong>A$1.3B</strong>. Westpac spent five years rebuilding AML/CTF controls, data, policies, and processes.</p>
+        <p><strong>For my design:</strong> Decision 6 (provenance) and Decision 8 (mode indicator) are not generic UX choices — they respond to a regulatory history Westpac knows intimately and has publicly committed to learning from.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CHAPTER 3 ════ -->
+  <div class="section">
+    <span class="section-label">CHAPTER 3 · THE THREE PAINS IN THE BRIEF</span>
+    <h2 class="section-title">What these pains actually look like in real work</h2>
+    <p class="section-sub">The actual behaviour behind the brief's one-line framings — the patterns, the examples, and the cognitive mechanism that explains each one.</p>
+
+    <div class="card-grid grid-3">
+      <div class="card procedural hero-card">
+        <div class="card-label">Q16 · PAIN 1 — NEW BANKER ERRORS</div>
+        <h3>Not dramatic failures — slow accumulation of small process errors</h3>
+        <p><strong>① Entity misclassification:</strong> a new banker classifies a "family business" as a sole trader when it's actually a discretionary trust with a corporate trustee. This single misclassification invalidates all downstream CDD.</p>
+        <p><strong>② Incomplete data capture:</strong> one required field missed — a beneficial owner, a source-of-funds declaration, a specific document. Deal proceeds → credit review → kicked back → resubmit days later.</p>
+        <p><strong>③ Skipped verification:</strong> banker captures the driver's license but forgets second-form verification for a higher-risk customer. Compliance catches it, customer forms a poor first impression.</p>
+        <p><strong>④ Misjudged risk:</strong> "standard risk" when it should be enhanced due diligence — missing foreign exposure or a PEP in the ownership chain.</p>
+        <p class="source">Sources: McKinsey commercial banking onboarding research · Cognitive Group RBC study (88 error types, ~$30M/year)</p>
+      </div>
+      <div class="card diagnostic hero-card">
+        <div class="card-label">Q17 · PAIN 2 — SENIOR BANKER SKIP</div>
+        <h3>Expertise reversal effect — where experience becomes a weakness</h3>
+        <p><strong>Cognitive psychology:</strong> expert performance relies on schemas (encoded patterns). For common products the schemas are finely tuned; for rare products they're out of date or don't fit.</p>
+        <p><strong>Concrete example:</strong> a senior who has done thousands of term loans opens a bank guarantee deal, thinks "same process," and muscle memory kicks in. But guarantees require different things — <em>beneficiary legal name and address, expiry aligned with underlying contract, term deposit as security, paper issuance from a physical branch</em>. Documentation review bounces it back.</p>
+        <p>Other examples: applying "company" mental model to a trust structure; applying company-style ownership logic to a partnership.</p>
+        <p><strong>Australian context:</strong> 3 of the 4 major Australian banks have stopped offering bank guarantees to retail customers. Westpac's remaining guarantee business is a specialised offering, making rare-product skip especially acute.</p>
+        <p class="source">Academic grounding: expertise reversal effect (well-studied in aviation and medicine)</p>
+      </div>
+      <div class="card spatial hero-card">
+        <div class="card-label">Q18 · PAIN 3 — NO SINGLE VIEW</div>
+        <h3>Not a dashboard — a <em>single guided workflow surface</em></h3>
+        <p><strong>Priya scenario:</strong> partway through a business loan, she needs to check three things right now — PPSR returned? Financials uploaded? Risk rating approved? Without a single view, each answer lives in a different system — 10–30 seconds of cognitive load per switch. McKinsey calls this "swivel chair work." Twenty times per deal × five deals per day = a huge attention tax.</p>
+        <p><strong>The reframe that changed my design:</strong> "no single view" does NOT mean "she needs a unified dashboard." Modern LOS research (nCino · Moody's · Baker Hill · Hawthorn River) converges: <strong>"single view = single guided workflow surface"</strong> — information sequenced around the next action, not displayed in parallel.</p>
+        <p><strong>→ Decision 5:</strong> progress spine with stage-specific checklist. Not a parallel dashboard.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CHAPTER 4 ════ -->
+  <div class="section">
+    <span class="section-label">CHAPTER 4 · DESIGN DECISIONS</span>
+    <h2 class="section-title">Eight decisions — What · Problem · Rationale · One-breath</h2>
+    <p class="section-sub">Each decision targets one or more of the three pains, and each one has its own chain of evidence.</p>
+
+    <div class="card-grid grid-2">
+      <div class="card strategic">
+        <div class="card-label">D1 · TARGETS PAIN 1+2</div>
+        <h3>Dynamic checklist — reshapes by product × entity × jurisdiction</h3>
+        <p><strong>What:</strong> when the banker selects product type, entity type, and jurisdictional factors, the checklist automatically reshapes to show the specific mandatory steps for that combination.</p>
+        <p><strong>Why:</strong> AUSTRAC itself structures its guidance by entity type — the regulator already models it this way. Hawthorn River: <em>"validation rules will vary based on the structure of the loan, borrowers, and collateral."</em> Not a Westpac-specific bet — an industry principle.</p>
+        <p><strong>One-breath:</strong> "Every business loan is a different combination, so the checklist rearranges itself to show you only the steps that matter for the deal you're working on."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D2 · AUSTRAC-ALIGNED</div>
+        <h3>Skip as friction, not a hard block, with logged reason</h3>
+        <p><strong>What:</strong> when a banker tries to pass an incomplete item, a lightweight dialog asks for a one-line reason and logs it for audit. No hard block.</p>
+        <p><strong>Why:</strong> hard blocks create workarounds; silent skips create audit gaps. Friction-with-reason is the middle path. AUSTRAC's post-reform guidance: <em>"Some initial CDD steps can be delayed where essential to avoid interrupting ordinary business."</em> My design operationalises the regulator's own intent.</p>
+        <p><strong>One-breath:</strong> "Instead of blocking the banker, the system asks for a one-line reason and records it — respecting judgment while creating an audit trail compliance and the regulator can both read."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D3 · TARGETS PAIN 1</div>
+        <h3>Inline expandable knowledge, not a separate chatbot</h3>
+        <p><strong>What:</strong> each checklist item has an "i" affordance that expands inline within the row — why this step, common mistakes for this specific combination, policy links. Default collapsed.</p>
+        <p><strong>Why:</strong> a separate chatbot fails new bankers — they must leave the workflow, re-explain context, and formulate a question they don't yet know how to ask. Psychological safety research (Edmondson, via Chartered Banker Institute): juniors delay asking due to reputation risk. Inline expansion removes the social cost.</p>
+        <p><strong>One-breath:</strong> "Each checklist item has a small expandable help button built in, so a banker can see why something's required without leaving the workflow."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D4 · NN/G-GROUNDED</div>
+        <h3>Progressive disclosure (no Learning/Expert mode toggle)</h3>
+        <p><strong>What:</strong> no mode toggle. Every banker sees the same interface. Experience-level adaptation happens via contextual expansion, not self-declaration.</p>
+        <p><strong>Why:</strong> mode toggles produce four bad outcomes — stigma, false confidence, decision paralysis, discoverability problems. And a deeper insight: <strong>expertise is product-specific, not banker-general.</strong> A senior may be expert on term loans and novice on trust lending. A binary toggle can't capture that granularity; contextual expansion can.</p>
+        <p><strong>One-breath:</strong> "Instead of asking the banker to declare 'I'm a beginner,' everyone just expands help on any step they need — seniors stay compact on common products and expand only on the rare ones."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D5 · BIGGEST REFRAME</div>
+        <h3>Progress spine as guided workflow surface, not a dashboard</h3>
+        <p><strong>What:</strong> a horizontal progress spine at the top (Setup → Identification → Credit → Approval → Settlement) with the current stage emphasised, and below it the dynamic checklist for <em>the current stage only</em>.</p>
+        <p><strong>Why:</strong> I initially assumed "single view = unified dashboard." Four major LOS vendors (nCino · Moody's · Baker Hill · Hawthorn River) all converge on <strong>"single view = single guided workflow surface."</strong> Information sequenced around the next action, not displayed in parallel. This was the biggest single direction change in my design.</p>
+        <p><strong>One-breath:</strong> "Instead of a dashboard with everything, a horizontal progress bar with the current stage highlighted, and below it only what you need to do right now."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D6 · "REASONABLE GROUNDS"</div>
+        <h3>Provenance indicators for auto-filled data</h3>
+        <p><strong>What:</strong> every field auto-populated from external sources (Company search · PPSR · customer portal) shows a small indicator — source + timestamp + confidence. Hover reveals details; banker can override, and overrides are logged alongside the original.</p>
+        <p><strong>Why:</strong> the reform requires decisions to be established on "reasonable grounds." <em>"The system told me"</em> is not reasonable grounds. The 2020 case is a reminder of what happens when evidence visibility is weak at scale — five years later you're paying A$1.3B.</p>
+        <p><strong>One-breath:</strong> "When the system auto-fills a field, a tiny indicator shows where it came from and when — so the banker can see whether to trust it or override, and auditors can see exactly how each decision was made."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D7 · BIZEDGE ARCHITECTURE</div>
+        <h3>Three-way task ownership — Banker / System / Customer</h3>
+        <p><strong>What:</strong> every outstanding item shows an owner indicator. The banker can filter to "my actions only."</p>
+        <p><strong>Why:</strong> "outstanding" isn't one bucket — some items wait on the banker, some on the system, some on the customer. Collapsing these makes the banker chase items they can't personally act on. The decisive evidence: RDC's <em>"two-sided digital finance application form"</em> — the customer is not an abstract actor but a real BizEdge surface. Three-way ownership mirrors the actual shape of the platform. <em>This was flagged as my weakest decision in audit feedback; the RDC finding turned it around.</em></p>
+        <p><strong>One-breath:</strong> "Every task shows who owns it, so the banker can filter to their own actions instead of chasing items they're waiting on other people or the system for."</p>
+      </div>
+      <div class="card strategic">
+        <div class="card-label">D8 · TRANSITION TRAP</div>
+        <h3>Legacy ACIP vs reform CDD mode indicator</h3>
+        <p><strong>What:</strong> a persistent indicator top-right — "Initial CDD: Legacy ACIP (transition)" or "Initial CDD: Reform framework." Ongoing CDD is always under the reform and noted separately. Clickable: reveals why this framework applies and when the deal must transition.</p>
+        <p><strong>Why:</strong> the transition trap (Q14) means a single deal can span two frameworks. Seniors may assume one framework applies uniformly because "we have until 2029." Ongoing CDD changed two weeks ago. Making mode explicit prevents silent misapplication. A temporary artifact (only until March 2029), but a critical safeguard during the three-year transition.</p>
+        <p><strong>One-breath:</strong> "A small persistent label shows which AUSTRAC framework applies to this deal's initial CDD — so seniors don't silently apply their old mental models during the three-year window when some deals span both frameworks."</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ CHAPTER 5 ════ -->
+  <div class="section">
+    <span class="section-label">CHAPTER 5 · STRATEGIC STORY</span>
+    <h2 class="section-title">Why now, why this role, and the interview-day framing</h2>
+    <p class="section-sub">Beyond the pains and decisions — the three forces that make this role the highest-leverage design job in Australian business banking right now.</p>
+
+    <div class="card-grid grid-2">
+      <div class="card meta">
+        <div class="card-label">Q19 · BANKER HIRING</div>
+        <h3>350 new business bankers in 2 years → learning-curve bottleneck</h3>
+        <p><strong>Timeline:</strong> November 2024 "200 by end-2027" commitment → September 2025 target expanded to "350 over two years," <strong>with 135 already hired</strong> (Reuters, citing Paul Fowler briefing).</p>
+        <p><strong>Business case for my design:</strong> McKinsey — new commercial bankers take 30–100 days to reach productivity, primarily due to tooling fragmentation. 350 × learning curve = enormous bottleneck. Every day a new banker produces compliant deals faster is real revenue for Westpac. <strong>V1 checklist targets this curve directly</strong> — not by improving training, but by making the tool do more of the "when and why" work training can't solve.</p>
+      </div>
+      <div class="card meta">
+        <div class="card-label">Q20 · UNITE FRAMING</div>
+        <h3>"My design rides the UNITE wave, not fights it"</h3>
+        <p><strong>① Not layered over legacy mess:</strong> BizEdge sits over a platform that's actively getting simpler. Each of the 180+ retired applications removed friction my design would otherwise need to compensate for.</p>
+        <p><strong>② Devil's-advocate defense:</strong> "UX can't fix a bank's culture" → "I'm not claiming UX fixes culture. I'm claiming my design rides the UNITE wave. 180+ · 70%+ · 700+ — UNITE is delivering, and my design operationalises that progress at the banker's workstation." Specific + humble.</p>
+        <p><strong>③ Strategic alignment signal:</strong> UNITE is back-end simplification; my design is the front-end translation of that simplification into daily banker experience.</p>
+      </div>
+      <div class="card meta">
+        <div class="card-label">Q21 · MARTIN ANDERSON — EXECUTIVE BACKING</div>
+        <h3>Convergent evidence for the V2 AI teammate thesis</h3>
+        <p>Dr Martin Anderson (Head of Technology, Business Lending &amp; B&amp;W UNITE; 2025 Team of the Year), AWS Financial Services Symposium Sydney:</p>
+        <blockquote>"People are going to be surprised by how these sequences are going to be reorganised, resequenced, rewired. It's not just going to be a case of adding in AI-specific points; it's actually reimagining the process so that you can actually optimise it to leverage AI … the whole end-to-end sequence of business lending can be optimised."</blockquote>
+        <p>I arrived at V2 (AI ambient teammate) independently — from cognitive psychology and my own experience building a Slack-based AI companion. Then I found Anderson's quote. <strong>Not borrowed authority — convergent evidence.</strong> Protects V2 from the "too speculative for a take-home" pushback.</p>
+      </div>
+      <div class="card meta">
+        <div class="card-label">Q22 · INTERVIEW FRAMING</div>
+        <h3>"Why this role, why now?" — two sentences</h3>
+        <blockquote><strong>S1:</strong> "Westpac is at the convergence of three forces — a competitive push to regain business lending market share, the AUSTRAC reform that commenced two weeks ago and invalidates some senior banker muscle memory, and a massive banker hiring push that creates a learning-curve bottleneck — and all three pressures land at the banker's workstation inside BizEdge."</blockquote>
+        <blockquote><strong>S2:</strong> "That makes the Senior Experience Designer role for BizEdge the single highest-leverage design role in Australian business banking right now, because the interface layer is where those three pressures become actionable — or become failure modes."</blockquote>
+        <p>Memorise the structure, not the exact words: <strong>(1) three specific converging forces, (2) the interface layer is where they become actionable.</strong> No generic phrases (no "exciting opportunity," no "mission-driven," no "passion for fintech").</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ UNCERTAINTY FLAGS ════ -->
+  <div class="section">
+    <span class="section-label">UNCERTAINTY FLAGS · REVIEW BEFORE INTERVIEW</span>
+    <h2 class="section-title">Knowing what I don't know</h2>
+    <p class="section-sub">The senior signal isn't confidence — it's <em>"I know the conditions under which I'm wrong."</em> On interview day, these are the items I answer honestly rather than bluff through.</p>
+
+    <div class="card-grid grid-2">
+      <div class="card dark">
+        <div class="card-label">FLAG 1 · Q3 / BIZEDGE LAUNCH DATE</div>
+        <h3>"April 2023" refers to SIMPLE+, not BizEdge itself</h3>
+        <p>insights.md explicitly flags this. Westpac's January 2023 Rich Data Co partnership announcement mentions AI in business lending but does not name BizEdge.</p>
+        <p><strong>Honest answer:</strong> "Westpac has publicly disclosed SIMPLE+ launching in April 2023, but the exact BizEdge platform launch date isn't in the public materials I found."</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">FLAG 2 · Q7 / UNITE ACRONYM</div>
+        <h3>Program name only — acronym unverified</h3>
+        <p>I couldn't find a public source confirming what UNITE stands for as an acronym.</p>
+        <p><strong>Honest answer:</strong> "I saw UNITE referenced in Westpac's FY25 and 1Q26 disclosures as the multi-year simplification program, but I couldn't find a public source for what the letters stand for."</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">FLAG 3 · Q19 / HIRING SOURCE</div>
+        <h3>Reuters citing Paul Fowler briefings</h3>
+        <p>The 200 → 350 progression (November 2024 → September 2025) and the "135 already hired" figure come from Reuters reporting. Safe to cite, but double-check before the interview if a primary source is requested.</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">FLAG 4 · JPMORGAN COACH AI</div>
+        <h3>No specific percentage</h3>
+        <p>The "10–20% efficiency lift" figure is flagged in insights.md as tertiary trade press. Do not cite a specific percentage in the interview.</p>
+        <p><strong>Safe framing:</strong> "JPMorgan reportedly uses an AI companion tool called Coach for junior bankers" — with no numbers attached.</p>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top: 32px;">
+      <strong>Purpose of this document:</strong> the primer is not an interview deliverable. It exists so I can explain the domain in my own words before Thursday, without having to cram insights.md · decisions.md · brief.md · talking-points.md the night before. Each question stands alone; on the day, I skim only the ones that feel shaky.
+    </div>
+  </div>
+
+  <!-- ════ FOOTER ════ -->
+  <div class="footer">
+    PRIMER · 22 Questions · 8 Decisions · 4 Uncertainty Flags — Interview prep · Personal background document · April 2026
+  </div>
+
+</div>
+
+</body>
+</html>

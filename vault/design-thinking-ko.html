@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>01 — 디자인 띵킹 · Westpac BizEdge 인터뷰</title>
+<style>
+  :root {
+    --yellow: #FFF4B8; --yellow-br: #E8D868; --yellow-label: #8A6F00;
+    --blue: #D8E9F7;   --blue-br: #A8C5E3;   --blue-label: #1A5F99;
+    --pink: #F8DDE7;   --pink-br: #E8B5C8;   --pink-label: #99144F;
+    --green: #DDEDCF;  --green-br: #B8D4A0;  --green-label: #3F7A1E;
+    --lav: #E8DFF5;    --lav-br: #C8B5E0;    --lav-label: #5A2E99;
+    --dark: #2D2D2D;
+    --text: #1A1A1A;
+    --subtle: #666;
+    --muted: #999;
+    --page-bg: #FAFAF7;
+    --card-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif;
+    background: var(--page-bg);
+    margin: 0;
+    padding: 48px 32px 96px;
+    color: var(--text);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .board { max-width: 1640px; margin: 0 auto; }
+
+  /* HEADER */
+  .header {
+    text-align: center;
+    padding: 24px 0 56px;
+    border-bottom: 2px dashed #CCC;
+    margin-bottom: 64px;
+  }
+  .header h1 {
+    font-size: 52px;
+    margin: 0 0 12px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .header .subtitle { font-size: 20px; color: var(--subtle); margin: 0 0 10px; }
+  .header .meta { font-size: 13px; color: var(--muted); letter-spacing: 0.3px; }
+  .header .badges { margin-top: 20px; }
+  .header .badge {
+    display: inline-block;
+    padding: 6px 14px;
+    background: #FFF;
+    border: 1px solid #DDD;
+    border-radius: 20px;
+    font-size: 12px;
+    color: #444;
+    margin: 0 4px;
+  }
+
+  /* SECTION */
+  .section { margin-bottom: 88px; }
+  .section-label {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--subtle);
+    margin-bottom: 14px;
+  }
+  .section-title { font-size: 34px; font-weight: 800; margin: 0 0 10px; letter-spacing: -0.3px; }
+  .section-sub { font-size: 17px; color: var(--subtle); margin: 0 0 36px; max-width: 900px; }
+
+  /* CARD GRID */
+  .card-grid { display: grid; gap: 24px; }
+  .grid-1 { grid-template-columns: 1fr; }
+  .grid-2 { grid-template-columns: 1fr 1fr; }
+  .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .grid-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  /* CARD */
+  .card {
+    padding: 26px 28px;
+    border-radius: 12px;
+    border: 1px solid;
+    box-shadow: var(--card-shadow);
+  }
+  .card .card-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 10px;
+  }
+  .card h3 { font-size: 19px; margin: 0 0 14px; font-weight: 700; line-height: 1.35; }
+  .card p { font-size: 14.5px; margin: 0 0 10px; line-height: 1.6; }
+  .card p:last-child { margin-bottom: 0; }
+  .card .source { font-size: 11.5px; color: #888; font-style: italic; margin-top: 14px; }
+  .card strong { font-weight: 700; }
+
+  /* Color variants */
+  .meta      { background: var(--yellow); border-color: var(--yellow-br); }
+  .meta .card-label { color: var(--yellow-label); }
+  .spatial   { background: var(--blue);   border-color: var(--blue-br); }
+  .spatial .card-label { color: var(--blue-label); }
+  .procedural{ background: var(--pink);   border-color: var(--pink-br); }
+  .procedural .card-label { color: var(--pink-label); }
+  .diagnostic{ background: var(--green);  border-color: var(--green-br); }
+  .diagnostic .card-label { color: var(--green-label); }
+  .strategic { background: var(--lav);    border-color: var(--lav-br); }
+  .strategic .card-label { color: var(--lav-label); }
+  .dark      { background: var(--dark);   border-color: var(--dark); color: #FFF; }
+  .dark .card-label { color: #FFC166; }
+  .dark .source { color: #AAA; }
+
+  .pain-hero { border-width: 2px; padding: 28px 28px 26px; }
+  .reframe-hero { border-width: 2px; }
+  .reframe-hero .card-label { color: #C44444 !important; }
+
+  /* FLOW (approach steps) */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 32px 0 24px;
+    padding: 28px 24px;
+    background: #F5F5F0;
+    border-radius: 12px;
+    border: 1.5px dashed #BBB;
+    flex-wrap: wrap;
+  }
+  .flow-step {
+    padding: 14px 22px;
+    background: #FFF;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 15px;
+    border: 1px solid #E8E8E8;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .flow-arrow { color: #999; font-size: 22px; font-weight: 300; }
+
+  /* CALLOUT */
+  .callout {
+    border-left: 4px solid #666;
+    padding: 16px 22px;
+    background: #F8F8F4;
+    margin: 24px 0 0;
+    font-size: 14px;
+    color: #555;
+    border-radius: 0 8px 8px 0;
+  }
+  .callout strong { color: #333; }
+
+  /* ASSUMPTION STRUCTURE */
+  .assumption h4 {
+    font-size: 12px;
+    margin: 18px 0 6px;
+    color: var(--subtle);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .assumption .wrong {
+    font-size: 13px;
+    color: #555;
+    padding: 10px 14px;
+    background: rgba(255,255,255,0.6);
+    border-left: 3px solid var(--pink-br);
+    border-radius: 0 6px 6px 0;
+    margin-top: 6px;
+  }
+
+  /* GLOSSARY */
+  .glossary {
+    background: #F5F5F5;
+    border: 1px solid #D0D0D0;
+    border-radius: 12px;
+    padding: 36px 40px;
+    margin-top: 80px;
+  }
+  .glossary h2 {
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #333;
+    margin: 0 0 6px;
+  }
+  .glossary .glossary-sub {
+    font-size: 13px;
+    color: var(--subtle);
+    margin: 0 0 24px;
+  }
+  .glossary-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px 40px;
+    font-size: 12.5px;
+    color: #4A4A4A;
+    line-height: 1.55;
+  }
+  .glossary-term strong { color: #1A1A1A; }
+
+  /* FOOTER */
+  .footer {
+    text-align: center;
+    margin-top: 64px;
+    padding-top: 32px;
+    border-top: 1px dashed #CCC;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.3px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1100px) {
+    .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .header h1 { font-size: 36px; }
+    .section-title { font-size: 26px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+    .glossary-grid { grid-template-columns: 1fr; }
+  }
+
+  @media print {
+    body { padding: 24px; background: #FFF; }
+    .card { box-shadow: none; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div class="board">
+
+  <!-- ════ HEADER ════ -->
+  <div class="header">
+    <h1>01 — 디자인 띵킹</h1>
+    <p class="subtitle">Business Lending Originations Platform · 접근 · 활동 · 문제 이해 · 핵심 가정</p>
+    <p class="meta">Senior Experience Designer (Westpac) · 인터뷰 take-home 딜리버러블 #1 · 2026년 4월</p>
+    <div class="badges">
+      <span class="badge">BizEdge</span>
+      <span class="badge">AUSTRAC reform 2026.3</span>
+      <span class="badge">Business &amp; Wealth</span>
+      <span class="badge">UNITE</span>
+    </div>
+  </div>
+
+  <!-- ════ 01 BRIEF ════ -->
+  <div class="section">
+    <span class="section-label">01 · 브리프 (BRIEF)</span>
+    <h2 class="section-title">무엇을 디자인해야 하는가</h2>
+    <p class="section-sub">Westpac의 business lending originations platform — banker가 deal을 생성·제출하는 도구. 본 과제는 그 중 <strong>"single deal을 위한 checklist-style home page"</strong>를 디자인하는 것.</p>
+
+    <div class="card-grid grid-1">
+      <div class="card meta">
+        <div class="card-label">시나리오</div>
+        <h3>Multi-product, multi-compliance business lending platform</h3>
+        <p>Business loan, overdraft, guarantee 등 — 각 product는 서로 다른 data 요구사항과 compliance check를 가짐. Banker는 lead에서 settlement까지 deal을 이끈다. 이 platform은 Westpac BizEdge로 이미 progressive rollout 중이며 45% time-to-decision 단축을 공개 발표한 상태.</p>
+        <p class="source">— 브리프 원문 + Westpac FY25 financial results 공개 자료</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-3" style="margin-top: 24px;">
+      <div class="card procedural pain-hero">
+        <div class="card-label">PAIN 1 · 신입 banker</div>
+        <h3>오류, 그리고 trial-and-error 학습</h3>
+        <p><em>"New bankers are prone to errors in deal setup and tend to learn through trial and error."</em></p>
+        <p>Westpac이 2년에 걸쳐 350명의 신입 business banker를 채용 중 — 135명 이미 채용. 그들이 얼마나 빨리 생산적이 되느냐는 단순한 training 문제가 아니라 경쟁력 병목.</p>
+      </div>
+      <div class="card diagnostic pain-hero">
+        <div class="card-label">PAIN 2 · Senior banker</div>
+        <h3>Rare product의 step skip → 재제출</h3>
+        <p><em>"Experienced bankers often have to resubmit deals because they skip key steps for less common product types."</em></p>
+        <p>2주 전 시행된 AUSTRAC 2026년 3월 reform으로 senior의 muscle memory 일부가 무효화되어 긴급성이 증폭된 상태.</p>
+      </div>
+      <div class="card spatial pain-hero">
+        <div class="card-label">PAIN 3 · 조직 전반</div>
+        <h3>Deal lifecycle에 대한 single view 부재</h3>
+        <p><em>"There is currently no single view that shows a banker where they are in the deal lifecycle or what's outstanding."</em></p>
+        <p>표면상 dashboard 문제처럼 들리지만, 리서치가 이 가정을 완전히 뒤집었다 (Section 04 참조).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 02 APPROACH ════ -->
+  <div class="section">
+    <span class="section-label">02 · 접근 방식 (MY APPROACH)</span>
+    <h2 class="section-title">발견 → 이해 → 가정 → 디자인</h2>
+    <p class="section-sub">이 순서가 중요하다. Junior-level take-home은 곧바로 디자인으로 뛴다. Senior-level 접근은 <strong>"나는 무엇을 모르는가, 무엇을 가정하고 있는가"</strong>를 먼저 드러낸다.</p>
+
+    <div class="flow">
+      <div class="flow-step">1 · 발견<br><span style="font-weight:400;font-size:12px;color:#888">Discovery</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">2 · 재정의<br><span style="font-weight:400;font-size:12px;color:#888">Reframe</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">3 · 가정 명시<br><span style="font-weight:400;font-size:12px;color:#888">Assumptions</span></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step">4 · 디자인<br><span style="font-weight:400;font-size:12px;color:#888">Design</span></div>
+    </div>
+
+    <div class="callout">
+      <strong>Take-home 현실:</strong> 본 과제에서는 2-3시간 내에 4단계를 압축 수행해야 했다. 실제 3개월 engagement라면 아래 Section 03의 3가지 discovery 활동을 병렬로 수행하겠지만, 현재는 <strong>(1) Westpac 공개 자료</strong>(FY25, 1Q26, B&amp;W Update), <strong>(2) AUSTRAC reform 가이던스</strong>, <strong>(3) 업계 LOS 리서치</strong>(nCino, Moody's Lending Suite, Baker Hill, Hawthorn River)로 이를 대체했다. Internal data 접근이 필요한 질문들은 "입사 후 month 1에 검증하겠다"는 open question으로 명시적으로 기록.
+    </div>
+  </div>
+
+  <!-- ════ 03 DISCOVERY ACTIVITIES ════ -->
+  <div class="section">
+    <span class="section-label">03 · Discovery 활동</span>
+    <h2 class="section-title">실제 engagement라면 병렬로 진행할 3가지</h2>
+    <p class="section-sub">Banker의 기억이 아니라 <strong>실제 data와 관찰</strong>에 기반하는 것이 핵심. 각 활동이 특정 pain을 겨냥한다.</p>
+
+    <div class="card-grid grid-3">
+      <div class="card spatial">
+        <div class="card-label">활동 1 · DATA DEEP-DIVE</div>
+        <h3>Deal Autopsies</h3>
+        <p>BizEdge 내부에서 최근 resubmission 20-30건을 추출 → <strong>product type × banker tenure</strong>별로 failure mode를 pattern matching. Banker interview는 유용하지만, banker는 자신의 오류를 잘 기억하지 못한다. Resubmission data가 대신 기억한다.</p>
+        <p><strong>겨냥:</strong> Pain 1 (신입 오류), Pain 2 (senior skip)</p>
+        <p class="source">Why data first: banker self-report ≠ actual error distribution</p>
+      </div>
+      <div class="card procedural">
+        <div class="card-label">활동 2 · OBSERVATION</div>
+        <h3>Paired Shadowing</h3>
+        <p>신입 banker 3명 + senior banker 3명을 각 deal 한 건씩 쉐도잉. <strong>"무엇이 어려웠나요?"</strong>를 묻지 않고 <strong>실제 decision moment</strong>와 <strong>context switch</strong>를 관찰. 어디서 망설였는가, 어디서 다른 시스템으로 swivel chair 했는가, 어디서 동료에게 물었는가.</p>
+        <p><strong>겨냥:</strong> Pain 1 (learning curve), Pain 3 (orientation 부재)</p>
+        <p class="source">Why observation: bankers don't know what they don't know</p>
+      </div>
+      <div class="card diagnostic">
+        <div class="card-label">활동 3 · CO-DESIGN</div>
+        <h3>Product × Entity × Jurisdiction Matrix</h3>
+        <p>Credit risk &amp; compliance team과 공동 설계한 규칙 매트릭스. Rare-case pain은 product 자체가 아니라 <strong>product + entity type + 지역/사법 요소</strong>의 <strong>조합</strong>에서 발생. AUSTRAC이 관심을 갖는 variation의 축은 정확히 이것.</p>
+        <p><strong>겨냥:</strong> Pain 2 (rare product skip), 전반적 규제 준수</p>
+        <p class="source">Why co-design: 나 혼자 규제 rule을 해석할 수 없음</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 04 PROBLEM UNDERSTANDING ════ -->
+  <div class="section">
+    <span class="section-label">04 · 문제 이해 (PROBLEM UNDERSTANDING)</span>
+    <h2 class="section-title">3개의 pain은 하나의 root cause를 공유한다</h2>
+    <p class="section-sub">이것이 전체 design의 thesis. 세 pain은 표면상 달라 보이지만 같은 뿌리에 닿는다: 적시에 banker에게 적절한 컨텍스트가 주어지지 않는다.</p>
+
+    <div class="card-grid grid-1" style="margin-bottom: 32px;">
+      <div class="card meta">
+        <div class="card-label">THESIS</div>
+        <h3>Context Scarcity — 컨텍스트가 3가지 차원에서 결핍되어 있다</h3>
+        <p>표면상 세 pain은 서로 다르다 — 신입의 오류, senior의 skip, view 부재. 하지만 각각을 파고 들어가면 같은 뿌리에 닿는다. 컨텍스트는 <strong>공간적</strong>(내가 lifecycle 어디에 있는가), <strong>절차적</strong>(다음에 무엇을 해야 하는가), <strong>진단적</strong>(이 deal이 왜 다른가) 세 축에서 결핍되어 있다. 세 pain은 각각 하나의 차원에 매핑된다. 이 통찰이 전체 design 방향을 결정했다.</p>
+      </div>
+    </div>
+
+    <div class="card-grid grid-3">
+      <div class="card spatial reframe-hero">
+        <div class="card-label">공간적 컨텍스트 · PAIN 3 REFRAME</div>
+        <h3>"나는 지금 어디에 있는가?"</h3>
+        <p><strong>재정의:</strong> Dashboard 격차가 아니라 <strong>guided workflow</strong> 격차. 현대 LOS(nCino의 'single sheet method', Moody's Lending Suite, Baker Hill)에서 'single view'는 '모든 정보를 동시에'가 아니라 <strong>'다음 action을 중심으로 순차화된 한 작업 표면'</strong>을 의미한다. 이것이 내 design 방향을 가장 크게 바꾼 reframe이었다.</p>
+        <p><strong>→ 디자인 D5:</strong> Progress spine — lifecycle 단계 가시화 + 현재 stage 강조. Dashboard 아님.</p>
+      </div>
+      <div class="card procedural reframe-hero">
+        <div class="card-label">절차적 컨텍스트 · PAIN 1 REFRAME</div>
+        <h3>"다음에 무엇을 해야 하는가?"</h3>
+        <p><strong>재정의:</strong> 지식 격차가 아니라 <strong>"언제와 왜"</strong> 격차. 신입 banker는 task가 존재한다는 것은 training에서 배웠다. 모르는 것은 <em>이 특정 deal에서</em> task의 순서와 각 task의 이유. Training은 "무엇"을 가르치고, 시스템은 "언제"와 "왜"를 알려줘야 한다.</p>
+        <p><strong>→ 디자인 D1 + D3 + D7:</strong> Dynamic checklist (product × entity × jurisdiction으로 reshape) + inline expandable knowledge + three-way task ownership.</p>
+      </div>
+      <div class="card diagnostic reframe-hero">
+        <div class="card-label">진단적 컨텍스트 · PAIN 2 REFRAME</div>
+        <h3>"이 deal은 왜 다른가?"</h3>
+        <p><strong>재정의:</strong> 지식 격차가 아니라 <strong>variation visibility</strong> 격차. Senior banker의 muscle memory는 common product에 최적화되어 있고 rare variation은 default 패턴을 시각적으로 돌파하지 못한다. 학술 근거: <strong>expertise reversal effect</strong>(항공·의학에서 잘 연구된 현상).</p>
+        <p><strong>→ 디자인 D2 + D4 + D8:</strong> Skip-as-friction + progressive disclosure + legacy/reform mode indicator (AUSTRAC 2026년 3월 개혁 맥락).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 05 KEY ASSUMPTIONS ════ -->
+  <div class="section">
+    <span class="section-label">05 · 핵심 가정 (KEY ASSUMPTIONS)</span>
+    <h2 class="section-title">내가 믿고 진행하는 3가지 — 그리고 틀릴 수 있는 조건</h2>
+    <p class="section-sub">Senior design work의 signal은 <strong>"I'm confident"</strong>가 아니라 <strong>"I know the conditions under which I'm wrong."</strong> 각 가정 아래에 falsification 조건을 명시한다.</p>
+
+    <div class="card-grid grid-3">
+      <div class="card strategic assumption">
+        <div class="card-label">가정 1 · THESIS 기반</div>
+        <h3>BizEdge의 남은 병목은 속도가 아니라 <em>판단 지원</em>이다</h3>
+        <p>Westpac은 BizEdge로 이미 <strong>45% TTD 단축</strong>, <strong>75%+ 자동 decisioning</strong>, simple deal은 <strong>4시간 미만 settlement</strong>를 달성했다. 속도는 승리했다. 다음 frontier는 오류 감소, judgment 지원, rework 축소다.</p>
+        <h4>틀릴 수 있는 조건</h4>
+        <div class="wrong">만약 Westpac 내부 메트릭이 여전히 속도를 banker top complaint로 보여준다면 나의 thesis는 재설계가 필요하다. 입사 후 month 1에 검증할 첫 번째 질문.</div>
+      </div>
+      <div class="card strategic assumption">
+        <div class="card-label">가정 2 · 구조적</div>
+        <h3>Rare-case 오류는 <em>product × entity</em> 조합에서 집중된다</h3>
+        <p>AUSTRAC 가이드 자체가 entity type별로 다른 초기 CDD 경로를 제공한다. 규제 당국의 구조가 product × entity를 결정 축으로 본다. Hawthorn River 같은 LOS vendor도 "validation rules must vary based on loan structure, borrowers, and collateral"이라고 명시한다.</p>
+        <h4>틀릴 수 있는 조건</h4>
+        <div class="wrong">만약 실제 패턴이 customer risk rating이나 geographic exposure에 따라 더 강하게 나뉜다면, dynamic checklist가 reshape할 축을 잘못 잡은 것. BizEdge 내부 resubmission data로 검증 필요.</div>
+      </div>
+      <div class="card strategic assumption">
+        <div class="card-label">가정 3 · 아키텍처</div>
+        <h3>Banker의 checklist가 primary UX, AI는 보조 layer</h3>
+        <p>규제된 workflow에서 banker는 시간 제약 하에 구체적 task를 완료해야 한다. 구조화된 task guidance가 대화형 AI보다 이 context에 더 적합하다 — 이것이 V1의 전제. 대화형 AI는 banker가 "무엇을 물어야 할지 이미 아는" 경우에 유용하지만, 신입 banker의 문제는 정확히 그 반대다.</p>
+        <h4>틀릴 수 있는 조건</h4>
+        <div class="wrong">만약 banker가 실제로 대화형 AI를 통한 judgment support를 더 선호한다면, V2의 ambient teammate가 V1 checklist보다 먼저 와야 한다. 내가 V2를 제시하는 이유는 정확히 이 반대 방향을 의식적으로 탐색하기 위함.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ 06 OUT OF SCOPE ════ -->
+  <div class="section">
+    <span class="section-label">06 · 범위 밖 (OUT OF SCOPE)</span>
+    <h2 class="section-title">명시적으로 다루지 않는 것</h2>
+    <p class="section-sub">Scoping은 senior signal. 무엇을 다루지 <em>않는지</em> 명확히 하는 것이 무엇을 다루는지만큼 중요하다.</p>
+
+    <div class="card-grid grid-2">
+      <div class="card dark">
+        <div class="card-label">NOT IN SCOPE · 1</div>
+        <h3>Customer-facing 경험</h3>
+        <p>이 deal home page는 banker 전용이다. 고객 신청서, 문서 업로드, status portal은 병렬 디자인 문제로 이 과제가 다루지 않는다. 단, BizEdge의 two-sided architecture(Rich Data Co의 "two-sided digital finance application form")는 D7 three-way task ownership의 근거로 활용.</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">NOT IN SCOPE · 2</div>
+        <h3>Credit decisioning UX</h3>
+        <p>Credit engine은 deal setup의 downstream. 나의 디자인은 그것에 더 정돈된 input을 제공하지만, credit decision이 만들어지는 방식 자체를 재설계하지 않는다. 75%+ 자동 decisioning은 이미 작동하는 상태로 가정.</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">NOT IN SCOPE · 3</div>
+        <h3>Training 프로그램 디자인</h3>
+        <p>McKinsey는 tooling 분산이 new banker learning curve(30-100일)의 주된 원인이라고 본다. 나의 디자인은 tooling 절반을 다룬다. Training 커리큘럼은 병렬 workstream으로 남긴다.</p>
+      </div>
+      <div class="card dark">
+        <div class="card-label">NOT IN SCOPE · 4</div>
+        <h3>Incentive 구조 &amp; Policy 단순화</h3>
+        <p>Westpac KPI가 throughput을 completeness보다 보상한다면 나의 friction-based skip이 measurement data를 생성하지만 그 근본 incentive를 고치지는 못한다. Policy fragmentation도 UNITE의 범위이지 이 design의 범위가 아니다.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════ GLOSSARY ════ -->
+  <div class="glossary">
+    <h2>GLOSSARY · 이 페이지에 쓰인 용어</h2>
+    <p class="glossary-sub">각 정의는 일반 사전적 의미가 아니라 <strong>이 브리프와 design의 맥락</strong>에서 그 용어가 왜 중요한지를 담는다.</p>
+    <div class="glossary-grid">
+      <div class="glossary-term"><strong>BizEdge</strong> — Westpac의 business lending origination platform. 45% TTD 단축, 75%+ 자동 decisioning, $43bn CLO 제공. 이 design의 target platform이며, 이미 progressive rollout 중.</div>
+      <div class="glossary-term"><strong>TTD</strong> — Time to Decision. 신청에서 credit 결정까지의 시간. Westpac이 BizEdge로 45% 단축했다고 FY25 ASX release에서 공식 발표.</div>
+      <div class="glossary-term"><strong>LOS</strong> — Loan Origination System. Banker가 loan을 생성·심사·승인·북킹하는 software 카테고리. nCino가 시장 선도자이고, BizEdge는 Westpac의 in-house 버전.</div>
+      <div class="glossary-term"><strong>AUSTRAC</strong> — 호주의 AML/CTF 규제 당국. 2020년 Westpac에 $1.3B 벌금(호주 역사상 최대 기업 벌금)을 부과했고, 2026년 3월 31일 reform으로 compliance-based에서 risk-based 접근으로 전환 — senior skip 긴급성의 직접적 원천.</div>
+      <div class="glossary-term"><strong>AML/CTF</strong> — Anti-Money Laundering / Counter-Terrorism Financing. 은행이 지켜야 하는 자금세탁방지·테러자금조달방지 프레임워크. AUSTRAC이 집행.</div>
+      <div class="glossary-term"><strong>CDD</strong> — Customer Due Diligence. 은행이 고객 신원을 확인하고 자금세탁 위험을 평가하는 절차. Entity type별로 요구사항이 달라져서 D1 Dynamic checklist의 핵심 근거. 2026년 reform 이후 initial CDD와 ongoing CDD로 분리.</div>
+      <div class="glossary-term"><strong>ACIP (legacy)</strong> — Applicable Customer Identification Procedure. Pre-reform AUSTRAC의 initial CDD 메커니즘. 2029년 3월 31일까지 legacy ACIP 사용 가능 — D8 mode indicator가 다루는 "transition trap"의 원인.</div>
+      <div class="glossary-term"><strong>Expertise reversal effect</strong> — 인지심리학 현상: 초보자에게 도움이 되는 instructional design이 전문가에게는 비효과적이거나 해로워짐. 항공·의학에서 잘 연구됨. Pain 2 (senior skip)의 학술적 근거.</div>
+      <div class="glossary-term"><strong>Progressive disclosure</strong> — NN/g(Nielsen Norman Group)가 권장하는 UX 패턴: 세부사항을 기본이 아니라 사용자 요청에 따라 노출. Banner blindness와 stigma 회피. D4가 Learning/Expert mode toggle을 거부하는 동인.</div>
+      <div class="glossary-term"><strong>Dynamic checklist</strong> — Product × entity × jurisdiction 조합에 따라 reshape되는 체크리스트. 정적 체크리스트는 senior의 muscle memory skip을 해결하지 못함. Hawthorn River가 industry principle로 명시.</div>
+      <div class="glossary-term"><strong>Context scarcity</strong> — 이 design 전체의 thesis. 3가지 pain이 공유하는 single root cause. 공간적·절차적·진단적 세 차원에서 컨텍스트 결핍.</div>
+      <div class="glossary-term"><strong>UNITE</strong> — Westpac의 다년도 단순화 프로그램(2024~). 2026년 3월까지 180+ 애플리케이션 폐기, 70%+ 상품 단순화, 700+ 프로세스 단순화. BizEdge는 UNITE 내부에 있으며, 내 design은 이 wave를 타고 간다.</div>
+      <div class="glossary-term"><strong>B&amp;W (Business &amp; Wealth)</strong> — Westpac의 Business &amp; Wealth division. H1 FY25에서 A$1,096M 달성(~33% 그룹 이익). 이 역할이 속한 전략적 엔진. Paul Fowler가 Chief Executive.</div>
+      <div class="glossary-term"><strong>Swivel chair work</strong> — McKinsey 용어. Banker가 여러 분리된 시스템 사이를 이동하며 같은 정보를 다시 입력해야 하는 상황. New banker 오류의 주된 원인이고, D7 three-way task ownership이 해결하려는 정보 단절.</div>
+      <div class="glossary-term"><strong>Rich Data Co (RDC)</strong> — AI decisioning 플랫폼. Westpac과 nCino가 2023년 11월 RDC Series B를 공동 주도. RDC의 "two-sided digital finance application form"이 BizEdge의 two-sided architecture를 정의하며, D7 three-way task ownership의 ground가 된다.</div>
+      <div class="glossary-term"><strong>nCino / Moody's / Baker Hill / Hawthorn River</strong> — 업계 선도 LOS vendor들. 4개 모두 "single view = guided workflow surface" 패턴으로 수렴. 나의 D5 progress spine이 이 수렴된 industry 패턴을 BizEdge에 operationalize한 것.</div>
+    </div>
+  </div>
+
+  <!-- ════ FOOTER ════ -->
+  <div class="footer">
+    Insights.md · Decisions.md · Talking-points.md — 이 페이지는 세 소스의 synthesis · 내용 fabrication 없음
+  </div>
+
+</div>
+
+</body>
+</html>
