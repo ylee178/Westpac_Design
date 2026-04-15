@@ -51,17 +51,16 @@ export function DevPanel() {
         <PopoverTrigger asChild>
           <button
             aria-label="Open dev panel"
-            className="group flex items-center justify-center w-12 h-12 text-white shadow-lg transition-all hover:scale-105 active:scale-95"
+            className="group flex items-center justify-center w-11 h-11 text-white transition-all hover:scale-105 active:scale-95"
             style={{
-              background: "var(--westpac-brand-maroon)",
+              background: "#3f3f46",
               borderRadius: "50%",
-              border: "2px solid var(--westpac-brand-red)",
-              boxShadow:
-                "0 8px 24px rgba(98,17,50,0.35), 0 2px 6px rgba(0,0,0,0.15)",
+              border: "none",
+              boxShadow: "0 4px 14px rgba(0,0,0,0.25)",
             }}
           >
             <Settings
-              size={20}
+              size={18}
               strokeWidth={2.2}
               className="transition-transform group-hover:rotate-45"
             />

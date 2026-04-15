@@ -28,7 +28,8 @@ import { DealHeader } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
 import { ProductEntitySwitcher } from "@/components/product-entity-switcher";
 import { OwnerFilter } from "@/components/owner-filter";
-import { ChecklistItemRow } from "@/components/checklist-item";
+import { ChecklistListRow } from "@/components/checklist-list-row";
+import { ChecklistDetail } from "@/components/checklist-detail";
 import { SkipDialog } from "@/components/skip-dialog";
 import { DevPanel } from "@/components/dev-panel";
 import { ArrowRight, ArrowLeft, Info, Sparkles } from "lucide-react";
@@ -39,6 +40,7 @@ export default function Page() {
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const { version } = useDevMode();
   const isV2 = version === "v2";
 
@@ -112,6 +114,13 @@ export default function Page() {
     return { ...breakdown, total };
   }, [breakdown, isV2]);
   const effectiveBreakdown = isV2 ? v2Breakdown : breakdown;
+
+  // Master-detail: selected item derived from id + visible list, auto-selecting
+  // the first visible item whenever selection falls out of the current view.
+  const selectedItem = useMemo(() => {
+    const byId = visibleItems.find((i) => i.id === selectedItemId);
+    return byId ?? visibleItems[0] ?? null;
+  }, [visibleItems, selectedItemId]);
 
   // Phase navigation — next/prev phase
   const currentPhaseIdx = PHASES.findIndex((p) => p.id === deal.phase);
@@ -250,39 +259,54 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Table-like list */}
-          {visibleItems.length > 0 ? (
-            <div
-              style={{
-                background: "var(--theme-card-bg)",
-                border: "1px solid var(--theme-border)",
-                borderRadius: "var(--theme-radius)",
-                overflow: "hidden",
-              }}
-            >
-              <ul>
-                {visibleItems.map((item) => (
-                  <ChecklistItemRow
-                    key={item.id}
-                    item={item}
-                    onRequestSkip={handleRequestSkip}
-                  />
-                ))}
-              </ul>
+          {/* Master-detail split — list left, detail right */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_440px] gap-5">
+            {/* Master list */}
+            <div className="min-w-0">
+              {visibleItems.length > 0 ? (
+                <div
+                  style={{
+                    background: "var(--theme-card-bg)",
+                    border: "1px solid var(--theme-border)",
+                    borderRadius: "var(--theme-radius)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <ul>
+                    {visibleItems.map((item) => (
+                      <ChecklistListRow
+                        key={item.id}
+                        item={item}
+                        selected={selectedItem?.id === item.id}
+                        onSelect={(i) => setSelectedItemId(i.id)}
+                      />
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div
+                  className="py-12 text-center text-[12px]"
+                  style={{
+                    background: "var(--theme-card-bg)",
+                    border: "1px solid var(--theme-border)",
+                    color: "var(--theme-text-tertiary)",
+                    borderRadius: "var(--theme-radius)",
+                  }}
+                >
+                  No items match the current filter. Change Owner filter back
+                  to "All".
+                </div>
+              )}
             </div>
-          ) : (
-            <div
-              className="py-12 text-center text-[12px]"
-              style={{
-                background: "var(--theme-card-bg)",
-                border: "1px solid var(--theme-border)",
-                color: "var(--theme-text-tertiary)",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              No items match the current filter. Change Owner filter back to "All".
+
+            {/* Detail panel — sticky on lg+ */}
+            <div className="min-w-0">
+              <ChecklistDetail
+                item={selectedItem}
+                onRequestSkip={handleRequestSkip}
+              />
             </div>
-          )}
+          </div>
 
           {/* Phase navigation — prev / next primary button */}
           <div className="mt-5 flex items-center justify-between gap-3 flex-wrap">
@@ -345,7 +369,7 @@ export default function Page() {
               size={13}
               style={{ color: "var(--theme-primary)" }}
             />
-            <div
+            <p
               className="text-[11px] leading-[1.55]"
               style={{ color: "var(--theme-text-secondary)" }}
             >
@@ -356,13 +380,14 @@ export default function Page() {
                 Demo flow:
               </span>{" "}
               Switch product (Bank Guarantee → Term Loan) to see D1 reshape.
-              Click any row to expand (D4). Open knowledge cards (D3), hover
-              provenance (D6), filter by owner (D7), try skipping a
-              non-mandatory item (D2), and try skipping "Source of funds
-              declaration" to see the legally-mandatory lock. Hover the Deal
-              Confidence score (D9) for the breakdown. Hover the CDD mode
-              label (D8) for AUSTRAC reform context.
-            </div>
+              Click any row to select (D4 detail panel). Read the knowledge
+              card (D3) in the right panel, hover provenance (D6), filter by
+              owner (D7), try skipping a non-mandatory item (D2), and try
+              skipping "Source of funds declaration" to see the legally-
+              mandatory lock. Hover the Deal Confidence score (D9) for the
+              breakdown. Hover the CDD mode label (D8) for AUSTRAC reform
+              context.
+            </p>
           </aside>
         </div>
       </main>

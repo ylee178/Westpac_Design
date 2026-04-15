@@ -281,77 +281,67 @@
 }
 
 /* ============================================================
-   Grayscale = lofi skeleton mode.
-   Replaces text with gray bars, dims icons, removes all colour
-   so only the structural skeleton remains — "I know what's where,
-   I don't need to read the content right now."
+   Grayscale = lo-fi skeleton mode.
+   Principle: KEEP structural signals (headings, section labels,
+   tab names, key data points, buttons) readable so the user can
+   see "what's where". SKELETON only the detail-level flowing text
+   (<p> tags + elements explicitly marked `.skeleton-detail`).
    ============================================================ */
 [data-grayscale="on"] body {
   filter: grayscale(1);
   transition: filter 0.2s ease;
 }
 
-/* Turn all leaf-level text containers into gray bars.
-   The text itself goes transparent; the element background paints
-   a muted grey that sits inside the element's bounds. */
-[data-grayscale="on"] :where(
-  h1, h2, h3, h4, h5, h6,
-  p, a, label, time, dt, dd, li,
-  td, th, caption, figcaption,
-  span:not(.keep-content),
-  button:not(.keep-content)
-) {
+/* Body paragraphs and opt-in details turn into gray bars */
+[data-grayscale="on"] p,
+[data-grayscale="on"] .skeleton-detail,
+[data-grayscale="on"] .skeleton-detail * {
   color: transparent !important;
   background-color: #d6d3d1 !important;
   border-radius: 3px !important;
   text-shadow: none !important;
-}
-
-/* Input/select fields also become flat gray blocks */
-[data-grayscale="on"] :where(input, select, textarea) {
-  color: transparent !important;
-  background-color: #e7e5e4 !important;
-  border-color: #d4d4d4 !important;
   box-shadow: none !important;
 }
 
-/* Dim all icons (SVGs) so only structural cues remain */
+/* Dim icons — structural cues stay, decorative noise fades */
 [data-grayscale="on"] svg:not([data-keep="true"]) {
-  opacity: 0.22;
-  color: #71717a !important;
+  opacity: 0.25;
 }
 
-/* Dim images too */
+/* Dim images */
 [data-grayscale="on"] img {
-  opacity: 0.5;
+  opacity: 0.45;
   filter: grayscale(1);
 }
 
-/* Keep the Westpac logo visible as an anchor point — just desaturated */
+/* Keep Westpac logo as an anchor — desaturated but legible */
 [data-grayscale="on"] img[alt="Westpac"] {
   opacity: 0.65;
   filter: grayscale(1) brightness(0.9);
 }
 
-/* Dev panel popover stays readable — opt out of skeleton */
-[data-grayscale="on"] [data-slot="popover-content"],
-[data-grayscale="on"] [data-slot="popover-content"] *,
-[data-grayscale="on"] [data-slot="tooltip-content"],
-[data-grayscale="on"] [data-slot="tooltip-content"] * {
+/* Dev panel popover + tooltips opt OUT of skeleton entirely */
+[data-grayscale="on"] [data-slot="popover-content"] p,
+[data-grayscale="on"] [data-slot="popover-content"] .skeleton-detail,
+[data-grayscale="on"] [data-slot="popover-content"] .skeleton-detail *,
+[data-grayscale="on"] [data-slot="tooltip-content"] p,
+[data-grayscale="on"] [data-slot="tooltip-content"] .skeleton-detail,
+[data-grayscale="on"] [data-slot="tooltip-content"] .skeleton-detail * {
   color: initial !important;
-  background-color: initial !important;
+  background-color: transparent !important;
 }
 [data-grayscale="on"] [data-slot="popover-content"] svg,
 [data-grayscale="on"] [data-slot="tooltip-content"] svg {
   opacity: 1 !important;
-  color: initial !important;
 }
 
-/* Dev panel trigger button must stay visible */
-[data-grayscale="on"] [aria-label="Open dev panel"],
+/* Dev trigger button stays visible (dark gray) */
+[data-grayscale="on"] [aria-label="Open dev panel"] {
+  background-color: #3f3f46 !important;
+  opacity: 1 !important;
+}
 [data-grayscale="on"] [aria-label="Open dev panel"] svg {
   color: #ffffff !important;
-  background-color: #7a1e3a !important;
   opacity: 1 !important;
 }
 
