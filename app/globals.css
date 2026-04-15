@@ -478,6 +478,44 @@
   animation: shimmer-once 850ms linear 1 forwards;
 }
 
+/* Message arrival shimmer — applied to a message bubble when it
+   first mounts. A maroon light beam sweeps across the bubble
+   background (NOT the text) and the bubble fades in. Fires once
+   because this is a "just-arrived" signal, not ambient motion. */
+@keyframes shimmer-message-in {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+    background-position: 180% 0;
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    background-position: -80% 0;
+  }
+}
+.shimmer-message-in {
+  position: relative;
+  animation: shimmer-message-in 1100ms ease-out 1 forwards;
+  background-image: linear-gradient(
+    100deg,
+    transparent 0%,
+    transparent 42%,
+    rgba(218, 23, 16, 0.10) 48%,
+    rgba(218, 23, 16, 0.22) 50%,
+    rgba(218, 23, 16, 0.10) 52%,
+    transparent 58%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  background-repeat: no-repeat;
+  background-position: 180% 0;
+}
+
 /* ============================================================
    Interactive hover states — shared affordance language.
    Use these classes on <button> / card elements so every

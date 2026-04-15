@@ -3,37 +3,50 @@
 /**
  * V2 — Pac AI teammate side panel.
  *
- * Three fixed zones:
  *   1. Header     — Pac avatar + status
- *   2. Briefing   — product+stage-aware context card (reactive, NOT chat)
- *   3. Chat area  — empty until the banker types or taps a suggestion
- *   4. Pills      — common questions that update with product / stage
- *   5. Input      — free text
- *
- * Pac no longer auto-announces every click. The briefing + pill
- * questions refresh silently when the product or the flow step
- * changes. A chat message is only appended when the banker actually
- * asks something (free text) or taps a suggested question pill.
+ *   2. Chat area  — empty-state splash, or message thread.
+ *                   Messages are of two kinds:
+ *                     * reply    — response to a banker question
+ *                     * guidance — proactive Pac-initiated nudge,
+ *                                  surfaced automatically when a
+ *                                  risk / policy / context signal
+ *                                  fires against the current deal.
+ *                   Guidance messages render with a category label
+ *                   and optional help link so they're visually
+ *                   distinct from chat replies.
+ *   3. Shelf      — common-question pills, swipable
+ *   4. Input      — free text
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChecklistItem as CI, Deal } from "@/lib/types";
 import { PacAvatar } from "@/components/pac-avatar";
-import { ChevronDown, Send } from "lucide-react";
-import { useFlowMode } from "@/lib/flow-mode-context";
 import {
-  getBriefing,
-  getSuggestions,
-  type Suggestion,
-} from "@/data/pac-briefings";
+  AlertTriangle,
+  ArrowUpRight,
+  BookOpen,
+  Info,
+  Send,
+  ShieldAlert,
+  Sparkles,
+} from "lucide-react";
+import { useFlowMode } from "@/lib/flow-mode-context";
+import { getSuggestions, type Suggestion } from "@/data/pac-briefings";
+import { productLabel } from "@/data/product-options";
 
 // ——— Message types ———
 type Sender = "pac" | "banker";
+type MessageKind = "reply" | "guidance";
+type GuidanceCategory = "risk" | "policy" | "context" | "alert";
 
 interface TimelineMessage {
   id: string;
   sender: Sender;
+  kind: MessageKind;
+  category?: GuidanceCategory;
   /** HTML-ish content — string-based for speed */
   content: string;
+  /** Optional companion link rendered as a chip below the body */
+  link?: { label: string; href: string };
   /** Milliseconds at which the message was created */
   createdAt: number;
 }
@@ -56,6 +69,92 @@ const STATUS_VERBS = [
 
 const PAC_HUMAN_GAP_MS = 30_000;
 
+// Visual + label metadata per guidance category.
+const CATEGORY_META: Record<
+  GuidanceCategory,
+  {
+    label: string;
+    icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+    accent: string;
+  }
+> = {
+  risk: { label: "Risk flag", icon: ShieldAlert, accent: "#c62828" },
+  policy: { label: "Policy note", icon: BookOpen, accent: "#7a1e3a" },
+  context: { label: "Context", icon: Info, accent: "#1f6feb" },
+  alert: { label: "Heads-up", icon: AlertTriangle, accent: "#b45309" },
+};
+
+// ——— Proactive guidance rules ———
+// Each rule is evaluated against the current draft. When a rule's
+// predicate becomes true and it hasn't been fired yet in this
+// session, Pac automatically surfaces its message into the chat.
+interface GuidanceRule {
+  id: string;
+  category: GuidanceCategory;
+  match: (d: {
+    product?: string;
+    entity?: string;
+    amountBucket?: string;
+    purpose?: string;
+  }) => boolean;
+  body: string;
+  link?: { label: string; href: string };
+}
+
+const GUIDANCE_RULES: GuidanceRule[] = [
+  {
+    id: "overdraft-existing-customer",
+    category: "alert",
+    match: (d) => d.product === "business-overdraft",
+    body:
+      "Business Overdraft is <strong>existing-customer only</strong>. " +
+      "Confirm the applicant already banks with Westpac before you lock " +
+      "in product — otherwise you'll have to backtrack at Setup.",
+    link: { label: "Overdraft eligibility matrix", href: "#" },
+  },
+  {
+    id: "bank-guarantee-wording",
+    category: "risk",
+    match: (d) => d.product === "bank-guarantee",
+    body:
+      "Bank Guarantees most often get blocked on <strong>beneficiary " +
+      "wording mismatches</strong>. Ask the customer for the " +
+      "beneficiary-supplied template on the first Identification item.",
+    link: { label: "BG wording examples", href: "#" },
+  },
+  {
+    id: "large-loan-pg",
+    category: "policy",
+    match: (d) =>
+      d.product === "business-loan" &&
+      (d.amountBucket === "500k-1m" || d.amountBucket === "over-1m"),
+    body:
+      "Loans over <strong>A$500k</strong> typically require director " +
+      "personal guarantees. This shows up as a Risk-phase gate — " +
+      "warn the applicant early.",
+    link: { label: "PG requirement matrix", href: "#" },
+  },
+  {
+    id: "trust-entity-kyc",
+    category: "context",
+    match: (d) => d.entity === "trust",
+    body:
+      "Trust entities add a <strong>trust deed verification</strong> " +
+      "step in KYC. Make sure you have a current deed on file before " +
+      "Identification.",
+    link: { label: "Trust CDD guide", href: "#" },
+  },
+  {
+    id: "equipment-ppsr",
+    category: "context",
+    match: (d) => d.product === "equipment-finance",
+    body:
+      "Equipment Finance is asset-backed — PPSR registration runs " +
+      "automatically during Setup. No extra action needed, but keep " +
+      "the supplier invoice handy for Identification.",
+  },
+];
+
 export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   const { step, draft } = useFlowMode();
   const firstName = deal.banker.name.split(" ")[0] || "there";
@@ -63,50 +162,56 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   const [timeline, setTimeline] = useState<TimelineMessage[]>([]);
   const [freeText, setFreeText] = useState("");
   const [pacTyping, setPacTyping] = useState(false);
-  // Open by default so the common-question pills (nested inside
-  // the briefing card) are immediately discoverable. Banker can
-  // collapse via the header toggle.
-  const [briefingOpen, setBriefingOpen] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const firedGuidance = useRef<Set<string>>(new Set());
 
-  // Briefing + pills are DERIVED directly from current product/step.
-  // No effects, no auto-push, no side effects.
-  const briefing = getBriefing(draft.product, step);
+  // Suggestion pills are DERIVED directly from current product/step.
   const suggestions = getSuggestions(draft.product, step);
 
-  function pushPac(content: string) {
-    setPacTyping(true);
-    // Long enough for the shimmer sweep to make at least one full
-    // visible cycle before Pac's reply lands.
-    setTimeout(() => {
-      setTimeline((t) => [
-        ...t,
-        {
-          id: `pac-${Date.now()}-${Math.random()}`,
-          sender: "pac",
-          content,
-          createdAt: Date.now(),
-        },
-      ]);
-      setPacTyping(false);
-    }, 2000);
-  }
-
-  function pushBanker(content: string) {
+  function appendMessage(msg: Omit<TimelineMessage, "id" | "createdAt">) {
     setTimeline((t) => [
       ...t,
       {
-        id: `banker-${Date.now()}`,
-        sender: "banker",
-        content: escapeHtml(content),
+        ...msg,
+        id: `${msg.sender}-${Date.now()}-${Math.random()}`,
         createdAt: Date.now(),
       },
     ]);
   }
 
+  function pushPacReply(content: string) {
+    setPacTyping(true);
+    setTimeout(() => {
+      appendMessage({ sender: "pac", kind: "reply", content });
+      setPacTyping(false);
+    }, 2000);
+  }
+
+  function pushGuidance(rule: GuidanceRule) {
+    setPacTyping(true);
+    setTimeout(() => {
+      appendMessage({
+        sender: "pac",
+        kind: "guidance",
+        category: rule.category,
+        content: rule.body,
+        link: rule.link,
+      });
+      setPacTyping(false);
+    }, 1400);
+  }
+
+  function pushBanker(content: string) {
+    appendMessage({
+      sender: "banker",
+      kind: "reply",
+      content: escapeHtml(content),
+    });
+  }
+
   function handlePillTap(s: Suggestion) {
     pushBanker(s.question);
-    setTimeout(() => pushPac(s.answer), 200);
+    setTimeout(() => pushPacReply(s.answer), 200);
   }
 
   function handleSendFreeText(e: React.FormEvent) {
@@ -116,13 +221,37 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
     pushBanker(text);
     setFreeText("");
     setTimeout(() => {
-      pushPac(
+      pushPacReply(
         `Understood. <em>Demo note — in production I'd parse natural ` +
           `language here. For this interview prototype the pill buttons ` +
           `drive the scripted flow.</em>`,
       );
     }, 300);
   }
+
+  // ——— Auto-push guidance ———
+  // Watch the draft and fire any guidance rules whose predicate has
+  // just become true. Each rule only fires once per session (tracked
+  // via firedGuidance ref) so changing-and-restoring a value doesn't
+  // spam the timeline.
+  useEffect(() => {
+    const d = {
+      product: draft.product,
+      entity: draft.entity,
+      amountBucket: draft.amountBucket,
+      purpose: draft.purpose,
+    };
+    const pending = GUIDANCE_RULES.filter(
+      (rule) => !firedGuidance.current.has(rule.id) && rule.match(d),
+    );
+    if (pending.length === 0) return;
+    // Fire them one at a time with a short stagger so they don't all
+    // land on the same tick.
+    pending.forEach((rule, i) => {
+      firedGuidance.current.add(rule.id);
+      setTimeout(() => pushGuidance(rule), i * 1800);
+    });
+  }, [draft.product, draft.entity, draft.amountBucket, draft.purpose]);
 
   // Auto-scroll chat on new entries.
   useEffect(() => {
@@ -141,83 +270,50 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         borderLeft: "1px solid var(--theme-border)",
       }}
     >
-      {/* ——— Header: Pac status strip + collapsible briefing ——— */}
+      {/* ——— Header: Pac status strip ——— */}
       <div
-        className="shrink-0 w-full min-w-0"
+        className="shrink-0 w-full min-w-0 px-4 py-3 flex items-center gap-3"
         style={{
           background: "var(--theme-card-bg)",
           borderBottom: "1px solid var(--theme-border)",
         }}
       >
-        <div className="px-4 py-3 flex items-center gap-3">
-          <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
-          <div className="min-w-0 flex-1">
-            <div
-              className="text-[13px] font-semibold leading-tight"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              Pac AI
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px]">
-              <span
-                className="inline-block w-1.5 h-1.5"
-                style={{ background: "#2e7d32", borderRadius: "50%" }}
-              />
-              <span style={{ color: "var(--theme-text-secondary)" }}>
-                Active · Westpac AI teammate
-              </span>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setBriefingOpen((v) => !v)}
-            aria-expanded={briefingOpen}
-            aria-label={
-              briefingOpen ? "Hide product briefing" : "Show product briefing"
-            }
-            className="interactive-pill inline-flex items-center gap-1 px-2.5 h-7 text-[11px] font-medium cursor-pointer"
-            style={{
-              color: "var(--theme-primary)",
-              background: "var(--westpac-primary-soft)",
-              border: "1px solid var(--westpac-primary-border)",
-              borderRadius: "999px",
-            }}
+        <PacAvatar size={32} state={pacTyping ? "speaking" : "idle"} />
+        <div className="min-w-0 flex-1">
+          <div
+            className="text-[13px] font-semibold leading-tight"
+            style={{ color: "var(--theme-text-primary)" }}
           >
-            {briefingOpen ? "Hide briefing" : "Briefing"}
-            <ChevronDown
-              size={12}
-              strokeWidth={2.4}
-              style={{
-                transform: briefingOpen ? "rotate(180deg)" : "rotate(0deg)",
-                transition: "transform 180ms ease",
-              }}
+            Pac AI
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px]">
+            <span
+              className="inline-block w-1.5 h-1.5"
+              style={{ background: "#2e7d32", borderRadius: "50%" }}
             />
-          </button>
+            <span style={{ color: "var(--theme-text-secondary)" }}>
+              Active · Westpac AI teammate
+            </span>
+          </div>
         </div>
-        {briefingOpen ? (
-          <HeaderBriefing briefing={briefing} firstName={firstName} />
-        ) : null}
       </div>
 
       {/* ——— Chat thread ——— */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 pt-3 pb-3 space-y-3"
+        className="flex-1 overflow-y-auto px-4 pt-3 pb-3 space-y-3 min-w-0"
         style={{ background: "var(--theme-page-bg)" }}
       >
         {timeline.length === 0 && !pacTyping ? (
-          <div
-            className="text-center text-[11px] pt-2"
-            style={{ color: "var(--theme-text-tertiary)" }}
-          >
-            Tap a common question below, or ask me anything.
-          </div>
+          <EmptyPacGuide firstName={firstName} />
         ) : (
           timeline.map((msg, i) => {
             const prev = timeline[i - 1];
             const sameSpeakerContinuation =
               prev &&
               prev.sender === msg.sender &&
+              msg.kind === "reply" &&
+              prev.kind === "reply" &&
               msg.createdAt - prev.createdAt < PAC_HUMAN_GAP_MS;
             return (
               <MessageBubble
@@ -232,12 +328,8 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         {pacTyping ? <TypingIndicator /> : null}
       </div>
 
-      {/* ——— Common questions — swipable pill shelf directly above
-             the input, on a pale-gray surface. */}
-      <SuggestionShelf
-        suggestions={suggestions}
-        onTap={handlePillTap}
-      />
+      {/* ——— Common questions — swipable pill shelf ——— */}
+      <SuggestionShelf suggestions={suggestions} onTap={handlePillTap} />
 
       {/* ——— Input ——— */}
       <form
@@ -278,12 +370,42 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
   );
 }
 
-/** Hook: mouse drag-to-scroll for a horizontal overflow container.
- *  Trackpad and touch already scroll horizontally natively; this
- *  makes desktop mouse users able to grab-and-drag the pill row.
- *  If the pointer moves more than a few px during a drag, we
- *  suppress the subsequent click so dragging doesn't accidentally
- *  fire a suggestion. */
+// ——— Empty chat state ———
+// Big Pac + text guide — the chat's idle screen before any message
+// has landed in the timeline.
+function EmptyPacGuide({ firstName }: { firstName: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center text-center min-h-full py-6 px-2">
+      <PacAvatar size={88} state="idle" />
+      <div
+        className="mt-4 text-[15px] font-semibold"
+        style={{ color: "var(--theme-text-primary)" }}
+      >
+        Hi {firstName}. I'm Pac AI.
+      </div>
+      <div
+        className="mt-1.5 text-[12px] leading-[1.55] max-w-[280px]"
+        style={{ color: "var(--theme-text-secondary)" }}
+      >
+        Pick a product on the left to get started — I'll watch the
+        setup and flag anything risky or policy-blocking as you go.
+        Or tap a common question below.
+      </div>
+      <div
+        className="mt-4 inline-flex items-center gap-1.5 text-[10px] uppercase font-semibold"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          letterSpacing: "0.5px",
+        }}
+      >
+        <Sparkles size={10} strokeWidth={2.2} />
+        Proactive · policy-aware · quiet by default
+      </div>
+    </div>
+  );
+}
+
+/** Hook: mouse drag-to-scroll for a horizontal overflow container. */
 function useHorizontalDragScroll() {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -296,7 +418,7 @@ function useHorizontalDragScroll() {
     const DRAG_THRESHOLD = 4;
 
     const onPointerDown = (e: PointerEvent) => {
-      if (e.pointerType === "touch") return; // native touch scroll handles this
+      if (e.pointerType === "touch") return;
       isDown = true;
       moved = false;
       startX = e.clientX;
@@ -337,79 +459,7 @@ function useHorizontalDragScroll() {
   return ref;
 }
 
-// ——— Header briefing (collapsible) ———
-// Lives inside the Pac panel header. The outer wrapper matches the
-// header background (white) so the header appears to grow taller
-// when expanded and collapses flush when hidden. The briefing
-// content itself is rendered on a pale-gray card inset.
-function HeaderBriefing({
-  briefing,
-  firstName,
-}: {
-  briefing: ReturnType<typeof getBriefing>;
-  firstName: string;
-}) {
-  return (
-    <div
-      className="w-full min-w-0 px-4 pb-3"
-      style={{ background: "var(--theme-card-bg)" }}
-    >
-      <div
-        className="px-3 py-3 w-full min-w-0"
-        style={{
-          background: "#f5f5f5",
-          borderRadius: "var(--theme-radius-lg)",
-        }}
-      >
-        <div className="flex items-baseline gap-2 flex-wrap min-w-0">
-          <span
-            className="text-[13px] font-semibold"
-            style={{ color: "var(--theme-text-primary)" }}
-          >
-            {briefing.title}
-          </span>
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            {briefing.subtitle}
-          </span>
-        </div>
-        <ul className="mt-2 space-y-1.5">
-          {briefing.bullets.map((b, i) => (
-            <li
-              key={i}
-              className="flex items-start gap-2 text-[11px] leading-[1.45]"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              <span
-                className="inline-block w-1 h-1 mt-[6px] shrink-0"
-                style={{
-                  background: "var(--theme-primary)",
-                  borderRadius: "50%",
-                }}
-              />
-              <span
-                dangerouslySetInnerHTML={{
-                  __html: b.replace(
-                    /^(Hi)\b/,
-                    `Hi ${escapeHtml(firstName)},`,
-                  ),
-                }}
-              />
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}
-
 // ——— Suggestion shelf ———
-// Swipable pill row sitting directly above the input on a pale-gray
-// surface. Horizontal padding lives on the inner scroll content
-// (first/last pill get side gutters via margin) so the left padding
-// is never "covered" by a pill sliding underneath it when scrolled.
 function SuggestionShelf({
   suggestions,
   onTap,
@@ -437,11 +487,6 @@ function SuggestionShelf({
       </div>
       <div
         ref={pillScrollRef}
-        // No horizontal padding on the scroll container — instead
-        // the first and last pills take side margin. That way the
-        // 16px side gutter is a property of the content, not the
-        // container, so pills never scroll underneath a clipping
-        // padding edge.
         className="flex flex-nowrap gap-2 pb-3 overflow-x-scroll min-w-0 w-full suggestion-pill-scroll cursor-grab active:cursor-grabbing"
         style={{
           scrollbarWidth: "none",
@@ -515,7 +560,59 @@ function MessageBubble({
     );
   }
 
-  // Compact Pac message
+  // Pac guidance card — visually distinct from chat replies.
+  if (message.kind === "guidance" && message.category) {
+    const meta = CATEGORY_META[message.category];
+    const CategoryIcon = meta.icon;
+    return (
+      <div className="flex items-start gap-2">
+        <div className="shrink-0 pt-0.5">
+          <PacAvatar size={26} state="idle" />
+        </div>
+        <div
+          className="flex-1 min-w-0 shimmer-message-in"
+          style={{
+            background: "var(--theme-card-bg)",
+            border: "1px solid var(--theme-border)",
+            borderLeft: `3px solid ${meta.accent}`,
+            borderRadius: "var(--theme-radius-lg)",
+            borderTopLeftRadius: "4px",
+          }}
+        >
+          <div
+            className="flex items-center gap-1.5 px-3 pt-2 text-[9px] uppercase font-bold"
+            style={{
+              color: meta.accent,
+              letterSpacing: "0.5px",
+            }}
+          >
+            <CategoryIcon size={10} strokeWidth={2.4} />
+            {meta.label}
+          </div>
+          <div className="px-3 pb-2 pt-0.5">
+            <span
+              className="text-[12px] leading-[1.55] block"
+              style={{ color: "var(--theme-text-primary)" }}
+              dangerouslySetInnerHTML={{ __html: message.content }}
+            />
+            {message.link ? (
+              <a
+                href={message.link.href}
+                onClick={(e) => e.preventDefault()}
+                className="interactive-link inline-flex items-center gap-1 mt-2 text-[11px] font-semibold cursor-pointer"
+                style={{ color: "var(--theme-primary)" }}
+              >
+                {message.link.label}
+                <ArrowUpRight size={11} strokeWidth={2.4} />
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Regular Pac reply bubble.
   return (
     <div className="flex items-start gap-2">
       {compactContinuation ? (
@@ -526,7 +623,7 @@ function MessageBubble({
         </div>
       )}
       <div
-        className="flex-1 min-w-0 px-3 py-2"
+        className="flex-1 min-w-0 px-3 py-2 shimmer-message-in"
         style={{
           background: "var(--theme-card-bg)",
           border: "1px solid var(--theme-border)",
@@ -555,10 +652,6 @@ function TypingIndicator() {
     );
     return () => clearInterval(t);
   }, []);
-  // NOTE: no `key` on the span — if React re-mounts the element on
-  // verb change, the shimmer-sweep animation restarts from zero and
-  // the user never sees a full cycle. Keeping the same span keeps
-  // the infinite animation running across verb swaps.
   return (
     <div className="flex items-start gap-2">
       <div className="shrink-0 pt-0.5">
