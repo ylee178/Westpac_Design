@@ -1,9 +1,8 @@
 "use client";
 
 /**
- * D7 — Three-way ownership filter.
- * Segmented control: All / Banker / System / Customer.
- * Filters the checklist to show only items owned by the selected actor.
+ * D7 — Three-way ownership filter as inline segmented control.
+ * Quiet treatment: thin border, subtle selected state, no bold colors.
  */
 import type { OwnerFilter as Filter } from "@/lib/types";
 import { User, Cpu, Users, Layers } from "lucide-react";
@@ -26,7 +25,12 @@ export function OwnerFilter({ value, onChange, counts }: Props) {
     <div
       role="radiogroup"
       aria-label="Filter by task owner"
-      className="inline-flex border border-[#c6c6c6] bg-white"
+      className="inline-flex border"
+      style={{
+        borderColor: "var(--theme-border)",
+        background: "var(--theme-card-bg)",
+        borderRadius: "var(--theme-radius)",
+      }}
     >
       {OPTIONS.map((opt, idx) => {
         const active = value === opt.id;
@@ -37,21 +41,25 @@ export function OwnerFilter({ value, onChange, counts }: Props) {
             role="radio"
             aria-checked={active}
             onClick={() => onChange(opt.id)}
-            className="flex items-center gap-1.5 px-3 h-10 text-[12px] font-medium tracking-[0.16px] transition-colors whitespace-nowrap"
+            className="flex items-center gap-1.5 px-3 h-9 text-[12px] font-medium transition-colors whitespace-nowrap"
             style={{
-              backgroundColor: active ? "#161616" : "#ffffff",
-              color: active ? "#ffffff" : "#161616",
-              borderLeft: idx === 0 ? "none" : "1px solid #c6c6c6",
+              background: active ? "var(--theme-primary)" : "transparent",
+              color: active
+                ? "var(--theme-primary-fg)"
+                : "var(--theme-text-secondary)",
+              borderLeft:
+                idx === 0 ? "none" : "1px solid var(--theme-border)",
             }}
           >
-            <opt.Icon size={13} strokeWidth={2.2} />
+            <opt.Icon size={12} strokeWidth={2.2} />
             {opt.label}
             <span
-              className="ml-1 tabular-nums"
+              className="ml-0.5 tabular-nums"
               style={{
-                color: active ? "#c6c6c6" : "#8d8d8d",
-                fontFamily: "var(--font-plex-mono)",
-                fontSize: "11px",
+                color: active
+                  ? "rgba(255,255,255,0.7)"
+                  : "var(--theme-text-tertiary)",
+                fontSize: "10px",
               }}
             >
               {counts[opt.id]}

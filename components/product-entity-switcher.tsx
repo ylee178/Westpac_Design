@@ -1,10 +1,8 @@
 "use client";
 
 /**
- * D1 — Product + Entity switchers.
- * Changing these triggers the checklist to reshape (demo interaction #2).
- * In production this would read from the deal record; here it's interactive
- * for the prototype demo.
+ * D1 — Product + Entity switchers. Quiet financial-UI dropdowns,
+ * thin border, no heavy input shells.
  */
 import type { ProductType, EntityType } from "@/lib/types";
 import {
@@ -43,23 +41,35 @@ export function ProductEntitySwitcher({
   onEntityChange,
 }: Props) {
   return (
-    <div className="flex items-center gap-4 flex-wrap">
+    <div className="flex items-center gap-3 flex-wrap">
       <SwitcherField label="Product">
         <Select
           value={product}
           onValueChange={(v) => onProductChange(v as ProductType)}
         >
           <SelectTrigger
-            className="w-[200px] rounded-none h-10 bg-[#f4f4f4] border-0 border-b-2 border-[#161616] focus:ring-0 focus-visible:ring-0 focus-visible:border-[#0f62fe] text-[13px]"
+            className="w-[200px] h-9 text-[13px] focus:ring-0 focus-visible:ring-0"
+            style={{
+              background: "var(--theme-card-bg)",
+              borderColor: "var(--theme-border)",
+              color: "var(--theme-text-primary)",
+              borderRadius: "var(--theme-radius)",
+            }}
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="rounded-none border-[#c6c6c6]">
+          <SelectContent
+            style={{
+              background: "var(--theme-card-bg)",
+              borderColor: "var(--theme-border)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
             {PRODUCTS.map((p) => (
               <SelectItem
                 key={p.id}
                 value={p.id}
-                className="rounded-none text-[13px] focus:bg-[#edf5ff] focus:text-[#0043ce]"
+                className="text-[13px]"
               >
                 {p.label}
               </SelectItem>
@@ -74,16 +84,28 @@ export function ProductEntitySwitcher({
           onValueChange={(v) => onEntityChange(v as EntityType)}
         >
           <SelectTrigger
-            className="w-[200px] rounded-none h-10 bg-[#f4f4f4] border-0 border-b-2 border-[#161616] focus:ring-0 focus-visible:ring-0 focus-visible:border-[#0f62fe] text-[13px]"
+            className="w-[200px] h-9 text-[13px] focus:ring-0 focus-visible:ring-0"
+            style={{
+              background: "var(--theme-card-bg)",
+              borderColor: "var(--theme-border)",
+              color: "var(--theme-text-primary)",
+              borderRadius: "var(--theme-radius)",
+            }}
           >
             <SelectValue />
           </SelectTrigger>
-          <SelectContent className="rounded-none border-[#c6c6c6]">
+          <SelectContent
+            style={{
+              background: "var(--theme-card-bg)",
+              borderColor: "var(--theme-border)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
             {ENTITIES.map((e) => (
               <SelectItem
                 key={e.id}
                 value={e.id}
-                className="rounded-none text-[13px] focus:bg-[#edf5ff] focus:text-[#0043ce]"
+                className="text-[13px]"
               >
                 {e.label}
               </SelectItem>
@@ -104,7 +126,13 @@ function SwitcherField({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[11px] uppercase tracking-[0.5px] text-[#525252] font-normal">
+      <span
+        className="text-[10px] uppercase font-medium"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          letterSpacing: "0.32px",
+        }}
+      >
         {label}
       </span>
       {children}

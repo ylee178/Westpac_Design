@@ -2,8 +2,10 @@
 
 /**
  * D5 — Progress spine as guided workflow surface.
- * Horizontal phase row. Current phase is visually emphasised (Blue 60 bar).
- * Hover each phase for the phase description.
+ * Quiet financial-UI treatment: inline phase tabs, subtle maroon
+ * underline on the active phase, muted text otherwise. No big
+ * circles, no bold colors — it sits below the deal header like
+ * a secondary nav row.
  */
 import type { Phase } from "@/lib/types";
 import { PHASES } from "@/data/deal-data";
@@ -24,89 +26,70 @@ export function ProgressSpine({ currentPhase }: Props) {
   return (
     <nav
       aria-label="Deal lifecycle phases"
-      className="w-full border-y"
+      className="w-full"
       style={{
-        background: "var(--theme-spine-bg)",
-        borderColor: "var(--theme-border)",
+        background: "var(--theme-card-bg)",
+        borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      <ol className="flex items-stretch max-w-[1584px] mx-auto">
-        {PHASES.map((phase, idx) => {
+      <ol className="flex items-stretch max-w-[1584px] mx-auto px-6 md:px-8">
+        {PHASES.map((phase) => {
           const isCurrent = phase.id === currentPhase;
           const isComplete = phase.order < currentOrder;
-          const isFuture = phase.order > currentOrder;
           return (
-            <li key={phase.id} className="flex-1 min-w-0">
+            <li key={phase.id}>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div
-                    className={`relative flex items-center gap-3 px-4 py-3.5 h-full cursor-help transition-colors ${
-                      isCurrent
-                        ? "bg-white"
-                        : isComplete
-                          ? "hover:brightness-95"
-                          : "hover:brightness-95 opacity-70"
-                    }`}
+                    className="relative flex items-center gap-2 h-11 px-4 cursor-help"
                     style={{
-                      borderLeft: idx === 0 ? "none" : "1px solid #e0e0e0",
+                      color: isCurrent
+                        ? "var(--theme-primary)"
+                        : "var(--theme-text-secondary)",
                     }}
                   >
-                    {/* Step number or check */}
-                    <div
-                      className="flex items-center justify-center w-6 h-6 text-[11px] font-medium shrink-0"
+                    <span
+                      className="text-[11px] tabular-nums"
                       style={{
-                        backgroundColor: isCurrent
-                          ? "var(--theme-spine-bar)"
-                          : isComplete
-                            ? "#24a148"
-                            : "var(--theme-card-bg)",
-                        color: isCurrent || isComplete ? "#ffffff" : "var(--theme-text-tertiary)",
-                        border: isFuture ? "1px solid var(--theme-border-strong)" : "none",
-                        borderRadius: "var(--theme-radius)",
+                        color: isCurrent
+                          ? "var(--theme-primary)"
+                          : "var(--theme-text-tertiary)",
+                        fontFamily: "var(--theme-font-mono)",
                       }}
                     >
                       {isComplete ? (
-                        <Check size={12} strokeWidth={3} />
+                        <Check size={12} strokeWidth={2.5} style={{ color: "var(--theme-success)" }} />
                       ) : (
-                        phase.order
+                        String(phase.order).padStart(2, "0")
                       )}
-                    </div>
-                    <div className="min-w-0 leading-tight">
-                      <div
-                        className={`text-[13px] tracking-[0.16px] ${
-                          isCurrent
-                            ? "font-semibold text-[#161616]"
-                            : "text-[#525252] font-normal"
-                        }`}
-                      >
-                        {phase.label}
-                      </div>
-                      <div className="text-[10px] tracking-[0.32px] text-[#6f6f6f] uppercase">
-                        Phase {phase.order} of {PHASES.length}
-                      </div>
-                    </div>
+                    </span>
+                    <span
+                      className={`text-[13px] ${isCurrent ? "font-semibold" : "font-medium"}`}
+                    >
+                      {phase.label}
+                    </span>
 
-                    {/* Active phase bottom bar — Westpac signature red via theme var */}
+                    {/* Active phase underline — subtle maroon */}
                     {isCurrent ? (
-                      <div
-                        className="absolute left-0 right-0 bottom-0 h-[3px]"
-                        style={{ background: "var(--theme-spine-bar)" }}
+                      <span
+                        className="absolute left-3 right-3 bottom-0 h-[2px]"
+                        style={{ background: "var(--theme-primary)" }}
                       />
                     ) : null}
                   </div>
                 </TooltipTrigger>
-                <TooltipContent className="max-w-[280px]" sideOffset={4}>
-                  <div className="text-[11px] uppercase tracking-[0.5px] text-[#c6c6c6]">
-                    {isCurrent
-                      ? "Current phase"
-                      : isComplete
-                        ? "Complete"
-                        : "Upcoming"}
+                <TooltipContent className="max-w-[260px]" sideOffset={4}>
+                  <div
+                    className="text-[10px] uppercase font-medium mb-0.5"
+                    style={{
+                      color: "var(--theme-text-tertiary)",
+                      letterSpacing: "0.5px",
+                    }}
+                  >
+                    {isCurrent ? "Current" : isComplete ? "Complete" : "Upcoming"}
                   </div>
-                  <div className="font-semibold text-[13px] mt-0.5">
-                    {phase.label}
-                  </div>
-                  <div className="text-[11px] text-[#c6c6c6] mt-1 leading-snug">
+                  <div className="font-semibold text-[13px]">{phase.label}</div>
+                  <div className="text-[11px] mt-1 leading-snug opacity-80">
                     {phase.description}
                   </div>
                 </TooltipContent>

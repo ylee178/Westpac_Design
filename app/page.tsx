@@ -127,11 +127,17 @@ export default function Page() {
       {/* D5 — Progress spine */}
       <ProgressSpine currentPhase={deal.phase} />
 
-      {/* Main workspace */}
-      <main className="flex-1 bg-white">
-        <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-6">
-          {/* Filter + switcher row */}
-          <div className="flex items-end justify-between gap-6 flex-wrap mb-5">
+      {/* Main workspace — table-first, quiet */}
+      <main
+        className="flex-1"
+        style={{ background: "var(--theme-page-bg)" }}
+      >
+        <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-5">
+          {/* Inline filter bar — dense, bank-style */}
+          <div
+            className="flex items-end justify-between gap-4 flex-wrap mb-4 pb-4"
+            style={{ borderBottom: "1px solid var(--theme-border-subtle)" }}
+          >
             <ProductEntitySwitcher
               product={deal.product}
               entity={deal.entity}
@@ -140,8 +146,14 @@ export default function Page() {
             />
 
             <div className="flex flex-col gap-1">
-              <span className="text-[11px] uppercase tracking-[0.5px] text-[#525252] font-normal">
-                Owner filter (D7)
+              <span
+                className="text-[10px] uppercase font-medium"
+                style={{
+                  color: "var(--theme-text-tertiary)",
+                  letterSpacing: "0.32px",
+                }}
+              >
+                Owner filter
               </span>
               <OwnerFilter
                 value={ownerFilter}
@@ -151,84 +163,89 @@ export default function Page() {
             </div>
           </div>
 
-          {/* Section heading */}
-          <div
-            className="mb-3 flex items-baseline justify-between flex-wrap gap-2 border-b pb-2"
-            style={{ borderColor: "var(--theme-text-primary)" }}
-          >
+          {/* Section heading — quiet */}
+          <div className="mb-2 flex items-baseline justify-between flex-wrap gap-2">
             <h2
-              className="text-[20px] font-normal leading-[1.4]"
+              className="text-[15px] leading-[1.4] font-semibold"
               style={{ color: "var(--theme-text-primary)" }}
             >
               Identification phase — checklist
             </h2>
             <div
-              className="text-[12px]"
-              style={{
-                color: "var(--theme-text-secondary)",
-                letterSpacing: "var(--theme-letter-spacing)",
-              }}
+              className="text-[11px]"
+              style={{ color: "var(--theme-text-tertiary)" }}
             >
               Showing {visibleItems.length} of {currentPhaseItems.length} items
-              for this phase · reshape axis: {deal.product} × {deal.entity}
+              · reshape: {deal.product} × {deal.entity}
             </div>
           </div>
 
-          {/* Checklist */}
+          {/* Table-like list */}
           {visibleItems.length > 0 ? (
-            <ul
-              className="border-t"
+            <div
               style={{
-                borderColor: "var(--theme-border)",
-                boxShadow: "var(--theme-shadow-card)",
+                background: "var(--theme-card-bg)",
+                border: "1px solid var(--theme-border)",
                 borderRadius: "var(--theme-radius)",
                 overflow: "hidden",
               }}
             >
-              {visibleItems.map((item) => (
-                <ChecklistItemRow
-                  key={item.id}
-                  item={item}
-                  onRequestSkip={handleRequestSkip}
-                />
-              ))}
-            </ul>
+              <ul>
+                {visibleItems.map((item) => (
+                  <ChecklistItemRow
+                    key={item.id}
+                    item={item}
+                    onRequestSkip={handleRequestSkip}
+                  />
+                ))}
+              </ul>
+            </div>
           ) : (
-            <div className="border border-dashed border-[#c6c6c6] py-12 text-center text-[13px] text-[#6f6f6f]">
-              No items match the current filter. Try changing Owner filter back to "All".
+            <div
+              className="py-12 text-center text-[12px]"
+              style={{
+                background: "var(--theme-card-bg)",
+                border: "1px solid var(--theme-border)",
+                color: "var(--theme-text-tertiary)",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              No items match the current filter. Change Owner filter back to "All".
             </div>
           )}
 
-          {/* Footer hint strip */}
+          {/* Footer hint — subtle, table-like */}
           <aside
-            className="mt-8 p-4 border-l-2 flex gap-3"
+            className="mt-6 p-3 flex items-start gap-2.5"
             style={{
-              background: "var(--theme-surface-subtle)",
-              borderLeftColor: "var(--theme-accent-fg)",
-              borderRadius: "0 var(--theme-radius) var(--theme-radius) 0",
-              boxShadow: "var(--theme-shadow-card)",
+              background: "var(--theme-card-bg)",
+              border: "1px solid var(--theme-border)",
+              borderLeft: "2px solid var(--theme-primary)",
+              borderRadius: "var(--theme-radius)",
             }}
           >
             <Info
               className="shrink-0 mt-0.5"
-              size={16}
-              style={{ color: "var(--theme-accent-fg)" }}
+              size={13}
+              style={{ color: "var(--theme-primary)" }}
             />
             <div
-              className="text-[12px] leading-[1.55]"
-              style={{
-                color: "var(--theme-text-primary)",
-                letterSpacing: "var(--theme-letter-spacing)",
-              }}
+              className="text-[11px] leading-[1.55]"
+              style={{ color: "var(--theme-text-secondary)" }}
             >
-              <strong className="font-semibold">Demo flow hints:</strong> Switch
-              product (Bank Guarantee → Term Loan) to see D1 reshape.
-              Click any item to expand (D4). Open knowledge cards (D3), hover
-              provenance badges (D6), filter by owner (D7), try skipping a
+              <span
+                className="font-semibold"
+                style={{ color: "var(--theme-text-primary)" }}
+              >
+                Demo flow:
+              </span>{" "}
+              Switch product (Bank Guarantee → Term Loan) to see D1 reshape.
+              Click any row to expand (D4). Open knowledge cards (D3), hover
+              provenance (D6), filter by owner (D7), try skipping a
               non-mandatory item (D2), and try skipping "Source of funds
               declaration" to see the legally-mandatory lock. Hover the Deal
-              Confidence score (D9) to see the breakdown. Hover the CDD mode
-              badge (D8) to see AUSTRAC reform context.
+              Confidence score (D9) for the breakdown. Hover the CDD mode
+              label (D8) for AUSTRAC reform context.
             </div>
           </aside>
         </div>

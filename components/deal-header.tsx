@@ -1,15 +1,15 @@
 "use client";
 
 /**
- * Deal header — top band of the deal workspace.
- * Displays customer identity, deal amount, confidence score, and mode indicator.
- * Carbon dark masthead aesthetic (Gray 100 background, white text).
+ * Deal header — white bank-style masthead, Westpac financial tone.
+ * Logo left, primary nav tabs, utility nav right. Below the masthead,
+ * a compact deal meta strip shows customer, amount, mode, confidence.
  */
 import type { ConfidenceBreakdown, Deal } from "@/lib/types";
 import { ConfidenceTooltip } from "@/components/confidence-tooltip";
 import { ModeIndicator } from "@/components/mode-indicator";
 import { WestpacLogo } from "@/components/westpac-logo";
-import { Building2, User2 } from "lucide-react";
+import { HelpCircle, LogOut } from "lucide-react";
 
 interface Props {
   deal: Deal;
@@ -23,99 +23,141 @@ const currency = new Intl.NumberFormat("en-AU", {
   maximumFractionDigits: 0,
 });
 
+const NAV = [
+  { label: "Deals", active: true },
+  { label: "Customers", active: false },
+  { label: "Approvals", active: false },
+  { label: "Reports", active: false },
+];
+
 export function DealHeader({ deal, breakdown, hasRedFlag }: Props) {
   return (
     <header
-      className="border-b"
+      className="w-full"
       style={{
         background: "var(--theme-header-bg)",
-        color: "var(--theme-header-fg)",
-        borderColor: "var(--theme-header-subtle)",
+        borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      {/* Top thin bar — Westpac logo + product label + banker */}
-      <div
-        className="px-6 md:px-8 py-2.5 flex items-center justify-between text-[11px]"
-        style={{
-          background: "var(--theme-header-subtle)",
-          color: "var(--theme-header-muted)",
-          letterSpacing: "var(--theme-letter-spacing-small)",
-          borderBottom: "1px solid rgba(255,255,255,0.06)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          {/* Westpac W logo — always visible, always brand red */}
-          <WestpacLogo size={28} />
+      {/* Top masthead — logo + nav + utilities */}
+      <div className="max-w-[1584px] mx-auto px-6 md:px-8 h-[56px] flex items-center justify-between">
+        <div className="flex items-center gap-7 min-w-0">
+          {/* Logo — real PNG */}
+          <WestpacLogo size={26} />
+
+          {/* Primary nav tabs — active indicated by subtle bottom border */}
+          <nav className="hidden md:flex items-center gap-0 h-[56px]">
+            {NAV.map((n) => (
+              <button
+                key={n.label}
+                type="button"
+                className="h-full px-4 text-[13px] font-medium transition-colors relative"
+                style={{
+                  color: n.active
+                    ? "var(--theme-text-primary)"
+                    : "var(--theme-text-secondary)",
+                }}
+              >
+                {n.label}
+                {n.active ? (
+                  <span
+                    className="absolute left-2 right-2 bottom-0 h-[2px]"
+                    style={{ background: "var(--theme-primary)" }}
+                  />
+                ) : null}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Utility nav right */}
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            className="flex items-center gap-1.5 text-[12px] font-medium"
+            style={{ color: "var(--theme-text-secondary)" }}
+          >
+            <HelpCircle size={13} strokeWidth={2} />
+            Need help?
+          </button>
           <div
-            className="hidden sm:block w-px h-5"
-            style={{ background: "rgba(255,255,255,0.15)" }}
-          />
-          <div className="flex items-center gap-2">
-            <span
-              className="font-semibold text-[13px]"
-              style={{ color: "var(--theme-header-fg)", letterSpacing: 0 }}
-            >
-              BizEdge
+            className="hidden md:flex items-center gap-2 text-[12px]"
+            style={{ color: "var(--theme-text-secondary)" }}
+          >
+            <span className="font-medium" style={{ color: "var(--theme-text-primary)" }}>
+              {deal.banker.name}
             </span>
-            <span
-              className="hidden md:inline text-[11px]"
-              style={{ color: "var(--theme-header-muted)" }}
-            >
-              Business Lending Origination Platform
+            <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
+            <span>
+              {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}
             </span>
           </div>
-        </div>
-        <div
-          className="flex items-center gap-2"
-          style={{ color: "var(--theme-header-muted)" }}
-        >
-          <User2 size={12} />
-          <span>
-            {deal.banker.name}
-            <span style={{ color: "var(--theme-text-tertiary)" }}>
-              {" "}— {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}
-            </span>
-          </span>
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 h-8 text-[12px] font-medium border transition-colors hover:brightness-95"
+            style={{
+              background: "var(--theme-card-bg)",
+              color: "var(--theme-text-primary)",
+              borderColor: "var(--theme-border-strong)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
+            <LogOut size={12} strokeWidth={2} />
+            Sign out
+          </button>
         </div>
       </div>
 
-      {/* Main deal header */}
-      <div className="px-6 md:px-8 py-5 flex items-start justify-between gap-6 max-w-[1584px] mx-auto">
-        <div className="min-w-0 flex-1">
-          <div
-            className="flex items-center gap-2 text-[11px] uppercase tracking-[0.5px]"
-            style={{ color: "var(--theme-header-muted)" }}
-          >
-            <Building2 size={12} />
-            Deal {deal.id}
-          </div>
-          <h1
-            className="text-[28px] md:text-[32px] font-light leading-[1.2] mt-1"
-            style={{ letterSpacing: 0, color: "var(--theme-header-fg)" }}
-          >
-            {deal.customerName}
-          </h1>
-          <div
-            className="text-[14px] mt-1"
-            style={{
-              color: "var(--theme-header-muted)",
-              letterSpacing: "var(--theme-letter-spacing)",
-            }}
-          >
-            {deal.dealName}
-          </div>
-          <div className="flex items-center gap-4 mt-3 flex-wrap">
-            <MetaItem label="Amount" value={currency.format(deal.amount)} mono />
-            <MetaItem label="ABN" value={deal.abn} mono />
-            <MetaItem label="Jurisdiction" value={deal.jurisdiction} />
-            <div className="mt-0.5">
-              <ModeIndicator mode={deal.cddMode} />
+      {/* Deal meta strip — customer, amount, mode, confidence */}
+      <div
+        className="border-t"
+        style={{
+          borderColor: "var(--theme-border-subtle)",
+          background: "var(--theme-card-bg)",
+        }}
+      >
+        <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-4 flex items-start justify-between gap-6">
+          <div className="min-w-0 flex-1">
+            <div
+              className="flex items-center gap-2 text-[11px] uppercase font-medium"
+              style={{
+                color: "var(--theme-text-tertiary)",
+                letterSpacing: "var(--theme-letter-spacing-small)",
+              }}
+            >
+              <span>Deal</span>
+              <span style={{ fontFamily: "var(--theme-font-mono)" }}>
+                {deal.id}
+              </span>
+            </div>
+            <h1
+              className="text-[22px] leading-[1.25] mt-1 font-medium"
+              style={{
+                color: "var(--theme-primary)",
+                letterSpacing: 0,
+              }}
+            >
+              {deal.customerName}
+            </h1>
+            <div
+              className="text-[13px] mt-0.5"
+              style={{ color: "var(--theme-text-secondary)" }}
+            >
+              {deal.dealName}
+            </div>
+            <div className="flex items-center gap-6 mt-3 flex-wrap">
+              <MetaItem label="Amount" value={currency.format(deal.amount)} mono emphasized />
+              <MetaItem label="ABN" value={deal.abn} mono />
+              <MetaItem label="Jurisdiction" value={deal.jurisdiction} />
+              <div className="mt-0.5">
+                <ModeIndicator mode={deal.cddMode} />
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="shrink-0 pt-5">
-          <ConfidenceTooltip breakdown={breakdown} hasRedFlag={hasRedFlag} />
+          <div className="shrink-0">
+            <ConfidenceTooltip breakdown={breakdown} hasRedFlag={hasRedFlag} />
+          </div>
         </div>
       </div>
     </header>
@@ -126,24 +168,31 @@ function MetaItem({
   label,
   value,
   mono = false,
+  emphasized = false,
 }: {
   label: string;
   value: string;
   mono?: boolean;
+  emphasized?: boolean;
 }) {
   return (
     <div className="flex flex-col leading-tight">
       <span
-        className="text-[10px] uppercase tracking-[0.5px]"
-        style={{ color: "var(--theme-text-tertiary)" }}
+        className="text-[10px] uppercase font-medium"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          letterSpacing: "var(--theme-letter-spacing-small)",
+        }}
       >
         {label}
       </span>
       <span
-        className="text-[14px] tabular-nums"
+        className="tabular-nums"
         style={{
-          color: "var(--theme-header-fg)",
+          color: "var(--theme-text-primary)",
           fontFamily: mono ? "var(--theme-font-mono)" : "var(--theme-font-sans)",
+          fontSize: emphasized ? "15px" : "13px",
+          fontWeight: emphasized ? 600 : 500,
         }}
       >
         {value}

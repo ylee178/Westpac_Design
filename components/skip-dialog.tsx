@@ -59,19 +59,39 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
   return (
     <Dialog open={open} onOpenChange={(o) => (o ? null : handleCancel())}>
       <DialogContent
-        className="max-w-[560px] p-0 rounded-none border border-[#c6c6c6]"
+        className="max-w-[560px] p-0"
+        style={{
+          background: "var(--theme-card-bg)",
+          borderColor: "var(--theme-border-strong)",
+          borderRadius: "var(--theme-radius-lg)",
+        }}
       >
-        <DialogHeader className="px-6 pt-6 pb-3 border-b border-[#e0e0e0]">
-          <div className="text-[11px] uppercase tracking-[0.5px] text-[#525252] flex items-center gap-2">
-            <AlertTriangle size={13} className="text-[#f1c21b]" />
-            D2 · Skip with reason
+        <DialogHeader
+          className="px-6 pt-5 pb-3"
+          style={{ borderBottom: "1px solid var(--theme-border)" }}
+        >
+          <div
+            className="text-[10px] uppercase font-medium flex items-center gap-1.5"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.5px",
+            }}
+          >
+            <AlertTriangle size={11} strokeWidth={2} />
+            Skip with reason · D2
           </div>
-          <DialogTitle className="text-[20px] font-normal text-[#161616] leading-[1.4] mt-1">
+          <DialogTitle
+            className="text-[18px] leading-[1.35] mt-1 font-medium"
+            style={{ color: "var(--theme-text-primary)" }}
+          >
             {item ? item.label : "Skip this step"}
           </DialogTitle>
-          <DialogDescription className="text-[13px] text-[#525252] leading-[1.45] mt-1">
-            Select a reason category below. If none of the options match, choose
-            "Other" and describe briefly. Your answer is logged to the audit trail.
+          <DialogDescription
+            className="text-[13px] leading-[1.5] mt-1"
+            style={{ color: "var(--theme-text-secondary)" }}
+          >
+            Select a reason category below. If none match, choose
+            "Other" and describe briefly. Logged to the audit trail.
           </DialogDescription>
         </DialogHeader>
 
@@ -133,23 +153,27 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
           ) : null}
         </div>
 
-        <DialogFooter className="px-0 py-0 border-t border-[#e0e0e0] flex-row gap-0 sm:gap-0">
+        <DialogFooter
+          className="px-0 py-0 flex-row gap-0 sm:gap-0"
+          style={{ borderTop: "1px solid var(--theme-border)" }}
+        >
           <Button
             variant="ghost"
             onClick={handleCancel}
-            className="flex-1 h-12 rounded-none text-[14px] font-normal text-[#161616] hover:bg-[#e8e8e8]"
+            className="flex-1 h-11 rounded-none text-[13px] font-medium"
+            style={{ color: "var(--theme-text-primary)" }}
           >
             Cancel
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="flex-1 h-12 rounded-none text-[14px] font-normal text-white disabled:text-[#8d8d8d]"
+            className="flex-1 h-11 rounded-none text-[13px] font-medium text-white"
             style={{
               background: canSubmit
                 ? "var(--theme-primary)"
                 : "var(--theme-border-strong)",
-              borderRadius: "0 var(--theme-radius) var(--theme-radius) 0",
+              borderLeft: "1px solid var(--theme-border)",
             }}
           >
             Skip with reason
