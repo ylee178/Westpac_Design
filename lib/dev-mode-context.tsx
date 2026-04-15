@@ -39,6 +39,8 @@ interface DevMode {
   setProduct: (p: DemoProduct) => void;
   entity: DemoEntity;
   setEntity: (e: DemoEntity) => void;
+  aiPanel: boolean;
+  setAiPanel: (on: boolean) => void;
 }
 
 const DevModeContext = createContext<DevMode | null>(null);
@@ -48,6 +50,7 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
   const [grayscale, setGrayscale] = useState(false);
   const [product, setProduct] = useState<DemoProduct>("bank-guarantee");
   const [entity, setEntity] = useState<DemoEntity>("company");
+  const [aiPanel, setAiPanel] = useState(true); // default ON
 
   // Apply data-attrs to <html> so CSS variable overrides cascade everywhere.
   useLayoutEffect(() => {
@@ -66,8 +69,10 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
       setProduct,
       entity,
       setEntity,
+      aiPanel,
+      setAiPanel,
     }),
-    [theme, grayscale, product, entity],
+    [theme, grayscale, product, entity, aiPanel],
   );
 
   return (

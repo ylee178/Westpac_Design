@@ -9,7 +9,6 @@ import type { ReadinessBreakdown, Deal } from "@/lib/types";
 import { ReadyToSubmitDisplay } from "@/components/readiness-display";
 import { ModeIndicator } from "@/components/mode-indicator";
 import { WestpacLogo } from "@/components/westpac-logo";
-import { ModeToggle } from "@/components/mode-toggle";
 import { HelpCircle, LogOut } from "lucide-react";
 
 interface Props {
@@ -85,7 +84,6 @@ export function DealHeader({
 
         {/* Utility nav right */}
         <div className="flex items-center gap-4">
-          <ModeToggle />
           <button
             type="button"
             className="flex items-center gap-1.5 text-[12px] font-medium"

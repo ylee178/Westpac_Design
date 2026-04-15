@@ -47,6 +47,8 @@ export function DevPanel() {
     setProduct,
     entity,
     setEntity,
+    aiPanel,
+    setAiPanel,
   } = useDevMode();
 
   return (
@@ -100,6 +102,15 @@ export function DevPanel() {
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto">
+            <SectionLabel>AI Teammate panel</SectionLabel>
+            <div className="px-2 pb-2">
+              <OptionButton
+                selected={aiPanel}
+                label={aiPanel ? "Panel visible" : "Panel hidden (V1 only)"}
+                onClick={() => setAiPanel(!aiPanel)}
+              />
+            </div>
+
             <SectionLabel>Grayscale</SectionLabel>
             <div className="px-2 pb-2">
               <OptionButton

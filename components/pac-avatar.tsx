@@ -1,106 +1,27 @@
 "use client";
 
 /**
- * Pac — Westpac AI teammate character.
+ * Pac — Westpac AI teammate.
  *
- * 16-bit pixel sprite rendered as an SVG grid of <rect> pixels.
- * Inspired by both Pac-Man (round body, mouth wedge) and the
- * Claude mascot (small, friendly, approachable). Brand-red
- * (#DA1710) is the constant — Pac never re-tints with theme.
+ * Smooth-SVG character (no longer pixel grid). Subtle friendliness
+ * refinements: smaller warm-cream eye, dark-burgundy pupil (not
+ * harsh black), rounded mouth (not sharp wedge), subtle highlight
+ * for 3D depth. Brand-red body is the constant.
  *
  * Three animation states:
- *   - idle:      subtle translateY bobbing
- *   - speaking:  mouth open ↔ closed every 200ms (typing indicator)
+ *   - idle:      gentle bobbing (translateY)
+ *   - speaking:  mouth toggles open ↔ closed every 200ms
  *   - celebrate: one-shot 360° spin
  */
 import { useEffect, useState } from "react";
 
 const BRAND_RED = "#DA1710";
-const EYE_WHITE = "#ffffff";
-const EYE_PUPIL = "#1a1a1a";
+const EYE_CREAM = "#FFF5F2";
+const EYE_PUPIL = "#3A0A0A";
+const MOUTH_CREAM = "#FFF5F2";
 
-// 14×14 pixel grid. Glyphs:
-//   X = red body pixel
-//   E = eye white pixel
-//   P = eye pupil pixel
-//   . = transparent
-const PAC_OPEN: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXEEXXXXXX..",
-  "XXXXEPXXXXX...",
-  "XXXXXXXXXX....",
-  "XXXXXXXX......",
-  "XXXXXX........",
-  "XXXXXX........",
-  "XXXXXXXX......",
-  "XXXXXXXXXX....",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
-];
-
-const PAC_CLOSED: readonly string[] = [
-  "....XXXXXX....",
-  "..XXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "XXXXEEXXXXXXX.",
-  "XXXXEPXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXX..",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXXX.",
-  "XXXXXXXXXXXX..",
-  ".XXXXXXXXXXXX.",
-  "..XXXXXXXXXX..",
-  "....XXXXXX....",
-];
-
-function renderGrid(grid: readonly string[], keyPrefix: string) {
-  const pixels: React.ReactElement[] = [];
-  grid.forEach((row, y) => {
-    for (let x = 0; x < row.length; x++) {
-      const ch = row[x];
-      if (ch === "X") {
-        pixels.push(
-          <rect
-            key={`${keyPrefix}-${x}-${y}`}
-            x={x}
-            y={y}
-            width={1}
-            height={1}
-            fill={BRAND_RED}
-          />,
-        );
-      } else if (ch === "E") {
-        pixels.push(
-          <rect
-            key={`${keyPrefix}-${x}-${y}`}
-            x={x}
-            y={y}
-            width={1}
-            height={1}
-            fill={EYE_WHITE}
-          />,
-        );
-      } else if (ch === "P") {
-        pixels.push(
-          <rect
-            key={`${keyPrefix}-${x}-${y}`}
-            x={x}
-            y={y}
-            width={1}
-            height={1}
-            fill={EYE_PUPIL}
-          />,
-        );
-      }
-    }
-  });
-  return pixels;
-}
+const MOUTH_OPEN_D = "M20,20 L38,14 Q39.5,20 38,26 Z";
+const MOUTH_CLOSED_D = "M20,20 L38,19 Q39,20 38,21 Z";
 
 export type PacState = "idle" | "speaking" | "celebrate";
 
@@ -111,22 +32,18 @@ interface Props {
 }
 
 export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) {
-  // Simple frame toggler for the speaking animation — alternates
-  // open/closed mouth every 200ms without relying on complex CSS keyframes.
-  const [frame, setFrame] = useState<"open" | "closed">("open");
+  const [mouthFrame, setMouthFrame] = useState<"open" | "closed">("open");
 
   useEffect(() => {
     if (state !== "speaking") {
-      setFrame("open");
+      setMouthFrame("open");
       return;
     }
     const interval = setInterval(() => {
-      setFrame((f) => (f === "open" ? "closed" : "open"));
+      setMouthFrame((f) => (f === "open" ? "closed" : "open"));
     }, 200);
     return () => clearInterval(interval);
   }, [state]);
-
-  const grid = frame === "open" ? PAC_OPEN : PAC_CLOSED;
 
   const animationClass =
     state === "idle"
@@ -146,14 +63,35 @@ export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) 
       }}
     >
       <svg
-        viewBox="0 0 14 14"
+        viewBox="0 0 40 40"
         width={size}
         height={size}
-        shapeRendering="crispEdges"
         aria-hidden="true"
-        style={{ display: "block" }}
+        style={{ display: "block", overflow: "visible" }}
       >
-        {renderGrid(grid, frame)}
+        {/* Body — Westpac Red */}
+        <circle cx="20" cy="20" r="18" fill={BRAND_RED} />
+
+        {/* Subtle highlight for 3D depth */}
+        <ellipse
+          cx="14"
+          cy="13"
+          rx="4.5"
+          ry="2.5"
+          fill="white"
+          opacity="0.18"
+        />
+
+        {/* Mouth — rounded wedge (warmer cream than pure white) */}
+        <path
+          d={mouthFrame === "open" ? MOUTH_OPEN_D : MOUTH_CLOSED_D}
+          fill={MOUTH_CREAM}
+          style={{ transition: "d 120ms ease-in-out" }}
+        />
+
+        {/* Eye — warm cream with small dark-burgundy pupil */}
+        <circle cx="22" cy="11" r="2" fill={EYE_CREAM} />
+        <circle cx="22.5" cy="10.6" r="0.8" fill={EYE_PUPIL} />
       </svg>
     </span>
   );

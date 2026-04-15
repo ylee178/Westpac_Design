@@ -37,7 +37,7 @@ import { V1DynamicLoading } from "@/components/v1-dynamic-loading";
 import { V1FocusedCard } from "@/components/v1-focused-card";
 import { V1PhaseTransition } from "@/components/v1-phase-transition";
 import { V1PhaseReadonly } from "@/components/v1-phase-readonly";
-import { V2Chat } from "@/components/v2-chat";
+import { V2ChatPanel } from "@/components/v2-chat-panel";
 import { ArrowRight, ArrowLeft, LayoutList, ListChecks, Sparkles } from "lucide-react";
 
 export default function Page() {
@@ -46,9 +46,8 @@ export default function Page() {
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
-  const { product: demoProduct, entity: demoEntity } = useDevMode();
+  const { product: demoProduct, entity: demoEntity, aiPanel } = useDevMode();
   const {
-    mode,
     step,
     setStep,
     draft,
@@ -56,7 +55,9 @@ export default function Page() {
     focusedIndex,
     setFocusedIndex,
   } = useFlowMode();
-  const isV2 = mode === "v2";
+  // V2 AI layer is always "on" when the Pac panel is visible — the
+  // readiness score bump uses the AI signal weighting below.
+  const isV2 = aiPanel;
 
   // Dev panel overrides product × entity for D1 reshape demo, AND the
   // empty-state card selector writes the same values so the deal reflects
@@ -246,149 +247,136 @@ export default function Page() {
   const shouldShowComplete =
     step === "focused" && phaseAllResolved;
 
-  // V2 side-effect handlers used by the scripted chat
-  function v2CompleteItem(id: string) {
-    setLibrary((prev) =>
-      prev.map((i) => (i.id === id ? { ...i, status: "complete" } : i)),
-    );
-  }
-  function v2SkipItem(id: string, category: string) {
-    setLibrary((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? { ...i, status: "skipped", skipReason: { category } }
-          : i,
-      ),
-    );
-  }
+  // ——— Unified render: header + spine up top, main area + Pac panel below ———
 
-  // ——— Render ———
-  // V2 mode — chat interface (Pac + scripted scenes)
-  if (mode === "v2") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <DealHeader
-          deal={deal}
-          breakdown={effectiveBreakdown}
-          hasRedFlag={hasRedFlag}
-          redFlagLabel={redFlagItem?.label}
-          redFlagSubtitle={redFlagItem?.subtitle}
-          bankerActionCount={bankerPending}
-          projectedAfterActions={projectedAfterActions}
-        />
-        <V2Chat
-          deal={deal}
-          breakdown={effectiveBreakdown}
-          library={reshaped}
-          onCompleteItem={v2CompleteItem}
-          onSkipItem={v2SkipItem}
-        />
-      </div>
-    );
-  }
-
-  // Empty / Creator / Loading — no header chrome; they own the full viewport
-  if (mode === "v1" && step === "empty") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <MinimalHeader />
-        <V1EmptyState />
-      </div>
-    );
-  }
-
-  if (mode === "v1" && step === "creator") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <MinimalHeader />
-        <V1DealContextForm />
-      </div>
-    );
-  }
-
-  if (mode === "v1" && step === "loading") {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <DealHeader
-          deal={deal}
-          breakdown={effectiveBreakdown}
-          hasRedFlag={hasRedFlag}
-          redFlagLabel={redFlagItem?.label}
-          redFlagSubtitle={redFlagItem?.subtitle}
-          bankerActionCount={bankerPending}
-          projectedAfterActions={projectedAfterActions}
-        />
-        <ProgressSpine currentPhase="setup" />
-        <V1DynamicLoading />
-      </div>
-    );
-  }
-
-  // Focused / ShowAll — full header + spine + V1 content
-  return (
-    <div className="min-h-screen flex flex-col">
-      <DealHeader
-        deal={deal}
-        breakdown={effectiveBreakdown}
-        hasRedFlag={hasRedFlag}
-        redFlagLabel={redFlagItem?.label}
-        redFlagSubtitle={redFlagItem?.subtitle}
-        bankerActionCount={bankerPending}
-        projectedAfterActions={projectedAfterActions}
-      />
-      <ProgressSpine currentPhase={deal.phase} />
-
-      <main
-        className="flex-1"
-        style={{ background: "var(--theme-page-bg)" }}
-      >
-        <div className="max-w-[1280px] mx-auto px-6 md:px-8 py-6">
-          {deal.phase === "setup" ? (
-            <V1PhaseReadonly
-              phaseLabel="Setup"
-              items={setupPhaseItems}
-              onReturn={() => setBaseDeal((d) => ({ ...d, phase: "identification" }))}
-            />
-          ) : shouldShowComplete ? (
-            <V1PhaseTransition
-              completedPhase="identification"
-              onRestart={handleRestart}
-            />
-          ) : step === "showAll" ? (
-            <ShowAllView
-              visibleItems={visibleItems}
-              currentPhaseItems={currentPhaseItems}
-              ownerFilter={ownerFilter}
-              setOwnerFilter={setOwnerFilter}
-              ownerCounts={ownerCounts}
-              onReturn={() => setStep("focused")}
-              selectedItemId={currentFocusedItem?.id ?? null}
-              onSelectItem={(item) => {
-                const idx = actionableIdentification.findIndex(
-                  (i) => i.id === item.id,
-                );
-                if (idx >= 0) setFocusedIndex(idx);
-                setStep("focused");
-              }}
-              onRequestSkip={handleRequestSkip}
-            />
-          ) : currentFocusedItem ? (
-            <FocusedView
-              item={currentFocusedItem}
-              total={actionableIdentification.length}
-              index={focusedIndex}
-              onComplete={handleCompleteItem}
-              onRequestSkip={handleRequestSkip}
-              onShowAll={() => setStep("showAll")}
-            />
-          ) : (
-            <V1PhaseTransition
-              completedPhase="identification"
-              onRestart={handleRestart}
-            />
-          )}
+  const mainContent = (() => {
+    if (step === "empty") return <V1EmptyState />;
+    if (step === "creator") return <V1DealContextForm />;
+    if (step === "loading") return <V1DynamicLoading />;
+    if (deal.phase === "setup") {
+      return (
+        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
+          <V1PhaseReadonly
+            phaseLabel="Setup"
+            items={setupPhaseItems}
+            onReturn={() =>
+              setBaseDeal((d) => ({ ...d, phase: "identification" }))
+            }
+          />
         </div>
-      </main>
+      );
+    }
+    if (shouldShowComplete) {
+      return (
+        <V1PhaseTransition
+          completedPhase="identification"
+          onRestart={handleRestart}
+        />
+      );
+    }
+    if (step === "showAll") {
+      return (
+        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
+          <ShowAllView
+            visibleItems={visibleItems}
+            currentPhaseItems={currentPhaseItems}
+            ownerFilter={ownerFilter}
+            setOwnerFilter={setOwnerFilter}
+            ownerCounts={ownerCounts}
+            onReturn={() => setStep("focused")}
+            selectedItemId={currentFocusedItem?.id ?? null}
+            onSelectItem={(item) => {
+              const idx = actionableIdentification.findIndex(
+                (i) => i.id === item.id,
+              );
+              if (idx >= 0) setFocusedIndex(idx);
+              setStep("focused");
+            }}
+            onRequestSkip={handleRequestSkip}
+          />
+        </div>
+      );
+    }
+    if (currentFocusedItem) {
+      return (
+        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
+          <FocusedView
+            item={currentFocusedItem}
+            total={actionableIdentification.length}
+            index={focusedIndex}
+            onComplete={handleCompleteItem}
+            onRequestSkip={handleRequestSkip}
+            onShowAll={() => setStep("showAll")}
+          />
+        </div>
+      );
+    }
+    return (
+      <V1PhaseTransition
+        completedPhase="identification"
+        onRestart={handleRestart}
+      />
+    );
+  })();
+
+  // Header + spine are visible for every step EXCEPT the very-empty
+  // "empty" and "creator" states where the banker hasn't committed to
+  // a deal yet. Those show MinimalHeader.
+  const showFullHeader = step !== "empty" && step !== "creator";
+
+  return (
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Sticky header + spine group */}
+      <div className="shrink-0">
+        {showFullHeader ? (
+          <>
+            <DealHeader
+              deal={deal}
+              breakdown={effectiveBreakdown}
+              hasRedFlag={hasRedFlag}
+              redFlagLabel={redFlagItem?.label}
+              redFlagSubtitle={redFlagItem?.subtitle}
+              bankerActionCount={bankerPending}
+              projectedAfterActions={projectedAfterActions}
+            />
+            <div
+              style={{
+                background: "#f5f5f5",
+                borderBottom: "1px solid var(--theme-border)",
+              }}
+            >
+              <ProgressSpine
+                currentPhase={step === "loading" ? "setup" : deal.phase}
+                onPhaseChange={(p) =>
+                  setBaseDeal((d) => ({ ...d, phase: p }))
+                }
+              />
+            </div>
+          </>
+        ) : (
+          <MinimalHeader />
+        )}
+      </div>
+
+      {/* Main area + optional Pac panel */}
+      <div className="flex-1 flex min-h-0">
+        <main
+          className="flex-1 min-w-0 overflow-y-auto flex flex-col"
+          style={{ background: "var(--theme-page-bg)" }}
+        >
+          {mainContent}
+        </main>
+
+        {aiPanel ? (
+          <div className="w-[400px] shrink-0 hidden lg:block h-full">
+            <V2ChatPanel
+              deal={deal}
+              currentFocusedItem={currentFocusedItem}
+              readinessScore={effectiveBreakdown.total}
+            />
+          </div>
+        ) : null}
+      </div>
 
       {/* D2 — Skip dialog */}
       <SkipDialog
