@@ -53,9 +53,10 @@ export function DealHeader({
       }}
     >
       {/* Top masthead — logo + nav + utilities.
-          NOTE: padding-right is removed so the DevPanel slot can flush
-          up against the right edge with its own left separator. */}
-      <div className="max-w-[1584px] mx-auto pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
+          NOTE: full viewport width (no max-w cap) so the DevPanel
+          slot sits flush against the true right edge of the header,
+          with its own left separator. */}
+      <div className="w-full pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
         <div className="flex items-center gap-7 min-w-0">
           {/* Logo — real PNG */}
           <WestpacLogo size={26} />

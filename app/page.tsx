@@ -420,7 +420,7 @@ function MinimalHeader() {
         borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      <div className="max-w-[1584px] mx-auto pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
+      <div className="w-full pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <span className="inline-block">
             <WestpacWordmark />
