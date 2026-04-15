@@ -117,9 +117,12 @@ export function V1DealContextForm() {
             label="Deal amount (AUD)"
             required
             value={draft.amount}
-            onChange={(v) => setDraft({ amount: v })}
-            placeholder="$"
+            // Strip any non-digit/comma so the $ prefix is always
+            // visually leading and the user just types the number.
+            onChange={(v) => setDraft({ amount: v.replace(/[^0-9,]/g, "") })}
+            placeholder="0"
             mono
+            prefix="$"
           />
           <Field
             label="Brief description (optional)"
@@ -186,6 +189,7 @@ function Field({
   required = false,
   mono = false,
   multiline = false,
+  prefix,
 }: {
   label: string;
   value: string;
@@ -194,6 +198,7 @@ function Field({
   required?: boolean;
   mono?: boolean;
   multiline?: boolean;
+  prefix?: string;
 }) {
   const commonStyle: React.CSSProperties = {
     background: "var(--theme-card-bg)",
@@ -222,6 +227,37 @@ function Field({
           className="w-full px-3 py-2 text-[13px] focus:outline-none focus-visible:ring-2"
           style={commonStyle}
         />
+      ) : prefix ? (
+        <div
+          className="w-full h-10 flex items-stretch overflow-hidden focus-within:ring-2"
+          style={commonStyle}
+        >
+          <span
+            className="flex items-center justify-center pl-3 pr-1 text-[13px] font-semibold select-none"
+            style={{
+              color: "var(--theme-text-primary)",
+              fontFamily: mono
+                ? "var(--theme-font-mono)"
+                : "var(--theme-font-sans)",
+            }}
+          >
+            {prefix}
+          </span>
+          <input
+            type="text"
+            inputMode="numeric"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={placeholder}
+            className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none pl-1 pr-3 text-[13px]"
+            style={{
+              color: "var(--theme-text-primary)",
+              fontFamily: mono
+                ? "var(--theme-font-mono)"
+                : "var(--theme-font-sans)",
+            }}
+          />
+        </div>
       ) : (
         <input
           type="text"
