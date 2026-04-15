@@ -24,7 +24,11 @@ export function ProgressSpine({ currentPhase }: Props) {
   return (
     <nav
       aria-label="Deal lifecycle phases"
-      className="w-full bg-[#f4f4f4] border-y border-[#e0e0e0]"
+      className="w-full border-y"
+      style={{
+        background: "var(--theme-spine-bg)",
+        borderColor: "var(--theme-border)",
+      }}
     >
       <ol className="flex items-stretch max-w-[1584px] mx-auto">
         {PHASES.map((phase, idx) => {
@@ -40,8 +44,8 @@ export function ProgressSpine({ currentPhase }: Props) {
                       isCurrent
                         ? "bg-white"
                         : isComplete
-                          ? "hover:bg-[#e8e8e8]"
-                          : "hover:bg-[#e8e8e8] opacity-70"
+                          ? "hover:brightness-95"
+                          : "hover:brightness-95 opacity-70"
                     }`}
                     style={{
                       borderLeft: idx === 0 ? "none" : "1px solid #e0e0e0",
@@ -52,12 +56,13 @@ export function ProgressSpine({ currentPhase }: Props) {
                       className="flex items-center justify-center w-6 h-6 text-[11px] font-medium shrink-0"
                       style={{
                         backgroundColor: isCurrent
-                          ? "#0f62fe"
+                          ? "var(--theme-spine-bar)"
                           : isComplete
                             ? "#24a148"
-                            : "#ffffff",
-                        color: isCurrent || isComplete ? "#ffffff" : "#6f6f6f",
-                        border: isFuture ? "1px solid #c6c6c6" : "none",
+                            : "var(--theme-card-bg)",
+                        color: isCurrent || isComplete ? "#ffffff" : "var(--theme-text-tertiary)",
+                        border: isFuture ? "1px solid var(--theme-border-strong)" : "none",
+                        borderRadius: "var(--theme-radius)",
                       }}
                     >
                       {isComplete ? (
@@ -81,9 +86,12 @@ export function ProgressSpine({ currentPhase }: Props) {
                       </div>
                     </div>
 
-                    {/* Active phase bottom bar (Carbon signature) */}
+                    {/* Active phase bottom bar — Westpac signature red via theme var */}
                     {isCurrent ? (
-                      <div className="absolute left-0 right-0 bottom-0 h-[3px] bg-[#0f62fe]" />
+                      <div
+                        className="absolute left-0 right-0 bottom-0 h-[3px]"
+                        style={{ background: "var(--theme-spine-bar)" }}
+                      />
                     ) : null}
                   </div>
                 </TooltipTrigger>

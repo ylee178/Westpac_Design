@@ -141,7 +141,11 @@ export function ChecklistItemRow({ item, onRequestSkip }: Props) {
                 e.stopPropagation();
                 setShowKnowledge((v) => !v);
               }}
-              className="h-8 rounded-none text-[12px] text-[#0f62fe] hover:bg-[#edf5ff] hover:text-[#0043ce] px-2 gap-1.5"
+              className="h-8 rounded-[var(--theme-radius)] text-[12px] px-2 gap-1.5"
+              style={{
+                color: "var(--theme-accent-fg)",
+                backgroundColor: "transparent",
+              }}
             >
               <Info size={13} />
               {showKnowledge ? "Hide knowledge" : "Why is this required?"}
@@ -189,8 +193,18 @@ export function ChecklistItemRow({ item, onRequestSkip }: Props) {
 
           {/* D3 — inline knowledge card, expands inside the row */}
           {showKnowledge ? (
-            <div className="mt-3 p-4 bg-[#f4f4f4] border-l-2 border-[#0f62fe] max-w-[680px]">
-              <div className="text-[10px] uppercase tracking-[0.5px] text-[#0043ce] font-semibold mb-2">
+            <div
+              className="mt-3 p-4 border-l-2 max-w-[680px]"
+              style={{
+                background: "var(--theme-surface-subtle)",
+                borderLeftColor: "var(--theme-accent-fg)",
+                borderRadius: "0 var(--theme-radius) var(--theme-radius) 0",
+              }}
+            >
+              <div
+                className="text-[10px] uppercase tracking-[0.5px] font-semibold mb-2"
+                style={{ color: "var(--theme-accent-fg)" }}
+              >
                 D3 · Inline knowledge
               </div>
               <div className="space-y-2.5 text-[13px] leading-[1.5] text-[#161616] tracking-[0.16px]">
@@ -215,7 +229,13 @@ export function ChecklistItemRow({ item, onRequestSkip }: Props) {
                   </div>
                 ) : null}
                 {item.knowledge.policyLink ? (
-                  <div className="text-[12px] text-[#0f62fe] border-t border-[#e0e0e0] pt-2">
+                  <div
+                    className="text-[12px] border-t pt-2"
+                    style={{
+                      color: "var(--theme-accent-fg)",
+                      borderColor: "var(--theme-border)",
+                    }}
+                  >
                     → {item.knowledge.policyLink}
                   </div>
                 ) : null}

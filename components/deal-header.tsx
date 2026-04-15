@@ -8,6 +8,7 @@
 import type { ConfidenceBreakdown, Deal } from "@/lib/types";
 import { ConfidenceTooltip } from "@/components/confidence-tooltip";
 import { ModeIndicator } from "@/components/mode-indicator";
+import { WestpacLogo } from "@/components/westpac-logo";
 import { Building2, User2 } from "lucide-react";
 
 interface Props {
@@ -24,21 +25,56 @@ const currency = new Intl.NumberFormat("en-AU", {
 
 export function DealHeader({ deal, breakdown, hasRedFlag }: Props) {
   return (
-    <header className="bg-[#161616] text-white border-b border-[#262626]">
-      {/* Top thin bar — product label */}
-      <div className="bg-[#262626] px-6 md:px-8 py-2 flex items-center justify-between text-[11px] text-[#c6c6c6] tracking-[0.32px]">
-        <div className="flex items-center gap-4">
-          <span className="font-semibold">
-            Westpac <span className="text-[#78a9ff]">BizEdge</span>
-          </span>
-          <span className="text-[#6f6f6f]">·</span>
-          <span>Business Lending Origination Platform</span>
+    <header
+      className="border-b"
+      style={{
+        background: "var(--theme-header-bg)",
+        color: "var(--theme-header-fg)",
+        borderColor: "var(--theme-header-subtle)",
+      }}
+    >
+      {/* Top thin bar — Westpac logo + product label + banker */}
+      <div
+        className="px-6 md:px-8 py-2.5 flex items-center justify-between text-[11px]"
+        style={{
+          background: "var(--theme-header-subtle)",
+          color: "var(--theme-header-muted)",
+          letterSpacing: "var(--theme-letter-spacing-small)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <div className="flex items-center gap-3">
+          {/* Westpac W logo — always visible, always brand red */}
+          <WestpacLogo size={28} />
+          <div
+            className="hidden sm:block w-px h-5"
+            style={{ background: "rgba(255,255,255,0.15)" }}
+          />
+          <div className="flex items-center gap-2">
+            <span
+              className="font-semibold text-[13px]"
+              style={{ color: "var(--theme-header-fg)", letterSpacing: 0 }}
+            >
+              BizEdge
+            </span>
+            <span
+              className="hidden md:inline text-[11px]"
+              style={{ color: "var(--theme-header-muted)" }}
+            >
+              Business Lending Origination Platform
+            </span>
+          </div>
         </div>
-        <div className="flex items-center gap-2 text-[#c6c6c6]">
+        <div
+          className="flex items-center gap-2"
+          style={{ color: "var(--theme-header-muted)" }}
+        >
           <User2 size={12} />
           <span>
             {deal.banker.name}
-            <span className="text-[#6f6f6f]"> — {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}</span>
+            <span style={{ color: "var(--theme-text-tertiary)" }}>
+              {" "}— {deal.banker.role === "senior-banker" ? "Senior Banker" : "New Banker"}
+            </span>
           </span>
         </div>
       </div>
@@ -46,17 +82,26 @@ export function DealHeader({ deal, breakdown, hasRedFlag }: Props) {
       {/* Main deal header */}
       <div className="px-6 md:px-8 py-5 flex items-start justify-between gap-6 max-w-[1584px] mx-auto">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.5px] text-[#c6c6c6]">
+          <div
+            className="flex items-center gap-2 text-[11px] uppercase tracking-[0.5px]"
+            style={{ color: "var(--theme-header-muted)" }}
+          >
             <Building2 size={12} />
             Deal {deal.id}
           </div>
           <h1
-            className="text-[28px] md:text-[32px] font-light leading-[1.2] mt-1 text-white"
-            style={{ letterSpacing: 0 }}
+            className="text-[28px] md:text-[32px] font-light leading-[1.2] mt-1"
+            style={{ letterSpacing: 0, color: "var(--theme-header-fg)" }}
           >
             {deal.customerName}
           </h1>
-          <div className="text-[14px] text-[#c6c6c6] tracking-[0.16px] mt-1">
+          <div
+            className="text-[14px] mt-1"
+            style={{
+              color: "var(--theme-header-muted)",
+              letterSpacing: "var(--theme-letter-spacing)",
+            }}
+          >
             {deal.dealName}
           </div>
           <div className="flex items-center gap-4 mt-3 flex-wrap">
@@ -88,13 +133,17 @@ function MetaItem({
 }) {
   return (
     <div className="flex flex-col leading-tight">
-      <span className="text-[10px] uppercase tracking-[0.5px] text-[#6f6f6f]">
+      <span
+        className="text-[10px] uppercase tracking-[0.5px]"
+        style={{ color: "var(--theme-text-tertiary)" }}
+      >
         {label}
       </span>
       <span
-        className="text-[14px] text-white tabular-nums"
+        className="text-[14px] tabular-nums"
         style={{
-          fontFamily: mono ? "var(--font-plex-mono)" : "var(--font-plex-sans)",
+          color: "var(--theme-header-fg)",
+          fontFamily: mono ? "var(--theme-font-mono)" : "var(--theme-font-sans)",
         }}
       >
         {value}

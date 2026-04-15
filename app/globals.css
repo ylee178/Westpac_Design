@@ -148,19 +148,143 @@
   --sidebar-ring: #78a9ff;
 }
 
+/* ============================================================
+   Theme-swappable tokens
+   The dev panel sets data-theme="ibm" (default) or data-theme="stripe"
+   on <html>. CSS variables below switch accordingly.
+   ============================================================ */
+/* ============================================================
+   Westpac brand tokens — applied as an overlay on BOTH design
+   systems. These values don't change when the theme switches.
+   The brand (red/maroon/logo) is the constant; the underlying
+   design system (IBM Carbon vs Stripe) changes around it.
+   ============================================================ */
+:root {
+  --westpac-brand-red: #d1132f;       /* brand accent, active indicators */
+  --westpac-brand-red-hover: #b50f28;
+  --westpac-brand-maroon: #621132;    /* primary actions, headings */
+  --westpac-brand-maroon-hover: #4d0e27;
+  --westpac-brand-maroon-active: #3a0a1e;
+  --westpac-brand-maroon-soft: #fff1f4;
+  --westpac-brand-maroon-border: #f5c6cf;
+}
+
+:root,
+[data-theme="ibm"] {
+  /* IBM Carbon structural tokens — typography, radius, shadow, density */
+  --theme-page-bg: #ffffff;
+  --theme-card-bg: #ffffff;
+  --theme-surface-subtle: #f4f4f4;
+  --theme-surface-hover: #e8e8e8;
+  --theme-border: #e0e0e0;
+  --theme-border-strong: #c6c6c6;
+
+  --theme-text-primary: #161616;
+  --theme-text-secondary: #525252;
+  --theme-text-tertiary: #6f6f6f;
+
+  --theme-header-bg: #161616;
+  --theme-header-subtle: #262626;
+  --theme-header-fg: #ffffff;
+  --theme-header-muted: #c6c6c6;
+
+  --theme-spine-bg: #f4f4f4;
+  --theme-spine-current: #ffffff;
+
+  --theme-radius: 0px;
+  --theme-radius-lg: 0px;
+  --theme-shadow-card: none;
+  --theme-shadow-float: 0 2px 6px rgba(0,0,0,0.15);
+
+  --theme-font-sans: var(--font-plex-sans), "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --theme-font-mono: var(--font-plex-mono), "IBM Plex Mono", Menlo, Courier, monospace;
+  --theme-letter-spacing: 0.16px;
+  --theme-letter-spacing-small: 0.32px;
+
+  /* Westpac brand overlay — replaces IBM Blue 60 */
+  --theme-primary: var(--westpac-brand-maroon);
+  --theme-primary-hover: var(--westpac-brand-maroon-hover);
+  --theme-primary-active: var(--westpac-brand-maroon-active);
+  --theme-primary-fg: #ffffff;
+  --theme-accent-bg: var(--westpac-brand-maroon-soft);
+  --theme-accent-border: var(--westpac-brand-maroon-border);
+  --theme-accent-fg: var(--westpac-brand-maroon);
+  --theme-header-accent: var(--westpac-brand-red);
+  --theme-spine-bar: var(--westpac-brand-red);
+}
+
+[data-theme="stripe"] {
+  /* Stripe structural tokens — rounded, shadowy, airy, Inter font */
+  --theme-page-bg: #f6f9fc;
+  --theme-card-bg: #ffffff;
+  --theme-surface-subtle: #f6f9fc;
+  --theme-surface-hover: #eef2f7;
+  --theme-border: #e3e8ee;
+  --theme-border-strong: #cfd7df;
+
+  --theme-text-primary: #0a2540;
+  --theme-text-secondary: #425466;
+  --theme-text-tertiary: #6b7c93;
+
+  --theme-header-bg: #0a2540;
+  --theme-header-subtle: #12355c;
+  --theme-header-fg: #ffffff;
+  --theme-header-muted: #adbdcc;
+
+  --theme-spine-bg: #ffffff;
+  --theme-spine-current: #f6f9fc;
+
+  --theme-radius: 8px;
+  --theme-radius-lg: 12px;
+  --theme-shadow-card: 0 1px 2px rgba(50,50,93,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --theme-shadow-float: 0 12px 30px rgba(50,50,93,0.15), 0 3px 8px rgba(0,0,0,0.08);
+
+  --theme-font-sans: var(--font-inter), -apple-system, "Segoe UI", "Helvetica Neue", sans-serif;
+  --theme-font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --theme-letter-spacing: 0;
+  --theme-letter-spacing-small: 0;
+
+  /* Westpac brand overlay — replaces Stripe indigo */
+  --theme-primary: var(--westpac-brand-maroon);
+  --theme-primary-hover: var(--westpac-brand-maroon-hover);
+  --theme-primary-active: var(--westpac-brand-maroon-active);
+  --theme-primary-fg: #ffffff;
+  --theme-accent-bg: var(--westpac-brand-maroon-soft);
+  --theme-accent-border: var(--westpac-brand-maroon-border);
+  --theme-accent-fg: var(--westpac-brand-maroon);
+  --theme-header-accent: var(--westpac-brand-red);
+  --theme-spine-bar: var(--westpac-brand-red);
+}
+
+[data-grayscale="on"] body {
+  filter: grayscale(1);
+  transition: filter 0.2s ease;
+}
+
+/* Stripe-specific visual tweaks that cascade beyond variables */
+[data-theme="stripe"] body {
+  background: var(--theme-page-bg);
+}
+[data-theme="stripe"] .theme-card {
+  border-radius: var(--theme-radius);
+  box-shadow: var(--theme-shadow-card);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
   html {
-    font-family: var(--font-plex-sans), "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    font-family: var(--theme-font-sans);
   }
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "kern", "liga", "clig", "calt";
+    background: var(--theme-page-bg);
+    transition: background-color 0.2s ease;
   }
   code, pre, .font-mono {
-    font-family: var(--font-plex-mono), "IBM Plex Mono", Menlo, Courier, monospace;
+    font-family: var(--theme-font-mono);
   }
 
   /* Carbon typographic details */

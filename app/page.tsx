@@ -28,6 +28,7 @@ import { ProductEntitySwitcher } from "@/components/product-entity-switcher";
 import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistItemRow } from "@/components/checklist-item";
 import { SkipDialog } from "@/components/skip-dialog";
+import { DevPanel } from "@/components/dev-panel";
 import { Info } from "lucide-react";
 
 export default function Page() {
@@ -151,11 +152,23 @@ export default function Page() {
           </div>
 
           {/* Section heading */}
-          <div className="mb-3 flex items-baseline justify-between flex-wrap gap-2 border-b border-[#161616] pb-2">
-            <h2 className="text-[20px] font-normal text-[#161616] leading-[1.4]">
+          <div
+            className="mb-3 flex items-baseline justify-between flex-wrap gap-2 border-b pb-2"
+            style={{ borderColor: "var(--theme-text-primary)" }}
+          >
+            <h2
+              className="text-[20px] font-normal leading-[1.4]"
+              style={{ color: "var(--theme-text-primary)" }}
+            >
               Identification phase — checklist
             </h2>
-            <div className="text-[12px] text-[#525252] tracking-[0.16px]">
+            <div
+              className="text-[12px]"
+              style={{
+                color: "var(--theme-text-secondary)",
+                letterSpacing: "var(--theme-letter-spacing)",
+              }}
+            >
               Showing {visibleItems.length} of {currentPhaseItems.length} items
               for this phase · reshape axis: {deal.product} × {deal.entity}
             </div>
@@ -163,7 +176,15 @@ export default function Page() {
 
           {/* Checklist */}
           {visibleItems.length > 0 ? (
-            <ul className="border-t border-[#e0e0e0]">
+            <ul
+              className="border-t"
+              style={{
+                borderColor: "var(--theme-border)",
+                boxShadow: "var(--theme-shadow-card)",
+                borderRadius: "var(--theme-radius)",
+                overflow: "hidden",
+              }}
+            >
               {visibleItems.map((item) => (
                 <ChecklistItemRow
                   key={item.id}
@@ -179,9 +200,27 @@ export default function Page() {
           )}
 
           {/* Footer hint strip */}
-          <aside className="mt-8 p-4 bg-[#f4f4f4] border-l-2 border-[#0f62fe] flex gap-3">
-            <Info className="text-[#0f62fe] shrink-0 mt-0.5" size={16} />
-            <div className="text-[12px] leading-[1.55] text-[#161616] tracking-[0.16px]">
+          <aside
+            className="mt-8 p-4 border-l-2 flex gap-3"
+            style={{
+              background: "var(--theme-surface-subtle)",
+              borderLeftColor: "var(--theme-accent-fg)",
+              borderRadius: "0 var(--theme-radius) var(--theme-radius) 0",
+              boxShadow: "var(--theme-shadow-card)",
+            }}
+          >
+            <Info
+              className="shrink-0 mt-0.5"
+              size={16}
+              style={{ color: "var(--theme-accent-fg)" }}
+            />
+            <div
+              className="text-[12px] leading-[1.55]"
+              style={{
+                color: "var(--theme-text-primary)",
+                letterSpacing: "var(--theme-letter-spacing)",
+              }}
+            >
               <strong className="font-semibold">Demo flow hints:</strong> Switch
               product (Bank Guarantee → Term Loan) to see D1 reshape.
               Click any item to expand (D4). Open knowledge cards (D3), hover
@@ -202,6 +241,9 @@ export default function Page() {
         onCancel={handleSkipCancel}
         onConfirm={handleSkipConfirm}
       />
+
+      {/* Floating dev panel — theme / version / grayscale */}
+      <DevPanel />
     </div>
   );
 }

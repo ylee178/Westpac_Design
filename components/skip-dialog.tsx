@@ -85,9 +85,14 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
                 onClick={() => setSelectedId(opt.id)}
                 className="w-full text-left px-4 py-3 border transition-colors"
                 style={{
-                  backgroundColor: selected ? "#edf5ff" : "#ffffff",
-                  borderColor: selected ? "#0f62fe" : "#e0e0e0",
+                  backgroundColor: selected
+                    ? "var(--theme-accent-bg)"
+                    : "var(--theme-card-bg)",
+                  borderColor: selected
+                    ? "var(--theme-primary)"
+                    : "var(--theme-border)",
                   borderWidth: selected ? "2px" : "1px",
+                  borderRadius: "var(--theme-radius)",
                 }}
               >
                 <div
@@ -117,7 +122,12 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
                 value={freeText}
                 onChange={(e) => setFreeText(e.target.value)}
                 placeholder="Brief explanation (required)"
-                className="mt-1 h-10 rounded-none bg-[#f4f4f4] border-0 border-b-2 border-[#161616] focus-visible:border-[#0f62fe] focus-visible:ring-0"
+                className="mt-1 h-10 border-0 border-b-2 focus-visible:ring-0"
+                style={{
+                  backgroundColor: "var(--theme-surface-subtle)",
+                  borderBottomColor: "var(--theme-text-primary)",
+                  borderRadius: "var(--theme-radius) var(--theme-radius) 0 0",
+                }}
               />
             </div>
           ) : null}
@@ -134,7 +144,13 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
           <Button
             onClick={handleConfirm}
             disabled={!canSubmit}
-            className="flex-1 h-12 rounded-none text-[14px] font-normal bg-[#0f62fe] hover:bg-[#0353e9] disabled:bg-[#c6c6c6] disabled:text-[#8d8d8d] text-white"
+            className="flex-1 h-12 rounded-none text-[14px] font-normal text-white disabled:text-[#8d8d8d]"
+            style={{
+              background: canSubmit
+                ? "var(--theme-primary)"
+                : "var(--theme-border-strong)",
+              borderRadius: "0 var(--theme-radius) var(--theme-radius) 0",
+            }}
           >
             Skip with reason
           </Button>
