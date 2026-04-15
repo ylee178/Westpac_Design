@@ -249,7 +249,7 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     },
   },
 
-  // 6. Register PPSR interest (system, TERM LOAN ONLY — D1 demo)
+  // 6. Register PPSR interest (system, business-loan / equipment-finance — D1 demo)
   {
     id: "item-06",
     label: "Register PPSR security interest",
@@ -258,7 +258,7 @@ export const INITIAL_CHECKLIST: ChecklistItem[] = [
     owner: "system",
     status: "pending",
     phase: "identification",
-    appliesTo: { product: ["term-loan"], entity: null },
+    appliesTo: { product: ["business-loan", "equipment-finance"], entity: null },
     legallyMandatory: false,
     category: "product-specific",
     knowledge: {

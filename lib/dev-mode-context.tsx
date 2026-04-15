@@ -23,7 +23,11 @@ import {
 } from "react";
 
 export type AppTheme = "ibm" | "stripe";
-export type DemoProduct = "bank-guarantee" | "term-loan" | "overdraft" | "trust-lending";
+export type DemoProduct =
+  | "business-loan"
+  | "bank-guarantee"
+  | "equipment-finance"
+  | "business-overdraft";
 export type DemoEntity = "sole-trader" | "company" | "trust" | "partnership";
 
 interface DevMode {

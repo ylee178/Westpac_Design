@@ -297,15 +297,18 @@
   transition: filter 0.2s ease;
 }
 
-/* Body paragraphs and opt-in details turn into gray bars */
+/* Body paragraphs and opt-in details become real skeleton-looking
+   blocks in grayscale mode — same background, pulse, and radius as
+   the Skeleton component so the two design languages match. */
 [data-grayscale="on"] p,
 [data-grayscale="on"] .skeleton-detail,
 [data-grayscale="on"] .skeleton-detail * {
   color: transparent !important;
-  background-color: #d6d3d1 !important;
-  border-radius: 3px !important;
+  background-color: var(--skeleton-bg) !important;
+  border-radius: 4px !important;
   text-shadow: none !important;
   box-shadow: none !important;
+  animation: skeleton-pulse 1.5s ease-in-out infinite !important;
 }
 
 /* Dim icons — structural cues stay, decorative noise fades */
@@ -383,6 +386,55 @@
 @keyframes pac-typing {
   0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
   30%           { opacity: 1;   transform: translateY(-2px); }
+}
+
+/* ============================================================
+   Skeleton — shared placeholder language.
+   Used by the <Skeleton /> component AND by grayscale dev mode
+   which reshapes real content into skeleton blocks via the CSS
+   overrides further below.
+   ============================================================ */
+:root {
+  --skeleton-bg: rgba(100, 116, 139, 0.2);
+  --skeleton-bg-strong: rgba(100, 116, 139, 0.32);
+}
+
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+@keyframes skeleton-wave {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-pulse {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-bg) 0%,
+    var(--skeleton-bg-strong) 50%,
+    var(--skeleton-bg) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.6s linear infinite;
+}
+
+.skeleton-none {
+  animation: none;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 280ms ease-out both;
 }
 
 /* Keep Pac sharp and brand-red even in grayscale skeleton mode */

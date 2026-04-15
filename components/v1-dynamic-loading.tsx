@@ -4,14 +4,15 @@
  * V1 step 3 — Dynamic loading animation.
  * Full-width loading state. Title names the product × entity ×
  * jurisdiction combination so the banker sees D1 reshape happening.
- * Skeleton shimmer cards appear then resolve into the Setup phase
- * items with provenance badges staggered in. After ~2.5s, a "Setup
- * complete" banner shows and auto-advances to focused step.
+ * Skeleton rows appear then resolve into the Setup phase items with
+ * provenance badges staggered in. After ~2.5s, a "Setup complete"
+ * banner shows and auto-advances to focused step.
  */
 import { useEffect, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
 import { Check, Sparkles } from "lucide-react";
-import { PHASES, SAMPLE_DEAL } from "@/data/deal-data";
+import { Skeleton } from "@/components/skeleton";
+import { productLabel } from "@/data/product-options";
 
 const SETUP_ITEMS = [
   { label: "Link customer record", source: "Customer master · manual" },
@@ -19,22 +20,12 @@ const SETUP_ITEMS = [
   { label: "Initial eligibility screen", source: "Risk engine · trading history ≥12mo" },
 ];
 
-function productLabel(id: string): string {
-  const map: Record<string, string> = {
-    "bank-guarantee": "Bank Guarantee",
-    "term-loan": "Term Loan",
-    "trust-lending": "Trust Lending",
-    overdraft: "Equipment Finance",
-  };
-  return map[id] ?? id;
-}
-
 function entityLabel(id: string): string {
   const map: Record<string, string> = {
     company: "Company",
     trust: "Trust",
     partnership: "Partnership",
-    "sole-trader": "Individual",
+    "sole-trader": "Sole Trader",
   };
   return map[id] ?? id;
 }
@@ -45,16 +36,15 @@ export function V1DynamicLoading() {
   const [showComplete, setShowComplete] = useState(false);
 
   useEffect(() => {
-    // Stagger-reveal each setup item, 400ms apart
     const timers: ReturnType<typeof setTimeout>[] = [];
     SETUP_ITEMS.forEach((_, i) => {
       timers.push(
         setTimeout(() => setRevealCount(i + 1), 500 + i * 400),
       );
     });
-    // Show "Setup complete" banner after the last item
-    timers.push(setTimeout(() => setShowComplete(true), 500 + SETUP_ITEMS.length * 400 + 300));
-    // Auto-advance to focused step
+    timers.push(
+      setTimeout(() => setShowComplete(true), 500 + SETUP_ITEMS.length * 400 + 300),
+    );
     timers.push(
       setTimeout(
         () => setStep("focused"),
@@ -124,7 +114,7 @@ export function V1DynamicLoading() {
 
         {showComplete ? (
           <div
-            className="mt-5 flex items-center gap-3 p-3 animate-fade-in"
+            className="mt-5 flex items-center gap-3 p-3"
             style={{
               background: "#f0f9f2",
               border: "1px solid #bfe4c6",
@@ -132,11 +122,7 @@ export function V1DynamicLoading() {
               borderRadius: "var(--theme-radius)",
             }}
           >
-            <Check
-              size={16}
-              strokeWidth={2.5}
-              style={{ color: "#2e7d32" }}
-            />
+            <Check size={16} strokeWidth={2.5} style={{ color: "#2e7d32" }} />
             <div
               className="text-[13px] font-semibold"
               style={{ color: "var(--theme-text-primary)" }}
@@ -161,29 +147,18 @@ function SetupItemRow({
     <div
       className="flex items-center gap-3 px-4 py-3 transition-all"
       style={{
-        opacity: revealed ? 1 : 0.4,
-        transform: revealed ? "translateY(0)" : "translateY(4px)",
         transitionDuration: "400ms",
       }}
     >
       {revealed ? (
         <div
           className="flex items-center justify-center w-5 h-5 shrink-0"
-          style={{
-            background: "#2e7d32",
-            borderRadius: "50%",
-          }}
+          style={{ background: "#2e7d32", borderRadius: "50%" }}
         >
           <Check size={11} strokeWidth={3} color="white" />
         </div>
       ) : (
-        <div
-          className="w-5 h-5 shrink-0 animate-pulse"
-          style={{
-            background: "var(--theme-border)",
-            borderRadius: "50%",
-          }}
-        />
+        <Skeleton variant="circle" width={20} height={20} />
       )}
       <div className="min-w-0 flex-1">
         {revealed ? (
@@ -205,22 +180,10 @@ function SetupItemRow({
             </div>
           </>
         ) : (
-          <>
-            <div
-              className="h-3 w-2/3 animate-pulse"
-              style={{
-                background: "var(--theme-border)",
-                borderRadius: "2px",
-              }}
-            />
-            <div
-              className="h-2 w-1/2 mt-1.5 animate-pulse"
-              style={{
-                background: "var(--theme-border-subtle)",
-                borderRadius: "2px",
-              }}
-            />
-          </>
+          <div className="flex flex-col gap-1.5">
+            <Skeleton variant="text" width="60%" height="14px" />
+            <Skeleton variant="text" width="40%" height="10px" />
+          </div>
         )}
       </div>
     </div>

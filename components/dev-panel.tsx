@@ -24,10 +24,10 @@ const THEMES: { id: AppTheme; label: string }[] = [
 ];
 
 const PRODUCTS: { id: DemoProduct; label: string }[] = [
-  { id: "bank-guarantee", label: "Bank guarantee" },
-  { id: "term-loan", label: "Term loan" },
-  { id: "overdraft", label: "Overdraft" },
-  { id: "trust-lending", label: "Trust lending" },
+  { id: "business-loan", label: "Business Loan" },
+  { id: "bank-guarantee", label: "Bank Guarantee" },
+  { id: "equipment-finance", label: "Equipment Finance" },
+  { id: "business-overdraft", label: "Business Overdraft" },
 ];
 
 const ENTITIES: { id: DemoEntity; label: string }[] = [

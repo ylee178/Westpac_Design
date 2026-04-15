@@ -14,10 +14,10 @@ import {
 } from "@/components/ui/select";
 
 const PRODUCTS: { id: ProductType; label: string }[] = [
+  { id: "business-loan", label: "Business Loan" },
   { id: "bank-guarantee", label: "Bank Guarantee" },
-  { id: "term-loan", label: "Term Loan" },
-  { id: "overdraft", label: "Overdraft" },
-  { id: "trust-lending", label: "Trust Lending" },
+  { id: "equipment-finance", label: "Equipment Finance" },
+  { id: "business-overdraft", label: "Business Overdraft" },
 ];
 
 const ENTITIES: { id: EntityType; label: string }[] = [

@@ -37,6 +37,10 @@ export interface DealDraft {
   product: string;
   entity: string;
   jurisdiction: string;
+  /** Amount bucket id from the product-specific bands */
+  amountBucket: string;
+  /** Secondary axis — purpose / asset type / loan type, per product */
+  purpose: string;
   customerName: string;
   amount: string;
   description: string;
@@ -61,6 +65,8 @@ const EMPTY_DRAFT: DealDraft = {
   product: "",
   entity: "",
   jurisdiction: "",
+  amountBucket: "",
+  purpose: "",
   customerName: "",
   amount: "",
   description: "",

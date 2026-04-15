@@ -19,11 +19,14 @@ export interface PhaseMeta {
 }
 
 // ——— Deal entity (D1 reshape drivers) ———
+// Matches the four Westpac business-lending products on
+// westpac.com.au. "Trust Lending" was removed — Trust is an entity
+// type, not a product.
 export type ProductType =
+  | "business-loan"
   | "bank-guarantee"
-  | "term-loan"
-  | "overdraft"
-  | "trust-lending";
+  | "equipment-finance"
+  | "business-overdraft";
 
 export type EntityType =
   | "sole-trader"
