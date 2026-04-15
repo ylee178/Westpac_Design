@@ -179,11 +179,13 @@ export function V1EmptyState() {
                   selected={selectedProductId === id}
                   onClick={() => setDraft({ product: id })}
                 >
-                  <Icon
-                    size={22}
-                    strokeWidth={1.8}
-                    style={{ color: "var(--theme-primary)" }}
-                  />
+                  <IconTile>
+                    <Icon
+                      size={20}
+                      strokeWidth={1.9}
+                      style={{ color: "var(--theme-primary)" }}
+                    />
+                  </IconTile>
                   <div
                     className="text-[14px] font-semibold mt-3"
                     style={{ color: "var(--theme-text-primary)" }}
@@ -243,11 +245,13 @@ export function V1EmptyState() {
                         onClick={() => setDraft({ entity: e.id })}
                         compact
                       >
-                        <Icon
-                          size={18}
-                          strokeWidth={1.8}
-                          style={{ color: "var(--theme-primary)" }}
-                        />
+                        <IconTile size={32}>
+                          <Icon
+                            size={16}
+                            strokeWidth={1.9}
+                            style={{ color: "var(--theme-primary)" }}
+                          />
+                        </IconTile>
                         <div
                           className="text-[13px] font-semibold mt-2"
                           style={{ color: "var(--theme-text-primary)" }}
@@ -318,7 +322,7 @@ export function V1EmptyState() {
                       key={j}
                       type="button"
                       onClick={() => setDraft({ jurisdiction: j })}
-                      className="inline-flex items-center gap-1.5 h-10 px-4 text-[13px] font-semibold transition-colors"
+                      className="inline-flex items-center gap-1.5 h-10 px-4 text-[13px] font-semibold transition-colors cursor-pointer"
                       style={{
                         background:
                           draft.jurisdiction === j
@@ -359,7 +363,7 @@ export function V1EmptyState() {
             type="button"
             onClick={handleCreate}
             disabled={!allChosen}
-            className="inline-flex items-center gap-2 h-12 px-6 text-[14px] font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 h-12 px-6 text-[14px] font-semibold text-white transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               background: "var(--theme-primary)",
               borderRadius: "var(--theme-radius)",
@@ -411,7 +415,7 @@ function CardSelector({
     <button
       type="button"
       onClick={onClick}
-      className={`w-full flex flex-col items-start text-left transition-all ${compact ? "p-3" : "p-4"}`}
+      className={`w-full flex flex-col items-start text-left transition-all cursor-pointer ${compact ? "p-3" : "p-4"}`}
       style={{
         background: selected
           ? "var(--westpac-primary-soft)"
@@ -424,6 +428,34 @@ function CardSelector({
     >
       {children}
     </button>
+  );
+}
+
+/**
+ * Rounded-square icon tile — wraps product/entity card icons in a
+ * pale Westpac-maroon background so each card has a clear visual
+ * anchor independent of label length. Uses westpac-primary-soft so
+ * the selected state's background still shows through cleanly.
+ */
+function IconTile({
+  children,
+  size = 36,
+}: {
+  children: React.ReactNode;
+  size?: number;
+}) {
+  return (
+    <span
+      className="inline-flex items-center justify-center shrink-0"
+      style={{
+        width: size,
+        height: size,
+        background: "var(--westpac-primary-soft)",
+        borderRadius: "8px",
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -440,7 +472,7 @@ function PillSelector({
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center h-10 px-4 text-[13px] font-semibold transition-colors"
+      className="inline-flex items-center h-10 px-4 text-[13px] font-semibold transition-colors cursor-pointer"
       style={{
         background: selected
           ? "var(--theme-primary)"
@@ -478,7 +510,11 @@ function SkeletonCardRow({
             borderRadius: "var(--theme-radius)",
           }}
         >
-          <Skeleton variant="circle" width={18} height={18} />
+          <Skeleton
+            variant="card"
+            width={compact ? 32 : 36}
+            height={compact ? 32 : 36}
+          />
           <div className="mt-2.5">
             <Skeleton variant="text" width="70%" height="13px" />
           </div>

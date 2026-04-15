@@ -3,62 +3,72 @@
 /**
  * Pac — Westpac AI teammate.
  *
- * 16x16 pixel creature: front-facing round body, two white square
- * eyes, small arms sticking out at the sides, two legs with feet.
- * Not Pac-Man — just a chunky pixel blob with brand-red fill.
+ * Inspired by the Westpac W-mark logo. Composed of two parts with
+ * a one-pixel gap between them (matching the gaps between the three
+ * W-bars below):
+ *
+ *   - A semicircle "face" on top, holding two square eyes.
+ *   - The three W-bars fan out below as the body, tapering at the
+ *     bottom like legs.
+ *
+ * The 1px gap row between face and body mirrors the 1px gutters
+ * between the three W-bars for visual consistency.
  *
  * Animation states:
  *   - idle:      static grid
- *   - speaking:  blinks every 240ms (used briefly on new chat bubbles)
- *   - celebrate: one-shot 360° spin (kept for phase-complete moments)
+ *   - speaking:  eye blink (subtle "thinking" cue)
+ *   - celebrate: one-shot 360° spin
  */
 import { useEffect, useState } from "react";
 
 const BRAND_RED = "#DA1710";
 const EYE_WHITE = "#FFFFFF";
 
-// 16x16 pixel grid.
+// 16x16 pixel grid — Westpac W-mark mascot.
 //   X = red body pixel
-//   E = white eye pixel (2x2 each, front-facing)
+//   E = white eye pixel
 //   . = transparent
+//
+// Rows 0-4:  semicircle face (dome) with two square eyes
+// Row 5:     1px gap (matches column gaps between W-bars)
+// Rows 6-15: W-mark body fanning down into legs
 const PAC_OPEN: readonly string[] = [
-  ".....XXXXXX.....",
+  "......XXXX......",
+  "....XXXXXXXX....",
   "...XXXXXXXXXX...",
-  "..XXXXXXXXXXXX..",
-  ".XXXEEXXXXEEXXX.",
-  ".XXXEEXXXXEEXXX.",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  "XX.XXXXXXXXXX.XX",
-  "XX.XXXXXXXXXX.XX",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  "..XXXXXXXXXXXX..",
-  "..XXXX....XXXX..",
-  "..XXXX....XXXX..",
-  ".XXXXX....XXXXX.",
+  "...XEEXXXXEEX...",
+  "...XXXXXXXXXX...",
+  "................",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  "..XX.XXXXXX.XX..",
+  "..XX.XXXXXX.XX..",
+  "...X.XXXXXX.X...",
+  "...X.XXXXXX.X...",
+  "................",
 ];
 
-// Speaking frame — eyes blink (disappear for a beat) so the new
-// bubble has a small "alive" signal without needing a mouth.
+// Blink frame — eyes fill in with body colour.
 const PAC_BLINK: readonly string[] = [
-  ".....XXXXXX.....",
+  "......XXXX......",
+  "....XXXXXXXX....",
   "...XXXXXXXXXX...",
-  "..XXXXXXXXXXXX..",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  "XX.XXXXXXXXXX.XX",
-  "XX.XXXXXXXXXX.XX",
-  ".XXXXXXXXXXXXXX.",
-  ".XXXXXXXXXXXXXX.",
-  "..XXXXXXXXXXXX..",
-  "..XXXX....XXXX..",
-  "..XXXX....XXXX..",
-  ".XXXXX....XXXXX.",
+  "...XXXXXXXXXX...",
+  "...XXXXXXXXXX...",
+  "................",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  ".XXX.XXXXXX.XXX.",
+  "..XX.XXXXXX.XX..",
+  "..XX.XXXXXX.XX..",
+  "...X.XXXXXX.X...",
+  "...X.XXXXXX.X...",
+  "................",
 ];
 
 function renderGrid(grid: readonly string[], keyPrefix: string) {
@@ -110,23 +120,16 @@ export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) 
       setFrame("open");
       return;
     }
-    // Eye blink cycle — mostly open, brief blink
     let openPhase = true;
-    const tick = () => {
-      openPhase = !openPhase;
-      setFrame(openPhase ? "open" : "blink");
-    };
-    // Longer open phase than blink for natural feel
-    const openMs = 700;
-    const blinkMs = 140;
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => {
       timer = setTimeout(
         () => {
-          tick();
+          openPhase = !openPhase;
+          setFrame(openPhase ? "open" : "blink");
           schedule();
         },
-        openPhase ? openMs : blinkMs,
+        openPhase ? 700 : 140,
       );
     };
     schedule();
@@ -134,7 +137,6 @@ export function PacAvatar({ size = 40, state = "idle", className = "" }: Props) 
   }, [state]);
 
   const grid = frame === "open" ? PAC_OPEN : PAC_BLINK;
-
   const animationClass = state === "celebrate" ? "pac-celebrate" : "";
 
   return (

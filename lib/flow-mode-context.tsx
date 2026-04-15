@@ -59,6 +59,11 @@ interface FlowMode {
 
   focusedIndex: number;
   setFocusedIndex: Dispatch<SetStateAction<number>>;
+
+  /** Incremented when the dev panel "Reset state" button is clicked.
+   *  page.tsx watches this and resets the full library + flow step. */
+  resetSignal: number;
+  requestReset: () => void;
 }
 
 const EMPTY_DRAFT: DealDraft = {
@@ -81,6 +86,7 @@ export function FlowModeProvider({ children }: { children: ReactNode }) {
   const [step, setStep] = useState<V1Step>("empty");
   const [draftState, setDraftState] = useState<DealDraft>(EMPTY_DRAFT);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [resetSignal, setResetSignal] = useState(0);
 
   const setDraft = useCallback((patch: Partial<DealDraft>) => {
     setDraftState((prev) => ({ ...prev, ...patch }));
@@ -88,6 +94,10 @@ export function FlowModeProvider({ children }: { children: ReactNode }) {
 
   const resetDraft = useCallback(() => {
     setDraftState(EMPTY_DRAFT);
+  }, []);
+
+  const requestReset = useCallback(() => {
+    setResetSignal((s) => s + 1);
   }, []);
 
   const value = useMemo<FlowMode>(
@@ -101,8 +111,10 @@ export function FlowModeProvider({ children }: { children: ReactNode }) {
       resetDraft,
       focusedIndex,
       setFocusedIndex,
+      resetSignal,
+      requestReset,
     }),
-    [mode, step, draftState, setDraft, resetDraft, focusedIndex],
+    [mode, step, draftState, setDraft, resetDraft, focusedIndex, resetSignal, requestReset],
   );
 
   return (

@@ -297,18 +297,24 @@
   transition: filter 0.2s ease;
 }
 
-/* Body paragraphs and opt-in details become real skeleton-looking
-   blocks in grayscale mode — same background, pulse, and radius as
-   the Skeleton component so the two design languages match. */
-[data-grayscale="on"] p,
-[data-grayscale="on"] .skeleton-detail,
-[data-grayscale="on"] .skeleton-detail * {
+/* Body paragraphs and opt-in details become skeleton-shaped blocks
+   in grayscale mode. Using inline-block + max-width so the bar
+   shrinks to the actual text width (not the parent container width)
+   — a standard skeleton look, not a full-bleed rectangle.
+
+   Line-height is tightened so multi-line paragraphs compress into
+   a single compact bar instead of a tall block. */
+[data-grayscale="on"] :where(p, .skeleton-detail) {
   color: transparent !important;
   background-color: var(--skeleton-bg) !important;
   border-radius: 4px !important;
   text-shadow: none !important;
   box-shadow: none !important;
   animation: skeleton-pulse 1.5s ease-in-out infinite !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+  line-height: 1 !important;
+  padding: 0.1em 0.4em !important;
 }
 
 /* Dim icons — structural cues stay, decorative noise fades */
@@ -416,7 +422,7 @@
 }
 
 /* One-shot shimmer for newly-arrived chat message text. A red light
-   beam sweeps through each message once (650ms) on mount, just like
+   beam sweeps through each message once (850ms) on mount, just like
    Claude Code's streaming highlight. Uses background-clip: text so
    only the glyph shapes are revealed. */
 @keyframes shimmer-once {
@@ -440,7 +446,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: shimmer-once 650ms linear 1 forwards;
+  animation: shimmer-once 850ms linear 1 forwards;
 }
 
 .shimmer-once-banker {
@@ -459,7 +465,7 @@
   background-clip: text;
   -webkit-text-fill-color: transparent;
   color: transparent;
-  animation: shimmer-once 650ms linear 1 forwards;
+  animation: shimmer-once 850ms linear 1 forwards;
 }
 
 /* ============================================================

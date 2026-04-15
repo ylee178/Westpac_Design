@@ -356,14 +356,19 @@ function MessageBubble({
     return (
       <div className="flex items-start gap-2 justify-end">
         <div
-          className="px-3 py-2 text-[12px] leading-[1.5] max-w-[260px] shimmer-once-banker"
+          className="px-3 py-2 max-w-[260px]"
           style={{
             background: "var(--theme-primary)",
             borderRadius: "var(--theme-radius-lg)",
             borderTopRightRadius: "4px",
           }}
-          dangerouslySetInnerHTML={{ __html: message.content }}
-        />
+        >
+          <span
+            className="text-[12px] leading-[1.5] shimmer-once-banker"
+            style={{ color: "#ffffff" }}
+            dangerouslySetInnerHTML={{ __html: message.content }}
+          />
+        </div>
         <div
           className="flex items-center justify-center w-6 h-6 shrink-0 text-[10px] font-bold text-white"
           style={{
@@ -408,10 +413,13 @@ function MessageBubble({
             </div>
           </div>
         </div>
-        <div
-          className="text-[12px] leading-[1.55] mt-1 shimmer-once-pac"
-          dangerouslySetInnerHTML={{ __html: message.content }}
-        />
+        <div className="mt-1">
+          <span
+            className="text-[12px] leading-[1.55] shimmer-once-pac"
+            style={{ color: "var(--theme-text-primary)" }}
+            dangerouslySetInnerHTML={{ __html: message.content }}
+          />
+        </div>
       </div>
     );
   }
@@ -427,15 +435,20 @@ function MessageBubble({
         </div>
       )}
       <div
-        className="flex-1 min-w-0 px-3 py-2 text-[12px] leading-[1.55] shimmer-once-pac"
+        className="flex-1 min-w-0 px-3 py-2"
         style={{
           background: "var(--theme-card-bg)",
           border: "1px solid var(--theme-border)",
           borderRadius: "var(--theme-radius-lg)",
           borderTopLeftRadius: compactContinuation ? "var(--theme-radius-lg)" : "4px",
         }}
-        dangerouslySetInnerHTML={{ __html: message.content }}
-      />
+      >
+        <span
+          className="text-[12px] leading-[1.55] shimmer-once-pac"
+          style={{ color: "var(--theme-text-primary)" }}
+          dangerouslySetInnerHTML={{ __html: message.content }}
+        />
+      </div>
     </div>
   );
 }

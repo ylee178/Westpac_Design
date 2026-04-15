@@ -1,55 +1,28 @@
 "use client";
 
 /**
- * Floating dev panel — bottom-right gear button.
- * Compact popover: 3 stacked option groups, no subtexts, tight gaps.
- * Height capped to viewport; body scrolls if content overflows.
+ * Dev panel — bottom-right gear button. Keeps exactly three demo
+ * controls the interviewer (or Sean) can use during presentation:
+ *
+ *   1. Version — V1 (plain checklist) or V2 (Pac AI panel visible)
+ *   2. Skeleton mode — toggles the lo-fi placeholder overlay
+ *   3. Reset state — rewinds to the empty deal-creation screen
+ *
+ * Theme swap, D1 product/entity overrides, and any other knobs
+ * have been removed to keep the panel focused.
  */
-import { Settings, Check } from "lucide-react";
-import {
-  useDevMode,
-  type AppTheme,
-  type DemoProduct,
-  type DemoEntity,
-} from "@/lib/dev-mode-context";
+import { Settings, Check, RotateCcw } from "lucide-react";
+import { useDevMode } from "@/lib/dev-mode-context";
+import { useFlowMode } from "@/lib/flow-mode-context";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-const THEMES: { id: AppTheme; label: string }[] = [
-  { id: "ibm", label: "IBM Carbon" },
-  { id: "stripe", label: "Stripe" },
-];
-
-const PRODUCTS: { id: DemoProduct; label: string }[] = [
-  { id: "business-loan", label: "Business Loan" },
-  { id: "bank-guarantee", label: "Bank Guarantee" },
-  { id: "equipment-finance", label: "Equipment Finance" },
-  { id: "business-overdraft", label: "Business Overdraft" },
-];
-
-const ENTITIES: { id: DemoEntity; label: string }[] = [
-  { id: "company", label: "Company" },
-  { id: "trust", label: "Trust" },
-  { id: "partnership", label: "Partnership" },
-  { id: "sole-trader", label: "Sole trader" },
-];
-
 export function DevPanel() {
-  const {
-    theme,
-    setTheme,
-    grayscale,
-    setGrayscale,
-    product,
-    setProduct,
-    entity,
-    setEntity,
-    aiPanel,
-    setAiPanel,
-  } = useDevMode();
+  const { grayscale, setGrayscale, aiPanel, setAiPanel } = useDevMode();
+  const { requestReset } = useFlowMode();
 
   return (
     <div className="fixed bottom-5 right-5 z-[1000]">
@@ -77,7 +50,7 @@ export function DevPanel() {
           side="top"
           sideOffset={10}
           collisionPadding={12}
-          className="w-[260px] p-0 overflow-hidden flex flex-col"
+          className="w-[240px] p-0 overflow-hidden flex flex-col"
           style={{
             background: "var(--theme-card-bg)",
             borderColor: "var(--theme-border-strong)",
@@ -100,18 +73,25 @@ export function DevPanel() {
             </div>
           </div>
 
-          {/* Scrollable body */}
+          {/* Body */}
           <div className="flex-1 overflow-y-auto">
-            <SectionLabel>AI Teammate panel</SectionLabel>
-            <div className="px-2 pb-2">
+            {/* 1. Version */}
+            <SectionLabel>1 · Version</SectionLabel>
+            <div className="px-2 pb-2 space-y-1">
+              <OptionButton
+                selected={!aiPanel}
+                label="V1 · Guided checklist"
+                onClick={() => setAiPanel(false)}
+              />
               <OptionButton
                 selected={aiPanel}
-                label={aiPanel ? "Panel visible" : "Panel hidden (V1 only)"}
-                onClick={() => setAiPanel(!aiPanel)}
+                label="V2 · AI teammate (Pac)"
+                onClick={() => setAiPanel(true)}
               />
             </div>
 
-            <SectionLabel>Grayscale</SectionLabel>
+            {/* 2. Skeleton mode */}
+            <SectionLabel>2 · Skeleton mode</SectionLabel>
             <div className="px-2 pb-2">
               <OptionButton
                 selected={grayscale}
@@ -120,40 +100,31 @@ export function DevPanel() {
               />
             </div>
 
-            <SectionLabel>Design system</SectionLabel>
-            <div className="px-2 pb-2 space-y-1">
-              {THEMES.map((t) => (
-                <OptionButton
-                  key={t.id}
-                  selected={theme === t.id}
-                  label={t.label}
-                  onClick={() => setTheme(t.id)}
+            {/* 3. Reset state */}
+            <SectionLabel>3 · Reset</SectionLabel>
+            <div className="px-2 pb-3">
+              <button
+                type="button"
+                onClick={() => requestReset()}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left transition-colors"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--theme-border-strong)",
+                  borderRadius: "var(--theme-radius)",
+                }}
+              >
+                <RotateCcw
+                  size={11}
+                  strokeWidth={2.2}
+                  style={{ color: "var(--theme-text-secondary)" }}
                 />
-              ))}
-            </div>
-
-            <SectionLabel>D1 · Product</SectionLabel>
-            <div className="px-2 pb-2 space-y-1">
-              {PRODUCTS.map((p) => (
-                <OptionButton
-                  key={p.id}
-                  selected={product === p.id}
-                  label={p.label}
-                  onClick={() => setProduct(p.id)}
-                />
-              ))}
-            </div>
-
-            <SectionLabel>D1 · Entity type</SectionLabel>
-            <div className="px-2 pb-2 space-y-1">
-              {ENTITIES.map((e) => (
-                <OptionButton
-                  key={e.id}
-                  selected={entity === e.id}
-                  label={e.label}
-                  onClick={() => setEntity(e.id)}
-                />
-              ))}
+                <span
+                  className="text-[12px] font-medium"
+                  style={{ color: "var(--theme-text-primary)" }}
+                >
+                  Reset to empty state
+                </span>
+              </button>
             </div>
           </div>
         </PopoverContent>

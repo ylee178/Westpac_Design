@@ -10,7 +10,7 @@
  *
  * Header + progress spine + Ready to Submit score are shared.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   ChecklistItem as CI,
   Deal,
@@ -46,7 +46,7 @@ export default function Page() {
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
   const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
-  const { product: demoProduct, entity: demoEntity, aiPanel } = useDevMode();
+  const { product: demoProduct, entity: demoEntity, aiPanel, setProduct, setEntity } = useDevMode();
   const {
     step,
     setStep,
@@ -54,7 +54,22 @@ export default function Page() {
     resetDraft,
     focusedIndex,
     setFocusedIndex,
+    resetSignal,
   } = useFlowMode();
+
+  // When the dev panel fires a reset, wipe all state back to empty.
+  useEffect(() => {
+    if (resetSignal === 0) return;
+    setLibrary(INITIAL_CHECKLIST);
+    setBaseDeal(SAMPLE_DEAL);
+    setOwnerFilter("all");
+    setSkipTarget(null);
+    setFocusedIndex(0);
+    setStep("empty");
+    resetDraft();
+    setProduct("bank-guarantee");
+    setEntity("company");
+  }, [resetSignal, resetDraft, setStep, setFocusedIndex, setProduct, setEntity]);
   // V2 AI layer is always "on" when the Pac panel is visible — the
   // readiness score bump uses the AI signal weighting below.
   const isV2 = aiPanel;
