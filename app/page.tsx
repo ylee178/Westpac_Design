@@ -26,8 +26,7 @@ import {
 import { useDevMode } from "@/lib/dev-mode-context";
 import { useFlowMode } from "@/lib/flow-mode-context";
 
-import { DealHeader } from "@/components/deal-header";
-import { DevPanel } from "@/components/dev-panel";
+import { DealMasthead, DealMetaStrip } from "@/components/deal-header";
 import { ProgressSpine } from "@/components/progress-spine";
 import { OwnerFilter } from "@/components/owner-filter";
 import { ChecklistListRow } from "@/components/checklist-list-row";
@@ -335,29 +334,22 @@ export default function Page() {
     );
   })();
 
-  // DealHeader (with live deal metadata) is visible once the banker has
-  // committed to a deal. Before that — empty/creator — we show a
-  // MinimalHeader. The ProgressSpine is ALWAYS visible as a sub-header
-  // so the five-phase lifecycle is never hidden from the banker.
-  const showFullHeader = step !== "empty" && step !== "creator";
+  // Masthead (nav, Need help, banker name, Sign out, dev panel) is
+  // ALWAYS visible — even during empty/creator, so the banker's
+  // workspace chrome never disappears. ProgressSpine sub-header sits
+  // directly below the masthead. The DealMetaStrip (customer card
+  // with readiness score) only appears once the banker has committed
+  // to a deal so the spine isn't pushed further down than necessary.
+  const showMetaStrip = step !== "empty" && step !== "creator";
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Sticky header + spine group */}
+      {/* Sticky header group: masthead → spine → (optional) meta strip */}
       <div className="shrink-0">
-        {showFullHeader ? (
-          <DealHeader
-            deal={deal}
-            breakdown={effectiveBreakdown}
-            hasRedFlag={hasRedFlag}
-            redFlagLabel={redFlagItem?.label}
-            redFlagSubtitle={redFlagItem?.subtitle}
-            bankerActionCount={bankerPending}
-            projectedAfterActions={projectedAfterActions}
-          />
-        ) : (
-          <MinimalHeader />
-        )}
+        <DealMasthead
+          bankerName={deal.banker.name}
+          bankerRole={deal.banker.role}
+        />
         <div
           style={{
             background: "#f5f5f5",
@@ -377,6 +369,17 @@ export default function Page() {
             }
           />
         </div>
+        {showMetaStrip ? (
+          <DealMetaStrip
+            deal={deal}
+            breakdown={effectiveBreakdown}
+            hasRedFlag={hasRedFlag}
+            redFlagLabel={redFlagItem?.label}
+            redFlagSubtitle={redFlagItem?.subtitle}
+            bankerActionCount={bankerPending}
+            projectedAfterActions={projectedAfterActions}
+          />
+        ) : null}
       </div>
 
       {/* Main area + optional Pac panel */}
@@ -407,49 +410,6 @@ export default function Page() {
         onConfirm={handleSkipConfirm}
       />
     </div>
-  );
-}
-
-/** Minimal header for empty/creator steps — just brand + dev panel */
-function MinimalHeader() {
-  return (
-    <header
-      className="w-full"
-      style={{
-        background: "var(--theme-header-bg)",
-        borderBottom: "1px solid var(--theme-border)",
-      }}
-    >
-      <div className="w-full pl-6 md:pl-8 pr-0 h-[56px] flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="inline-block">
-            <WestpacWordmark />
-          </span>
-          <span
-            className="text-[13px] font-semibold"
-            style={{ color: "var(--theme-text-primary)" }}
-          >
-            BizEdge
-          </span>
-        </div>
-        <div className="flex items-center self-stretch">
-          <DevPanel />
-        </div>
-      </div>
-    </header>
-  );
-}
-
-// Inline wordmark to avoid circular import with DealHeader
-function WestpacWordmark() {
-  return (
-    <img
-      src="/westpac-logo.png"
-      alt="Westpac"
-      width={40}
-      height={22}
-      style={{ height: "22px", width: "40px", objectFit: "contain" }}
-    />
   );
 }
 
