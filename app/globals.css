@@ -559,6 +559,13 @@
   color: var(--westpac-primary-active) !important;
 }
 
+/* Hide horizontal scrollbar on the suggestion pill row while still
+   allowing swipe / drag scroll. Firefox uses scrollbar-width:none,
+   WebKit needs this override. */
+.suggestion-pill-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Pill label — pale maroon background for static uppercase labels
    (phase names, "Why this matters", etc.) so they can't be mistaken
    for a text button. Not interactive. */

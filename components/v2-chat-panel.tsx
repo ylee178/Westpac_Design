@@ -165,13 +165,6 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         </div>
       </div>
 
-      {/* ——— Common questions — sits directly above the chat screen
-             on the page-bg surface so there's no white-card boundary. */}
-      <SuggestionPills
-        suggestions={suggestions}
-        onTap={handlePillTap}
-      />
-
       {/* ——— Chat thread ——— */}
       <div
         ref={scrollRef}
@@ -188,7 +181,7 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
             className="text-center text-[11px] pt-2"
             style={{ color: "var(--theme-text-tertiary)" }}
           >
-            Tap a common question above, or ask me anything.
+            Tap a common question below, or ask me anything.
           </div>
         ) : (
           timeline.map((msg, i) => {
@@ -209,6 +202,14 @@ export function V2ChatPanel({ deal, currentFocusedItem }: Props) {
         )}
         {pacTyping ? <TypingIndicator /> : null}
       </div>
+
+      {/* ——— Common questions — swipable pill row just above the
+             input, on a pale maroon surface so the prompts read as
+             a prompting shelf rather than additional chrome. */}
+      <SuggestionPills
+        suggestions={suggestions}
+        onTap={handlePillTap}
+      />
 
       {/* ——— Input ——— */}
       <form
@@ -315,6 +316,10 @@ function BriefingCard({
 }
 
 // ——— Suggestion pills ———
+// Horizontal, swipable pill row sitting on a pale maroon surface
+// directly above the input. Pills don't wrap — they scroll out to
+// the right, giving the banker a quick "prompting shelf" of the
+// most common questions.
 function SuggestionPills({
   suggestions,
   onTap,
@@ -324,33 +329,37 @@ function SuggestionPills({
 }) {
   return (
     <div
-      className="shrink-0 px-4 pt-3 pb-2"
+      className="shrink-0"
       style={{
-        background: "var(--theme-page-bg)",
-        borderBottom: "1px solid var(--theme-border-subtle)",
+        background: "var(--westpac-primary-soft)",
+        borderTop: "1px solid var(--westpac-primary-border)",
       }}
     >
       <div
-        className="text-[9px] uppercase font-semibold mb-2"
+        className="text-[9px] uppercase font-semibold px-4 pt-2.5 pb-1.5"
         style={{
-          color: "var(--theme-text-tertiary)",
+          color: "var(--theme-primary)",
           letterSpacing: "0.5px",
+          opacity: 0.75,
         }}
       >
         Common questions
       </div>
-      <div className="flex flex-col gap-1.5">
+      <div
+        className="flex gap-2 px-4 pb-3 overflow-x-auto suggestion-pill-scroll"
+        style={{ scrollbarWidth: "none" }}
+      >
         {suggestions.map((s, i) => (
           <button
             key={i}
             type="button"
             onClick={() => onTap(s)}
-            className="interactive-pill text-left px-3 py-2 text-[11.5px] leading-[1.35] font-medium cursor-pointer"
+            className="interactive-pill shrink-0 whitespace-nowrap px-3.5 py-1.5 text-[12px] leading-[1.3] font-medium cursor-pointer"
             style={{
-              background: "transparent",
+              background: "var(--theme-card-bg)",
               color: "var(--theme-primary)",
               border: "1px solid var(--westpac-primary-border)",
-              borderRadius: "var(--theme-radius)",
+              borderRadius: "999px",
             }}
           >
             {s.question}
