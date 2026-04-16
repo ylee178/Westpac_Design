@@ -11,7 +11,7 @@
  *
  * Product options are verified from westpac.com.au.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DemoEntity, DemoProduct } from "@/lib/dev-mode-context";
 import { useDevMode } from "@/lib/dev-mode-context";
 import { useFlowMode } from "@/lib/flow-mode-context";
@@ -29,7 +29,6 @@ import {
   Banknote,
   Briefcase,
   Building2,
-  CircleAlert,
   FileCheck,
   Gavel,
   ShieldCheck,
@@ -65,9 +64,21 @@ const STAGGER = {
 
 type SectionKey = "entity" | "amount" | "secondary" | "jurisdiction";
 
+function scrollToRef(ref: React.RefObject<HTMLElement | null>, delay = 350) {
+  setTimeout(() => {
+    ref.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, delay);
+}
+
 export function V1EmptyState() {
   const { setProduct, setEntity } = useDevMode();
   const { draft, setDraft, setStep } = useFlowMode();
+
+  const entityRef = useRef<HTMLElement>(null);
+  const amountRef = useRef<HTMLElement>(null);
+  const secondaryRef = useRef<HTMLElement>(null);
+  const jurisdictionRef = useRef<HTMLElement>(null);
+  const submitRef = useRef<HTMLDivElement>(null);
 
   const selectedProductId = draft.product as WestpacProductId | "";
   const product = selectedProductId
@@ -168,7 +179,7 @@ export function V1EmptyState() {
 
         {/* Product type — always visible */}
         <section className="mb-8">
-          <SectionLabel step="1" label="Product type" />
+          <SectionLabel label="Product type" />
           {!product ? (
             <div
               className="text-[12px] mb-3 -mt-1"
@@ -185,7 +196,10 @@ export function V1EmptyState() {
                 <CardSelector
                   key={id}
                   selected={selectedProductId === id}
-                  onClick={() => setDraft({ product: id })}
+                  onClick={() => {
+                    setDraft({ product: id });
+                    scrollToRef(entityRef, 500);
+                  }}
                 >
                   <IconTile>
                     <Icon
@@ -206,6 +220,19 @@ export function V1EmptyState() {
                   >
                     {p.tagline}
                   </div>
+                  {p.existingCustomerOnly ? (
+                    <span
+                      className="inline-flex items-center mt-2 px-2 py-[2px] text-[9px] font-semibold uppercase"
+                      style={{
+                        background: "rgba(0, 0, 0, 0.08)",
+                        color: "var(--theme-text-secondary)",
+                        borderRadius: "999px",
+                        letterSpacing: "0.4px",
+                      }}
+                    >
+                      Existing customer
+                    </span>
+                  ) : null}
                 </CardSelector>
               );
             })}
@@ -215,33 +242,8 @@ export function V1EmptyState() {
         {/* Dynamic sections — only render once a product is chosen */}
         {product ? (
           <>
-            {/* Existing-customer warning for overdraft */}
-            {product.existingCustomerOnly ? (
-              <div
-                className="mb-6 p-3 flex items-start gap-2 text-[12px]"
-                style={{
-                  background: "#fff8ec",
-                  border: "1px solid #f3d591",
-                  borderLeft: "3px solid #b45309",
-                  borderRadius: "var(--theme-radius)",
-                }}
-              >
-                <CircleAlert
-                  size={14}
-                  strokeWidth={2.2}
-                  className="shrink-0 mt-0.5"
-                  style={{ color: "#b45309" }}
-                />
-                <div style={{ color: "var(--theme-text-primary)" }}>
-                  <strong className="font-semibold">Existing customer required.</strong>{" "}
-                  Business Overdraft is available only to customers who
-                  already bank with Westpac.
-                </div>
-              </div>
-            ) : null}
-
-            <section className="mb-8">
-              <SectionLabel step="2" label="Entity type" />
+            <section ref={entityRef} className="mb-8">
+              <SectionLabel label="Entity type" />
               {revealed.entity ? (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-in">
                   {product.entityTypes.map((e) => {
@@ -250,7 +252,10 @@ export function V1EmptyState() {
                       <CardSelector
                         key={e.id}
                         selected={draft.entity === e.id}
-                        onClick={() => setDraft({ entity: e.id })}
+                        onClick={() => {
+                          setDraft({ entity: e.id });
+                          scrollToRef(amountRef);
+                        }}
                         compact
                       >
                         <IconTile size={32}>
@@ -275,8 +280,8 @@ export function V1EmptyState() {
               )}
             </section>
 
-            <section className="mb-8">
-              <SectionLabel step="3" label="Amount range" />
+            <section ref={amountRef} className="mb-8">
+              <SectionLabel label="Amount range" />
               {product.amountNote && revealed.amount ? (
                 <div
                   className="text-[11px] mb-2 animate-fade-in"
@@ -291,7 +296,10 @@ export function V1EmptyState() {
                     <PillSelector
                       key={b.id}
                       selected={draft.amountBucket === b.id}
-                      onClick={() => setDraft({ amountBucket: b.id })}
+                      onClick={() => {
+                        setDraft({ amountBucket: b.id });
+                        scrollToRef(secondaryRef);
+                      }}
                     >
                       {b.label}
                     </PillSelector>
@@ -302,15 +310,18 @@ export function V1EmptyState() {
               )}
             </section>
 
-            <section className="mb-8">
-              <SectionLabel step="4" label={product.secondary.sectionLabel} />
+            <section ref={secondaryRef} className="mb-8">
+              <SectionLabel label={product.secondary.sectionLabel} />
               {revealed.secondary ? (
                 <div className="flex flex-wrap gap-2 animate-fade-in">
                   {product.secondary.options.map((opt) => (
                     <PillSelector
                       key={opt.id}
                       selected={draft.purpose === opt.id}
-                      onClick={() => setDraft({ purpose: opt.id })}
+                      onClick={() => {
+                        setDraft({ purpose: opt.id });
+                        scrollToRef(jurisdictionRef);
+                      }}
                     >
                       {opt.label}
                     </PillSelector>
@@ -321,15 +332,18 @@ export function V1EmptyState() {
               )}
             </section>
 
-            <section className="mb-10">
-              <SectionLabel step="5" label="Jurisdiction" />
+            <section ref={jurisdictionRef} className="mb-10">
+              <SectionLabel label="Jurisdiction" />
               {revealed.jurisdiction ? (
                 <div className="flex flex-wrap gap-2 animate-fade-in">
                   {product.jurisdictions.map((j) => (
                     <button
                       key={j}
                       type="button"
-                      onClick={() => setDraft({ jurisdiction: j })}
+                      onClick={() => {
+                        setDraft({ jurisdiction: j });
+                        scrollToRef(submitRef);
+                      }}
                       className="interactive-pill inline-flex items-center gap-1.5 h-10 px-4 text-[13px] font-semibold cursor-pointer"
                       style={{
                         background:
@@ -359,7 +373,7 @@ export function V1EmptyState() {
           </>
         ) : null}
 
-        <div className="flex items-center justify-end">
+        <div ref={submitRef} className="flex items-center justify-end">
           <button
             type="button"
             onClick={handleCreate}
@@ -379,18 +393,9 @@ export function V1EmptyState() {
   );
 }
 
-function SectionLabel({ step, label }: { step: string; label: string }) {
+function SectionLabel({ label }: { label: string }) {
   return (
-    <div className="flex items-baseline gap-2 mb-3">
-      <span
-        className="text-[10px] uppercase font-semibold tabular-nums"
-        style={{
-          color: "var(--theme-text-tertiary)",
-          letterSpacing: "0.5px",
-        }}
-      >
-        Step {step}
-      </span>
+    <div className="mb-3">
       <h2
         className="text-[14px] font-semibold"
         style={{ color: "var(--theme-text-primary)" }}
@@ -512,12 +517,13 @@ function SkeletonCardRow({
           }}
         >
           <Skeleton
+            animation="none"
             variant="card"
             width={compact ? 32 : 36}
             height={compact ? 32 : 36}
           />
           <div className="mt-2.5">
-            <Skeleton variant="text" width="70%" height="13px" />
+            <Skeleton animation="none" variant="text" width="70%" height="13px" />
           </div>
         </div>
       ))}
@@ -532,6 +538,7 @@ function SkeletonPillRow({ count }: { count: number }) {
       {Array.from({ length: count }).map((_, i) => (
         <Skeleton
           key={i}
+          animation="none"
           variant="button"
           width={widths[i % widths.length]}
           height={40}

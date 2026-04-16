@@ -32,7 +32,7 @@ export function DealRibbon({ deal }: Props) {
         borderBottom: "1px solid var(--theme-border)",
       }}
     >
-      <div className="max-w-[1584px] mx-auto px-6 md:px-8 py-3 flex items-center gap-6 flex-wrap">
+      <div className="px-6 md:px-8 py-3 flex items-center gap-6 flex-wrap">
         <div className="min-w-0 flex-1">
           <div
             className="flex items-center gap-2 text-[10px] uppercase font-medium mb-1"

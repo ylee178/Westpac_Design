@@ -60,13 +60,13 @@ export function calculateReadiness(
   );
   let provenanceConfidence: number;
   if (applicableWithData.length === 0) {
-    provenanceConfidence = 70;
+    provenanceConfidence = 100;
   } else {
     const sum = applicableWithData.reduce((acc, i) => {
-      if (!i.provenance) return acc + 70;
+      if (!i.provenance) return acc + 100;
       if (i.provenance.confidence === "high") return acc + 100;
-      if (i.provenance.confidence === "medium") return acc + 75;
-      return acc + 50; // low
+      if (i.provenance.confidence === "medium") return acc + 85;
+      return acc + 65; // low
     }, 0);
     provenanceConfidence = Math.round(sum / applicableWithData.length);
   }
