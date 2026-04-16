@@ -15,7 +15,7 @@ import {
   Check,
   Clock,
   Info,
-  Lock,
+  Scale,
   MinusCircle,
   Circle,
 } from "lucide-react";
@@ -122,11 +122,12 @@ export function ChecklistListRow({ item, selected, onSelect }: Props) {
               {item.label}
             </span>
 
-            {/* Lock icon when legally mandatory */}
+            {/* Scale icon when legally mandatory */}
             {item.legallyMandatory && !isResolved ? (
-              <Lock
-                size={11}
-                strokeWidth={2.5}
+              <Scale
+                size={12}
+                strokeWidth={2.25}
+                aria-label="Legally mandatory"
                 style={{ color: "var(--theme-error)" }}
               />
             ) : null}

@@ -19,6 +19,7 @@ import { PHASES } from "@/data/deal-data";
 export interface PhaseSnapshot {
   id: Phase;
   label: string;
+  description: string;
   order: number;
   items: ChecklistItem[];
   complete: number;
@@ -96,6 +97,7 @@ export function computeDealState(
     return {
       id: meta.id,
       label: meta.label,
+      description: meta.description,
       order: meta.order,
       items: phaseItems,
       complete,

@@ -20,7 +20,18 @@ import { ReadyToSubmitDisplay } from "@/components/readiness-display";
 import { ModeIndicator } from "@/components/mode-indicator";
 import { WestpacLogo } from "@/components/westpac-logo";
 import { DevPanel } from "@/components/dev-panel";
-import { HelpCircle, LogOut } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  HelpCircle,
+  LogOut,
+  MoreHorizontal,
+  Plus,
+  UserRound,
+} from "lucide-react";
 
 const currency = new Intl.NumberFormat("en-AU", {
   style: "currency",
@@ -38,9 +49,19 @@ const NAV = [
 interface MastheadProps {
   bankerName: string;
   bankerRole: Deal["banker"]["role"];
+  /** Fires the "New Deal" button click. When provided, the button
+   *  renders in the masthead (typically on the dashboard landing). */
+  onNewDeal?: () => void;
+  /** When true, render the primary "New Deal" button. */
+  showNewDeal?: boolean;
 }
 
-export function DealMasthead({ bankerName, bankerRole }: MastheadProps) {
+export function DealMasthead({
+  bankerName,
+  bankerRole,
+  onNewDeal,
+  showNewDeal = false,
+}: MastheadProps) {
   return (
     <div
       className="w-full"
@@ -78,6 +99,20 @@ export function DealMasthead({ bankerName, bankerRole }: MastheadProps) {
 
         <div className="flex items-center self-stretch">
           <div className="flex items-center gap-4 pr-4">
+            {showNewDeal && onNewDeal ? (
+              <button
+                type="button"
+                onClick={onNewDeal}
+                className="interactive-primary inline-flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold text-white cursor-pointer"
+                style={{
+                  background: "var(--theme-primary)",
+                  borderRadius: "var(--theme-radius)",
+                }}
+              >
+                <Plus size={13} strokeWidth={2.6} />
+                New Deal
+              </button>
+            ) : null}
             <button
               type="button"
               className="interactive-subtle flex items-center gap-1.5 text-[12px] font-medium cursor-pointer px-1"
@@ -86,34 +121,7 @@ export function DealMasthead({ bankerName, bankerRole }: MastheadProps) {
               <HelpCircle size={13} strokeWidth={2} />
               Need help?
             </button>
-            <div
-              className="hidden md:flex items-center gap-2 text-[12px]"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              <span
-                className="font-medium"
-                style={{ color: "var(--theme-text-primary)" }}
-              >
-                {bankerName}
-              </span>
-              <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
-              <span>
-                {bankerRole === "senior-banker" ? "Senior Banker" : "New Banker"}
-              </span>
-            </div>
-            <button
-              type="button"
-              className="interactive-pill flex items-center gap-1.5 px-3 h-8 text-[12px] font-medium border cursor-pointer"
-              style={{
-                background: "var(--theme-card-bg)",
-                color: "var(--theme-text-primary)",
-                borderColor: "var(--theme-border-strong)",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              <LogOut size={12} strokeWidth={2} />
-              Sign out
-            </button>
+            <BankerMenu bankerName={bankerName} bankerRole={bankerRole} />
           </div>
           <DevPanel />
         </div>
@@ -241,5 +249,94 @@ function MetaItem({
         {value}
       </span>
     </div>
+  );
+}
+
+// ——— Banker menu (three-dot) ———
+
+function BankerMenu({
+  bankerName,
+  bankerRole,
+}: {
+  bankerName: string;
+  bankerRole: Deal["banker"]["role"];
+}) {
+  const roleLabel =
+    bankerRole === "senior-banker" ? "Senior Banker" : "New Banker";
+  return (
+    <div className="flex items-center gap-1.5">
+      <div
+        className="hidden md:flex items-center gap-2 text-[12px]"
+        style={{ color: "var(--theme-text-secondary)" }}
+      >
+        <span
+          className="font-medium"
+          style={{ color: "var(--theme-text-primary)" }}
+        >
+          {bankerName}
+        </span>
+        <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
+        <span>{roleLabel}</span>
+      </div>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            aria-label={`Open menu for ${bankerName}`}
+            className="interactive-subtle inline-flex items-center justify-center w-7 h-7 cursor-pointer"
+            style={{
+              color: "var(--theme-text-secondary)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
+            <MoreHorizontal size={15} strokeWidth={2} />
+          </button>
+        </PopoverTrigger>
+        <PopoverContent
+          align="end"
+          sideOffset={6}
+          className="w-[200px] p-1"
+        >
+          <BankerMenuItem icon={UserRound} label="Edit profile" />
+          <div
+            className="my-1 mx-1"
+            style={{ borderTop: "1px solid var(--theme-border)" }}
+          />
+          <BankerMenuItem icon={LogOut} label="Sign out" />
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
+}
+
+function BankerMenuItem({
+  icon: Icon,
+  label,
+}: {
+  icon: typeof LogOut;
+  label: string;
+}) {
+  return (
+    <button
+      type="button"
+      className="w-full flex items-center gap-2 px-2.5 py-2 text-[12.5px] font-medium cursor-pointer text-left"
+      style={{
+        color: "var(--theme-text-primary)",
+        borderRadius: "var(--theme-radius)",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--westpac-primary-soft)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+      }}
+    >
+      <Icon
+        size={13}
+        strokeWidth={2}
+        style={{ color: "var(--theme-text-secondary)" }}
+      />
+      {label}
+    </button>
   );
 }

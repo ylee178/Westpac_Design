@@ -697,6 +697,18 @@
   100% { opacity: 1; transform: scale(1); }
 }
 
+/* Phase complete toast — drops smoothly from above the masthead,
+ * holds for 1.2s, then smoothly lifts back up.
+ * Total 2000ms: 400ms drop → 1200ms hold → 400ms lift.
+ * 0-20% in, 20-80% hold, 80-100% out.
+ */
+@keyframes phase-toast {
+  0%   { opacity: 0; transform: translate(-50%, -64px); }
+  20%  { opacity: 1; transform: translate(-50%, 0); }
+  80%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -64px); }
+}
+
 /* Keep Pac sharp and brand-red even in grayscale skeleton mode */
 [data-grayscale="on"] .pac-avatar,
 [data-grayscale="on"] .pac-avatar svg,

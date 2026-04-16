@@ -238,3 +238,51 @@ export const PRODUCTS_IN_ORDER: WestpacProductId[] = [
   "equipment-finance",
   "business-overdraft",
 ];
+
+/**
+ * Numeric amount floors / ceilings per product — used for form
+ * validation on the deal context form. Values sourced from
+ * Westpac's public product pages (April 2026). Used by V1 deal
+ * context form to block obviously wrong demo inputs like $232
+ * bank guarantees.
+ */
+export const PRODUCT_AMOUNT_RANGE: Record<
+  WestpacProductId,
+  { min: number; max: number }
+> = {
+  "business-loan": { min: 10_000, max: 5_000_000 },
+  "bank-guarantee": { min: 5_000, max: 1_500_000 },
+  "equipment-finance": { min: 10_000, max: 5_000_000 },
+  "business-overdraft": { min: 5_000, max: 1_500_000 },
+};
+
+const audFmt = new Intl.NumberFormat("en-AU", {
+  style: "currency",
+  currency: "AUD",
+  maximumFractionDigits: 0,
+});
+
+/**
+ * Validate a typed amount string against the selected product's
+ * range. Returns null when the amount is valid, or a short error
+ * message suitable for inline display.
+ */
+export function validateAmount(
+  raw: string,
+  productId: string | undefined,
+): string | null {
+  if (!productId) return null;
+  const range = PRODUCT_AMOUNT_RANGE[productId as WestpacProductId];
+  if (!range) return null;
+  const parsed = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return "Enter a valid amount.";
+  }
+  if (parsed < range.min) {
+    return `Minimum for this product is ${audFmt.format(range.min)}.`;
+  }
+  if (parsed > range.max) {
+    return `Maximum for this product is ${audFmt.format(range.max)}.`;
+  }
+  return null;
+}

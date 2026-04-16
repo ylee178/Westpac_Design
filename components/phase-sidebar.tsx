@@ -25,7 +25,19 @@ import type {
   Phase,
 } from "@/lib/types";
 import type { DealState, PhaseSnapshot } from "@/lib/deal-state";
-import { Check, Circle, Lock, Clock, MinusCircle } from "lucide-react";
+import { readinessTier, deriveActionHint } from "@/lib/deal-state";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  Circle,
+  Scale,
+  Clock,
+  MinusCircle,
+  Send,
+} from "lucide-react";
+
+const SUBMIT_THRESHOLD = 90;
 
 interface Props {
   state: DealState;
@@ -38,6 +50,10 @@ interface Props {
   onSelectPhase: (phase: Phase) => void;
   /** Fired when the banker clicks an item inside the current phase. */
   onSelectItem: (item: CI) => void;
+  /** Enabled when every phase has tipped to complete. */
+  canSubmit: boolean;
+  /** Fires when the banker submits the deal from the sidebar card. */
+  onSubmit: () => void;
 }
 
 export function PhaseSidebar({
@@ -46,17 +62,19 @@ export function PhaseSidebar({
   focusedItemId,
   onSelectPhase,
   onSelectItem,
+  canSubmit,
+  onSubmit,
 }: Props) {
   return (
     <aside
-      className="shrink-0 w-[280px] h-full overflow-y-auto"
+      className="shrink-0 w-[280px] h-full flex flex-col"
       style={{
         background: "var(--theme-card-bg)",
         borderRight: "1px solid var(--theme-border)",
       }}
     >
       <div
-        className="px-5 pt-5 pb-3 text-[10px] uppercase font-semibold"
+        className="px-5 pt-5 pb-3 text-[10px] uppercase font-semibold shrink-0"
         style={{
           color: "var(--theme-text-tertiary)",
           letterSpacing: "1px",
@@ -65,7 +83,7 @@ export function PhaseSidebar({
         Deal progress
       </div>
 
-      <nav className="px-3 pb-6">
+      <nav className="px-3 pb-4 flex-1 min-h-0 overflow-y-auto">
         {state.phases.map((p) => {
           const isCurrent = p.id === state.currentPhase.id;
           const isViewing = p.id === viewingPhase;
@@ -89,7 +107,196 @@ export function PhaseSidebar({
           );
         })}
       </nav>
+
+      <ReadyToSubmitCard
+        state={state}
+        canSubmit={canSubmit}
+        onSubmit={onSubmit}
+      />
     </aside>
+  );
+}
+
+// ——— Ready to submit card ———
+
+function ReadyToSubmitCard({
+  state,
+  canSubmit,
+  onSubmit,
+}: {
+  state: DealState;
+  canSubmit: boolean;
+  onSubmit: () => void;
+}) {
+  const { breakdown, redFlags } = state;
+  const tier = readinessTier(breakdown.total, redFlags.length > 0);
+  const actionHint = deriveActionHint(state);
+  const barFill = Math.min(100, Math.max(0, breakdown.total));
+  const fillColor = tier.fg;
+  const isBlocked = redFlags.length > 0;
+
+  return (
+    <div
+      className="shrink-0 px-4 pt-4 pb-5"
+      style={{
+        borderTop: "1px solid var(--theme-border)",
+        background: "var(--theme-card-bg)",
+      }}
+    >
+      <div
+        className="p-3.5"
+        style={{
+          background: canSubmit
+            ? "#edf7ed"
+            : isBlocked
+              ? "#fdecec"
+              : "var(--theme-surface-subtle, #f7f7f7)",
+          border: `1px solid ${
+            canSubmit
+              ? "#c8e6c9"
+              : isBlocked
+                ? "#f5c6cb"
+                : "var(--theme-border)"
+          }`,
+          borderRadius: "var(--theme-radius)",
+        }}
+      >
+        <div className="flex items-baseline justify-between gap-2">
+          <span
+            className="text-[9.5px] uppercase font-semibold"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.6px",
+            }}
+          >
+            Ready to submit
+          </span>
+          <span
+            className="text-[9.5px] uppercase font-semibold tabular-nums"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.5px",
+              fontFamily: "var(--theme-font-mono)",
+            }}
+          >
+            Target {SUBMIT_THRESHOLD}%
+          </span>
+        </div>
+
+        <div className="flex items-baseline gap-2 mt-1.5">
+          <span
+            className="text-[30px] font-semibold tabular-nums leading-none"
+            style={{
+              color: fillColor,
+              fontFamily: "var(--theme-font-mono)",
+              letterSpacing: "-0.5px",
+              transition: "color 320ms ease",
+            }}
+          >
+            {breakdown.total}
+            <span
+              className="text-[14px] font-medium ml-0.5"
+              style={{ opacity: 0.75 }}
+            >
+              %
+            </span>
+          </span>
+        </div>
+        <div
+          className="text-[11px] font-semibold mt-0.5"
+          style={{ color: fillColor }}
+        >
+          {tier.label}
+        </div>
+
+        <ReadinessBar
+          percent={barFill}
+          fillColor={fillColor}
+          threshold={SUBMIT_THRESHOLD}
+        />
+
+        {actionHint ? (
+          <div
+            className="mt-6 flex items-center gap-1.5 text-[10.5px] font-medium leading-snug"
+            style={{
+              color: isBlocked ? "#c62828" : "var(--theme-text-secondary)",
+            }}
+          >
+            {isBlocked ? (
+              <AlertTriangle size={11} strokeWidth={2.4} className="shrink-0" />
+            ) : (
+              <CheckCircle2 size={11} strokeWidth={2.4} className="shrink-0" />
+            )}
+            <span>{actionHint}</span>
+          </div>
+        ) : null}
+
+        <button
+          type="button"
+          onClick={canSubmit ? onSubmit : undefined}
+          disabled={!canSubmit}
+          className="interactive-primary mt-3 w-full inline-flex items-center justify-center gap-1.5 h-10 px-4 text-[12px] font-semibold text-white cursor-pointer disabled:cursor-not-allowed"
+          style={{
+            background: canSubmit ? "#2e7d32" : "var(--theme-border-strong)",
+            borderRadius: "var(--theme-radius)",
+            opacity: canSubmit ? 1 : 0.6,
+            transition: "background-color 320ms ease, opacity 320ms ease",
+          }}
+          title={
+            canSubmit
+              ? "Submit this deal for credit decisioning"
+              : "Complete every phase to enable submission"
+          }
+        >
+          <Send size={13} strokeWidth={2.6} />
+          Submit deal
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ReadinessBar({
+  percent,
+  fillColor,
+  threshold,
+}: {
+  percent: number;
+  fillColor: string;
+  threshold: number;
+}) {
+  return (
+    <div
+      className="relative mt-2.5"
+      style={{
+        width: "100%",
+        height: "6px",
+        background: "var(--theme-border)",
+        borderRadius: "3px",
+      }}
+      aria-hidden="true"
+    >
+      <div
+        className="h-full"
+        style={{
+          width: `${percent}%`,
+          background: fillColor,
+          borderRadius: "3px",
+          transition: "width 420ms ease, background-color 320ms ease",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: `${threshold}%`,
+          top: "-2px",
+          bottom: "-2px",
+          width: "1.5px",
+          background: "var(--theme-text-tertiary)",
+          opacity: 0.7,
+        }}
+      />
+    </div>
   );
 }
 
@@ -302,7 +509,7 @@ function ItemRow({
       <button
         type="button"
         onClick={onClick}
-        className="interactive-row w-full text-left px-2.5 py-1.5 flex items-start gap-2 cursor-pointer"
+        className="interactive-row w-full text-left px-2.5 py-1.5 flex items-center gap-2 cursor-pointer"
         style={{
           background: bg,
           borderRadius: "var(--theme-radius)",
@@ -323,13 +530,11 @@ function ItemRow({
         {item.legallyMandatory &&
         item.status !== "complete" &&
         item.status !== "skipped" ? (
-          <Lock
-            size={10}
-            strokeWidth={2.5}
-            style={{
-              color: "var(--theme-text-tertiary)",
-              marginTop: "3px",
-            }}
+          <Scale
+            size={11}
+            strokeWidth={2.25}
+            aria-label="Legally mandatory"
+            style={{ color: "var(--theme-text-tertiary)" }}
           />
         ) : null}
       </button>
@@ -348,7 +553,6 @@ function ItemStatusIcon({ item }: { item: CI }) {
   const base = {
     width: 12,
     height: 12,
-    marginTop: 2,
     flexShrink: 0,
   } as React.CSSProperties;
 

@@ -13,7 +13,7 @@ import {
   Check,
   Clock,
   Info,
-  Lock,
+  Scale,
   MinusCircle,
   Circle,
   SkipForward,
@@ -139,7 +139,7 @@ export function ChecklistDetail({ item, onRequestSkip }: Props) {
               className="inline-flex items-center gap-1 text-[11px] font-medium"
               style={{ color: "var(--theme-error)" }}
             >
-              <Lock size={11} strokeWidth={2.5} />
+              <Scale size={12} strokeWidth={2.25} aria-label="Legally mandatory" />
               Legally mandatory
             </span>
           ) : null}
@@ -285,7 +285,7 @@ export function ChecklistDetail({ item, onRequestSkip }: Props) {
                     borderRadius: "var(--theme-radius)",
                   }}
                 >
-                  <Lock size={12} strokeWidth={2.2} />
+                  <Scale size={13} strokeWidth={2.25} aria-label="Legally mandatory" />
                   Cannot skip — legally mandatory
                 </button>
               </TooltipTrigger>
