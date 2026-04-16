@@ -10,21 +10,40 @@
  * of a hard snap. This mirrors the skeleton language used in
  * V1EmptyState's staged reveals and in V1DynamicLoading.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
 import { Skeleton } from "@/components/skeleton";
 import { validateAmount } from "@/data/product-options";
-import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Search } from "lucide-react";
+
+const EXISTING_CUSTOMERS = [
+  "Meridian Logistics Pty Ltd",
+  "Harbourline Fabrication Pty Ltd",
+  "Kowari Vineyards",
+  "Solvent Creative Group",
+  "Parkline Logistics",
+  "Coastal Marine Services Pty Ltd",
+  "Northgate Property Holdings",
+  "Apex Civil Contractors",
+];
 
 export function V1DealContextForm() {
   const { draft, setDraft, setStep } = useFlowMode();
   const [mounted, setMounted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const isExistingOnly = draft.product === "business-overdraft";
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 550);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (mounted && nameInputRef.current) {
+      nameInputRef.current.focus();
+    }
+  }, [mounted]);
 
   const nameError =
     draft.customerName.trim().length > 0 && draft.customerName.trim().length < 3
@@ -119,14 +138,23 @@ export function V1DealContextForm() {
         </header>
 
         <div className="space-y-5">
-          <Field
-            label="Customer name"
-            required
-            value={draft.customerName}
-            onChange={(v) => setDraft({ customerName: v })}
-            placeholder="e.g. Meridian Logistics Pty Ltd"
-            error={nameError}
-          />
+          {isExistingOnly ? (
+            <CustomerSearch
+              value={draft.customerName}
+              onSelect={(v) => setDraft({ customerName: v })}
+              autoFocus={mounted}
+            />
+          ) : (
+            <Field
+              label="Customer name"
+              required
+              value={draft.customerName}
+              onChange={(v) => setDraft({ customerName: v })}
+              placeholder="e.g. Meridian Logistics Pty Ltd"
+              error={nameError}
+              inputRef={nameInputRef}
+            />
+          )}
           <Field
             label="Deal amount (AUD)"
             required
@@ -206,6 +234,7 @@ function Field({
   multiline = false,
   prefix,
   error,
+  inputRef,
 }: {
   label: string;
   value: string;
@@ -216,6 +245,7 @@ function Field({
   multiline?: boolean;
   prefix?: string;
   error?: string | null;
+  inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
   const commonStyle: React.CSSProperties = {
     background: "var(--theme-card-bg)",
@@ -280,6 +310,7 @@ function Field({
         </div>
       ) : (
         <input
+          ref={inputRef}
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -297,5 +328,153 @@ function Field({
         </div>
       ) : null}
     </label>
+  );
+}
+
+function CustomerSearch({
+  value,
+  onSelect,
+  autoFocus,
+}: {
+  value: string;
+  onSelect: (v: string) => void;
+  autoFocus?: boolean;
+}) {
+  const [query, setQuery] = useState(value);
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const selected = value.length >= 3;
+
+  useEffect(() => {
+    if (autoFocus && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [autoFocus]);
+
+  const filtered = query.length > 0
+    ? EXISTING_CUSTOMERS.filter((c) =>
+        c.toLowerCase().includes(query.toLowerCase()),
+      )
+    : EXISTING_CUSTOMERS;
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        wrapperRef.current &&
+        !wrapperRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function handlePick(name: string) {
+    setQuery(name);
+    onSelect(name);
+    setOpen(false);
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative">
+      <div
+        className="text-[11px] font-semibold mb-1.5 flex items-center gap-1"
+        style={{ color: "var(--theme-text-secondary)" }}
+      >
+        Customer name
+        <span style={{ color: "var(--theme-error)" }}>*</span>
+        <span
+          className="ml-1 px-1.5 py-[1px] text-[9px] uppercase font-semibold"
+          style={{
+            background: "rgba(0, 0, 0, 0.07)",
+            color: "var(--theme-text-tertiary)",
+            borderRadius: "999px",
+            letterSpacing: "0.3px",
+          }}
+        >
+          Existing customer
+        </span>
+      </div>
+      <div
+        className="w-full h-10 flex items-center gap-2 px-3 focus-within:ring-2"
+        style={{
+          background: "var(--theme-card-bg)",
+          border: `1px solid ${
+            selected
+              ? "var(--theme-primary)"
+              : "var(--theme-border-strong)"
+          }`,
+          borderRadius: "var(--theme-radius)",
+        }}
+      >
+        <Search
+          size={13}
+          strokeWidth={2.2}
+          style={{ color: "var(--theme-text-tertiary)", flexShrink: 0 }}
+        />
+        <input
+          ref={searchInputRef}
+          type="text"
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (selected && e.target.value !== value) {
+              onSelect("");
+            }
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search existing customers…"
+          className="flex-1 min-w-0 h-full bg-transparent border-0 outline-none text-[13px]"
+          style={{ color: "var(--theme-text-primary)" }}
+        />
+      </div>
+      {open && filtered.length > 0 ? (
+        <ul
+          className="absolute z-20 mt-1 w-full max-h-[200px] overflow-y-auto py-1"
+          style={{
+            background: "var(--theme-card-bg)",
+            border: "1px solid var(--theme-border)",
+            borderRadius: "var(--theme-radius)",
+            boxShadow: "var(--theme-shadow-float)",
+          }}
+        >
+          {filtered.map((name) => (
+            <li key={name}>
+              <button
+                type="button"
+                onClick={() => handlePick(name)}
+                className="w-full text-left px-3 py-2 text-[13px] cursor-pointer"
+                style={{ color: "var(--theme-text-primary)" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background =
+                    "var(--westpac-primary-soft)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                {name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : open && query.length > 0 && filtered.length === 0 ? (
+        <div
+          className="absolute z-20 mt-1 w-full px-3 py-3 text-[12px]"
+          style={{
+            background: "var(--theme-card-bg)",
+            border: "1px solid var(--theme-border)",
+            borderRadius: "var(--theme-radius)",
+            boxShadow: "var(--theme-shadow-float)",
+            color: "var(--theme-text-tertiary)",
+          }}
+        >
+          No matching customer found
+        </div>
+      ) : null}
+    </div>
   );
 }

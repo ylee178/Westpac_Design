@@ -16,9 +16,11 @@
  *     and the completed item collapses to a muted ✓ row.
  *   - Skipped and complete rows are click-inert (read-only).
  */
+import { useEffect, useRef } from "react";
 import type { ChecklistItem as CI } from "@/lib/types";
 import type { PhaseSnapshot } from "@/lib/deal-state";
 import { V1FocusedCard } from "@/components/v1-focused-card";
+import { Skeleton } from "@/components/skeleton";
 import { Check, Circle, Cpu, Scale, MinusCircle, User, Users } from "lucide-react";
 
 interface Props {
@@ -31,6 +33,10 @@ interface Props {
   /** When this key changes, the stagger animation restarts. Use the
    *  phase id so entering a new phase replays the fade-in. */
   animationKey?: string;
+  /** Id of an item currently playing its collapse animation. The
+   *  wrapper for this id gets the `is-collapsing` class so the
+   *  focused card smoothly shrinks before its state flips. */
+  pendingResolveId?: string | null;
 }
 
 export function PhaseItemStack({
@@ -41,9 +47,22 @@ export function PhaseItemStack({
   onRevert,
   onFocusItem,
   animationKey,
+  pendingResolveId,
 }: Props) {
   const items = phase.items;
   const orderPadded = phase.order.toString().padStart(2, "0");
+  const focusedRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!focusedItemId || !focusedRef.current) return;
+    const t = setTimeout(() => {
+      focusedRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 460);
+    return () => clearTimeout(t);
+  }, [focusedItemId]);
 
   return (
     <div
@@ -87,35 +106,43 @@ export function PhaseItemStack({
         </div>
       </header>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col">
         {items.map((item, i) => {
           const isFocused = item.id === focusedItemId;
+          const isClosing = item.id === pendingResolveId;
           return (
             <div
               key={item.id}
-              style={{
-                opacity: 0,
-                animation: `fade-in 360ms ease-out ${150 + i * 120}ms forwards`,
-              }}
+              ref={isFocused ? focusedRef : undefined}
+              className={`item-collapse ${i > 0 ? "mt-3" : ""} ${
+                isClosing ? "is-collapsing" : ""
+              }`}
             >
-              {isFocused ? (
-                <V1FocusedCard
-                  item={item}
-                  index={i}
-                  total={items.length}
-                  phaseLabel={phase.label}
-                  onComplete={onComplete}
-                  onRequestSkip={onRequestSkip}
-                  onRevert={onRevert}
-                />
-              ) : (
-                <CompactRow
-                  item={item}
-                  index={i}
-                  total={items.length}
-                  onFocus={() => onFocusItem(item)}
-                />
-              )}
+              <div
+                style={{
+                  opacity: 0,
+                  animation: `fade-in 360ms ease-out ${150 + i * 120}ms forwards`,
+                }}
+              >
+                {isFocused ? (
+                  <V1FocusedCard
+                    item={item}
+                    index={i}
+                    total={items.length}
+                    phaseLabel={phase.label}
+                    onComplete={onComplete}
+                    onRequestSkip={onRequestSkip}
+                    onRevert={onRevert}
+                  />
+                ) : (
+                  <CompactRow
+                    item={item}
+                    index={i}
+                    total={items.length}
+                    onFocus={() => onFocusItem(item)}
+                  />
+                )}
+              </div>
             </div>
           );
         })}
@@ -281,5 +308,58 @@ function StatusGlyph({ status }: { status: CI["status"] }) {
       strokeWidth={1.8}
       style={{ color: "var(--theme-text-tertiary)" }}
     />
+  );
+}
+
+// ——— Phase transition skeleton ———
+
+const SKEL_WIDTHS = ["65%", "55%", "48%", "60%", "52%"];
+
+export function PhaseTransitionSkeleton({ count }: { count: number }) {
+  const none = "none" as const;
+  return (
+    <div
+      className="w-full max-w-[760px] mx-auto px-6 md:px-8 py-6"
+      style={{
+        opacity: 0,
+        animation: "fade-in 360ms ease-out both",
+      }}
+    >
+      <header className="mb-6">
+        <Skeleton animation={none} variant="text" width="80px" height="10px" />
+        <div className="mt-2">
+          <Skeleton animation={none} variant="text" width="42%" height="26px" />
+        </div>
+        <div className="mt-2">
+          <Skeleton animation={none} variant="text" width="58%" height="12px" />
+        </div>
+        <div className="mt-3">
+          <Skeleton animation={none} variant="text" width="100px" height="10px" />
+        </div>
+      </header>
+
+      <div className="flex flex-col gap-3">
+        {Array.from({ length: count }).map((_, i) => (
+          <div
+            key={i}
+            className="w-full px-5 py-5"
+            style={{
+              background: "var(--theme-card-bg)",
+              border: "1px solid var(--theme-border)",
+              borderRadius: "var(--theme-radius-lg)",
+              opacity: 0,
+              animation: `fade-in 360ms ease-out ${80 + i * 90}ms forwards`,
+            }}
+          >
+            <Skeleton
+              animation={none}
+              variant="text"
+              width={SKEL_WIDTHS[i % SKEL_WIDTHS.length]}
+              height="13px"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }

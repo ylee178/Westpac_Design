@@ -25,12 +25,14 @@ import type {
   Phase,
 } from "@/lib/types";
 import type { DealState, PhaseSnapshot } from "@/lib/deal-state";
+import { useEffect, useRef } from "react";
 import { readinessTier, deriveActionHint } from "@/lib/deal-state";
 import {
   AlertTriangle,
   Check,
   CheckCircle2,
   Circle,
+  Hourglass,
   Scale,
   Clock,
   MinusCircle,
@@ -65,6 +67,19 @@ export function PhaseSidebar({
   canSubmit,
   onSubmit,
 }: Props) {
+  const viewingRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!viewingRef.current) return;
+    const t = setTimeout(() => {
+      viewingRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [viewingPhase]);
+
   return (
     <aside
       className="shrink-0 w-[280px] h-full flex flex-col"
@@ -84,7 +99,7 @@ export function PhaseSidebar({
       </div>
 
       <nav className="px-3 pb-4 flex-1 min-h-0 overflow-y-auto">
-        {state.phases.map((p) => {
+        {state.phases.map((p, idx) => {
           const isCurrent = p.id === state.currentPhase.id;
           const isViewing = p.id === viewingPhase;
           const isComplete = p.status === "complete";
@@ -92,8 +107,8 @@ export function PhaseSidebar({
             !isComplete && !isCurrent && p.status === "not-started";
           const isExpanded = isViewing && p.items.length > 0;
           return (
+            <div key={p.id} ref={isViewing ? viewingRef : undefined}>
             <PhaseRow
-              key={p.id}
               phase={p}
               isCurrent={isCurrent}
               isViewing={isViewing}
@@ -104,6 +119,7 @@ export function PhaseSidebar({
               onSelectPhase={() => onSelectPhase(p.id)}
               onSelectItem={onSelectItem}
             />
+            </div>
           );
         })}
       </nav>
@@ -132,8 +148,27 @@ function ReadyToSubmitCard({
   const tier = readinessTier(breakdown.total, redFlags.length > 0);
   const actionHint = deriveActionHint(state);
   const barFill = Math.min(100, Math.max(0, breakdown.total));
-  const fillColor = tier.fg;
   const isBlocked = redFlags.length > 0;
+
+  // Color scheme — number is always black; bar + tier label ride the
+  // burgundy brand until target, then snap green. Red is reserved for
+  // the blocked action hint only.
+  const tierColor = canSubmit
+    ? "#2e7d32"
+    : isBlocked
+      ? "#c62828"
+      : "var(--theme-primary)";
+  const barColor = canSubmit ? "#2e7d32" : "var(--theme-primary)";
+  const HintIcon = isBlocked
+    ? AlertTriangle
+    : canSubmit
+      ? CheckCircle2
+      : Hourglass;
+  const hintColor = isBlocked
+    ? "#c62828"
+    : canSubmit
+      ? "#2e7d32"
+      : "var(--theme-text-secondary)";
 
   return (
     <div
@@ -147,56 +182,37 @@ function ReadyToSubmitCard({
         className="p-3.5"
         style={{
           background: canSubmit
-            ? "#edf7ed"
-            : isBlocked
-              ? "#fdecec"
-              : "var(--theme-surface-subtle, #f7f7f7)",
+            ? "#f4faf5"
+            : "var(--theme-surface-subtle, #fafafa)",
           border: `1px solid ${
-            canSubmit
-              ? "#c8e6c9"
-              : isBlocked
-                ? "#f5c6cb"
-                : "var(--theme-border)"
+            canSubmit ? "#d7ead9" : "var(--theme-border)"
           }`,
           borderRadius: "var(--theme-radius)",
         }}
       >
-        <div className="flex items-baseline justify-between gap-2">
-          <span
-            className="text-[9.5px] uppercase font-semibold"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.6px",
-            }}
-          >
-            Ready to submit
-          </span>
-          <span
-            className="text-[9.5px] uppercase font-semibold tabular-nums"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.5px",
-              fontFamily: "var(--theme-font-mono)",
-            }}
-          >
-            Target {SUBMIT_THRESHOLD}%
-          </span>
+        <div
+          className="text-[9.5px] uppercase font-semibold"
+          style={{
+            color: "var(--theme-text-tertiary)",
+            letterSpacing: "0.6px",
+          }}
+        >
+          Ready to submit
         </div>
 
         <div className="flex items-baseline gap-2 mt-1.5">
           <span
             className="text-[30px] font-semibold tabular-nums leading-none"
             style={{
-              color: fillColor,
+              color: "var(--theme-text-primary)",
               fontFamily: "var(--theme-font-mono)",
               letterSpacing: "-0.5px",
-              transition: "color 320ms ease",
             }}
           >
             {breakdown.total}
             <span
               className="text-[14px] font-medium ml-0.5"
-              style={{ opacity: 0.75 }}
+              style={{ opacity: 0.55 }}
             >
               %
             </span>
@@ -204,29 +220,26 @@ function ReadyToSubmitCard({
         </div>
         <div
           className="text-[11px] font-semibold mt-0.5"
-          style={{ color: fillColor }}
+          style={{
+            color: tierColor,
+            transition: "color 320ms ease",
+          }}
         >
           {tier.label}
         </div>
 
         <ReadinessBar
           percent={barFill}
-          fillColor={fillColor}
+          fillColor={barColor}
           threshold={SUBMIT_THRESHOLD}
         />
 
         {actionHint ? (
           <div
-            className="mt-6 flex items-center gap-1.5 text-[10.5px] font-medium leading-snug"
-            style={{
-              color: isBlocked ? "#c62828" : "var(--theme-text-secondary)",
-            }}
+            className="mt-5 flex items-center gap-1.5 text-[10.5px] font-medium leading-snug"
+            style={{ color: hintColor }}
           >
-            {isBlocked ? (
-              <AlertTriangle size={11} strokeWidth={2.4} className="shrink-0" />
-            ) : (
-              <CheckCircle2 size={11} strokeWidth={2.4} className="shrink-0" />
-            )}
+            <HintIcon size={11} strokeWidth={2.4} className="shrink-0" />
             <span>{actionHint}</span>
           </div>
         ) : null}
@@ -237,9 +250,9 @@ function ReadyToSubmitCard({
           disabled={!canSubmit}
           className="interactive-primary mt-3 w-full inline-flex items-center justify-center gap-1.5 h-10 px-4 text-[12px] font-semibold text-white cursor-pointer disabled:cursor-not-allowed"
           style={{
-            background: canSubmit ? "#2e7d32" : "var(--theme-border-strong)",
+            background: canSubmit ? "#2e7d32" : "var(--theme-primary)",
             borderRadius: "var(--theme-radius)",
-            opacity: canSubmit ? 1 : 0.6,
+            opacity: canSubmit ? 1 : 0.38,
             transition: "background-color 320ms ease, opacity 320ms ease",
           }}
           title={
@@ -266,36 +279,63 @@ function ReadinessBar({
   threshold: number;
 }) {
   return (
-    <div
-      className="relative mt-2.5"
-      style={{
-        width: "100%",
-        height: "6px",
-        background: "var(--theme-border)",
-        borderRadius: "3px",
-      }}
-      aria-hidden="true"
-    >
+    <div className="mt-2.5 w-full">
       <div
-        className="h-full"
+        className="relative"
         style={{
-          width: `${percent}%`,
-          background: fillColor,
+          width: "100%",
+          height: "6px",
+          background: "var(--theme-border)",
           borderRadius: "3px",
-          transition: "width 420ms ease, background-color 320ms ease",
         }}
-      />
+        aria-hidden="true"
+      >
+        <div
+          className="h-full"
+          style={{
+            width: `${percent}%`,
+            background: fillColor,
+            borderRadius: "3px",
+            transition: "width 420ms ease, background-color 320ms ease",
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            left: `${threshold}%`,
+            top: "-2px",
+            bottom: "-2px",
+            width: "1.5px",
+            background: "var(--theme-text-tertiary)",
+            opacity: 0.7,
+          }}
+        />
+      </div>
+      {/* Target label — anchored to the threshold marker */}
       <div
-        style={{
-          position: "absolute",
-          left: `${threshold}%`,
-          top: "-2px",
-          bottom: "-2px",
-          width: "1.5px",
-          background: "var(--theme-text-tertiary)",
-          opacity: 0.7,
-        }}
-      />
+        className="relative mt-1"
+        style={{ height: "12px" }}
+        aria-hidden="true"
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: `${threshold}%`,
+            transform: "translateX(-100%)",
+            paddingRight: "4px",
+            fontSize: "9px",
+            letterSpacing: "0.4px",
+            color: "var(--theme-text-tertiary)",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            textTransform: "uppercase",
+            lineHeight: "12px",
+            fontFamily: "var(--theme-font-mono)",
+          }}
+        >
+          Target {threshold}%
+        </div>
+      </div>
     </div>
   );
 }
@@ -350,14 +390,13 @@ function PhaseRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-baseline justify-between gap-2">
             <span
-              className="text-[9px] uppercase font-semibold tabular-nums"
+              className="text-[8px] uppercase font-semibold"
               style={{
                 color: "var(--theme-text-tertiary)",
-                letterSpacing: "0.6px",
-                fontFamily: "var(--theme-font-mono)",
+                letterSpacing: "0.5px",
               }}
             >
-              {String(phase.order).padStart(2, "0")}
+              Step {phase.order}
             </span>
             <span
               className="text-[10px] tabular-nums"

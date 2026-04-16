@@ -1,26 +1,23 @@
 "use client";
 
 /**
- * Deals Dashboard — the banker's landing surface.
+ * Deals Dashboard — operational deal queue.
  *
- * A bento-grid of the banker's active and recent deals plus two
- * "at-a-glance" summary tiles (queue counts and team SLA). The
- * banker picks a deal to resume, or kicks off a new one via the
- * "New Deal" button in the masthead.
+ * Simple layout: greeting + one-line metrics, then a deal list
+ * with inline status. "New Deal" button sits at the section header.
  */
-import { useMemo } from "react";
 import type { Phase } from "@/lib/types";
 import { PHASES, SAMPLE_DEAL } from "@/data/deal-data";
 import {
-  ArrowUpRight,
-  Briefcase,
-  Banknote,
-  ShieldCheck,
-  Wrench,
-  Wallet,
-  Clock,
   AlertCircle,
-  TrendingUp,
+  ArrowUpRight,
+  Banknote,
+  Briefcase,
+  CheckCircle2,
+  Plus,
+  ShieldCheck,
+  Wallet,
+  Wrench,
 } from "lucide-react";
 
 type DashboardDeal = {
@@ -33,7 +30,6 @@ type DashboardDeal = {
   updatedLabel: string;
   readiness: number;
   redFlag?: boolean;
-  accent?: "primary" | "warn" | "ok" | "neutral";
 };
 
 const DEALS: DashboardDeal[] = [
@@ -44,10 +40,9 @@ const DEALS: DashboardDeal[] = [
     productIcon: ShieldCheck,
     amount: SAMPLE_DEAL.amount,
     phase: "identification",
-    updatedLabel: "Updated 12m ago",
+    updatedLabel: "12m ago",
     readiness: 58,
     redFlag: true,
-    accent: "warn",
   },
   {
     id: "BE-2026-00398",
@@ -56,9 +51,8 @@ const DEALS: DashboardDeal[] = [
     productIcon: Banknote,
     amount: 450_000,
     phase: "credit",
-    updatedLabel: "Updated 2h ago",
+    updatedLabel: "2h ago",
     readiness: 72,
-    accent: "primary",
   },
   {
     id: "BE-2026-00377",
@@ -67,9 +61,8 @@ const DEALS: DashboardDeal[] = [
     productIcon: Wrench,
     amount: 210_000,
     phase: "approval",
-    updatedLabel: "Updated yesterday",
+    updatedLabel: "Yesterday",
     readiness: 88,
-    accent: "ok",
   },
   {
     id: "BE-2026-00361",
@@ -78,9 +71,8 @@ const DEALS: DashboardDeal[] = [
     productIcon: Wallet,
     amount: 120_000,
     phase: "settlement",
-    updatedLabel: "Updated 3 days ago",
+    updatedLabel: "3 days ago",
     readiness: 94,
-    accent: "neutral",
   },
   {
     id: "BE-2026-00342",
@@ -89,9 +81,8 @@ const DEALS: DashboardDeal[] = [
     productIcon: Banknote,
     amount: 680_000,
     phase: "setup",
-    updatedLabel: "Updated 4 days ago",
+    updatedLabel: "4 days ago",
     readiness: 18,
-    accent: "neutral",
   },
 ];
 
@@ -113,362 +104,300 @@ interface Props {
 
 export function DealsDashboard({ bankerName, onOpenDeal, onNewDeal }: Props) {
   const firstName = bankerName.split(" ")[0] ?? bankerName;
-
-  const stats = useMemo(() => {
-    const active = DEALS.length;
-    const redFlags = DEALS.filter((d) => d.redFlag).length;
-    const readyToSubmit = DEALS.filter((d) => d.readiness >= 90).length;
-    return { active, redFlags, readyToSubmit };
-  }, []);
+  const active = DEALS.length;
+  const needAttention = DEALS.filter((d) => d.redFlag).length;
+  const readyToSubmit = DEALS.filter((d) => d.readiness >= 90).length;
 
   return (
     <main
       className="flex-1 overflow-y-auto"
       style={{ background: "var(--theme-page-bg)" }}
     >
-      <div className="max-w-[1280px] mx-auto px-6 md:px-10 py-10">
-        {/* Greeting row */}
-        <header className="flex items-end justify-between mb-8 gap-6 flex-wrap">
-          <div>
-            <div
-              className="text-[11px] uppercase font-semibold"
-              style={{
-                color: "var(--theme-text-tertiary)",
-                letterSpacing: "0.8px",
-              }}
-            >
-              Your workspace
-            </div>
-            <h1
-              className="text-[26px] font-semibold leading-[1.2] mt-1"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              Good morning, {firstName}
-            </h1>
-            <p
-              className="text-[13px] mt-1"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              {stats.active} active deals · {stats.redFlags} need attention ·{" "}
-              {stats.readyToSubmit} ready to submit
-            </p>
-          </div>
+      <div className="max-w-[960px] mx-auto px-6 md:px-10 py-10">
+        {/* Greeting */}
+        <header className="mb-6">
+          <h1
+            className="text-[24px] font-semibold leading-[1.2]"
+            style={{ color: "var(--theme-text-primary)" }}
+          >
+            Good morning, {firstName}
+          </h1>
         </header>
 
-        {/* Bento grid */}
-        <div className="grid grid-cols-12 auto-rows-[128px] gap-4">
-          {/* Big feature tile — most-urgent deal (red flag) */}
-          <FeatureDealTile
-            deal={DEALS[0]}
-            onOpenDeal={onOpenDeal}
-            className="col-span-12 lg:col-span-7 row-span-2"
+        {/* Stat cards */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <StatCard
+            icon={Briefcase}
+            label="Active deals"
+            value={String(active)}
+            hint={`${currency.format(DEALS.reduce((s, d) => s + d.amount, 0))} pipeline`}
           />
-
-          {/* Summary: pending actions */}
-          <StatTile
-            className="col-span-6 lg:col-span-5"
-            label="Pending actions"
-            value="7"
-            hint="3 banker · 2 customer · 2 system"
-            icon={Clock}
-            accent="primary"
+          <StatCard
+            icon={AlertCircle}
+            label="Needs attention"
+            value={String(needAttention)}
+            hint="Unresolved mandatory items"
+            accent="error"
           />
-
-          {/* Summary: team SLA */}
-          <StatTile
-            className="col-span-6 lg:col-span-5"
-            label="Avg. time to submit"
-            value="4.2d"
-            hint="−0.6d vs last month"
-            icon={TrendingUp}
-            accent="ok"
+          <StatCard
+            icon={CheckCircle2}
+            label="Ready to submit"
+            value={String(readyToSubmit)}
+            hint="All phases complete"
+            accent="success"
           />
+        </div>
 
-          {/* Medium deal tiles */}
-          {DEALS.slice(1).map((d, i) => (
-            <DealTile
-              key={d.id}
-              deal={d}
-              onOpenDeal={onOpenDeal}
-              className={`col-span-12 md:col-span-6 ${
-                i === 0 ? "lg:col-span-6" : "lg:col-span-6"
-              } row-span-2`}
+        {/* Section header with New Deal button */}
+        <div className="flex items-center justify-between mb-3">
+          <div
+            className="text-[10px] uppercase font-semibold"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.8px",
+            }}
+          >
+            Your deals
+          </div>
+          <button
+            type="button"
+            onClick={onNewDeal}
+            className="interactive-primary inline-flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold text-white cursor-pointer"
+            style={{
+              background: "var(--theme-primary)",
+              borderRadius: "var(--theme-radius)",
+            }}
+          >
+            <Plus size={13} strokeWidth={2.6} />
+            New Deal
+          </button>
+        </div>
+
+        {/* Deal list */}
+        <div
+          className="overflow-hidden"
+          style={{
+            background: "var(--theme-card-bg)",
+            border: "1px solid var(--theme-border)",
+            borderRadius: "var(--theme-radius)",
+          }}
+        >
+          {DEALS.map((deal, i) => (
+            <DealRow
+              key={deal.id}
+              deal={deal}
+              onClick={() => onOpenDeal(deal.id)}
+              isLast={i === DEALS.length - 1}
             />
           ))}
-
-          {/* New deal CTA tile */}
-          <NewDealTile
-            onNewDeal={onNewDeal}
-            className="col-span-12 lg:col-span-12 row-span-1"
-          />
         </div>
       </div>
     </main>
   );
 }
 
-// ——— Tiles ———
-
-function FeatureDealTile({
+function DealRow({
   deal,
-  onOpenDeal,
-  className,
+  onClick,
+  isLast,
 }: {
   deal: DashboardDeal;
-  onOpenDeal: (id: string) => void;
-  className: string;
+  onClick: () => void;
+  isLast: boolean;
 }) {
   const Icon = deal.productIcon;
+  const isReady = deal.readiness >= 90;
+  const meterColor = isReady
+    ? "#2e7d32"
+    : deal.readiness >= 60
+      ? "var(--theme-primary)"
+      : "var(--theme-text-tertiary)";
+
   return (
     <button
       type="button"
-      onClick={() => onOpenDeal(deal.id)}
-      className={`interactive-card ${className} text-left flex flex-col p-5 cursor-pointer`}
+      onClick={onClick}
+      className="w-full text-left flex items-center gap-4 px-4 py-3.5 cursor-pointer transition-colors"
       style={{
-        background: "var(--theme-card-bg)",
-        border: "1px solid var(--theme-border)",
-        borderLeft: "3px solid var(--theme-error)",
-        borderRadius: "var(--theme-radius)",
+        borderBottom: isLast ? "none" : "1px solid var(--theme-border)",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "var(--theme-surface-hover)";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
       }}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <span
-            className="inline-flex items-center justify-center shrink-0"
-            style={{
-              width: 40,
-              height: 40,
-              background: "var(--westpac-primary-soft)",
-              borderRadius: "10px",
-            }}
-          >
-            <Icon
-              size={20}
-              strokeWidth={1.9}
-              style={{ color: "var(--theme-primary)" }}
-            />
-          </span>
-          <div className="min-w-0">
-            <div
-              className="text-[10px] uppercase font-semibold tabular-nums"
-              style={{
-                color: "var(--theme-text-tertiary)",
-                letterSpacing: "0.6px",
-                fontFamily: "var(--theme-font-mono)",
-              }}
-            >
-              {deal.id}
-            </div>
-            <div
-              className="text-[17px] font-semibold leading-tight mt-0.5 truncate"
-              style={{ color: "var(--theme-primary)" }}
-            >
-              {deal.customerName}
-            </div>
-            <div
-              className="text-[12px] mt-0.5"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              {deal.productLabel}
-            </div>
-          </div>
-        </div>
-        <span
-          className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase shrink-0 px-2 py-1"
-          style={{
-            color: "var(--theme-error)",
-            background: "#fdecec",
-            borderRadius: "4px",
-            letterSpacing: "0.4px",
-          }}
-        >
-          <AlertCircle size={11} strokeWidth={2.5} />
-          Needs attention
-        </span>
-      </div>
-
-      <div className="flex-1" />
-
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <div
-            className="text-[10px] uppercase font-semibold"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Amount
-          </div>
-          <div
-            className="text-[20px] font-semibold tabular-nums leading-tight"
-            style={{
-              color: "var(--theme-text-primary)",
-              fontFamily: "var(--theme-font-mono)",
-            }}
-          >
-            {currency.format(deal.amount)}
-          </div>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <ReadinessMeter percent={deal.readiness} />
-          <span
-            className="text-[11px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            {PHASE_LABEL[deal.phase]} · {deal.updatedLabel}
-          </span>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-function DealTile({
-  deal,
-  onOpenDeal,
-  className,
-}: {
-  deal: DashboardDeal;
-  onOpenDeal: (id: string) => void;
-  className: string;
-}) {
-  const Icon = deal.productIcon;
-  return (
-    <button
-      type="button"
-      onClick={() => onOpenDeal(deal.id)}
-      className={`interactive-card ${className} text-left flex flex-col p-4 cursor-pointer`}
-      style={{
-        background: "var(--theme-card-bg)",
-        border: "1px solid var(--theme-border)",
-        borderRadius: "var(--theme-radius)",
-      }}
-    >
-      <div className="flex items-start gap-3 min-w-0">
-        <span
-          className="inline-flex items-center justify-center shrink-0"
-          style={{
-            width: 34,
-            height: 34,
-            background: "var(--westpac-primary-soft)",
-            borderRadius: "8px",
-          }}
-        >
-          <Icon
-            size={17}
-            strokeWidth={1.9}
-            style={{ color: "var(--theme-primary)" }}
-          />
-        </span>
-        <div className="min-w-0 flex-1">
-          <div
-            className="text-[10px] uppercase font-semibold tabular-nums"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.5px",
-              fontFamily: "var(--theme-font-mono)",
-            }}
-          >
-            {deal.id}
-          </div>
-          <div
-            className="text-[14px] font-semibold leading-tight mt-0.5 truncate"
-            style={{ color: "var(--theme-text-primary)" }}
-          >
-            {deal.customerName}
-          </div>
-          <div
-            className="text-[11.5px] mt-0.5 truncate"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            {deal.productLabel}
-          </div>
-        </div>
-        <ArrowUpRight
-          size={14}
-          strokeWidth={2.2}
-          style={{ color: "var(--theme-text-tertiary)" }}
+      {/* Product icon */}
+      <span
+        className="inline-flex items-center justify-center shrink-0"
+        style={{
+          width: 32,
+          height: 32,
+          background: "var(--westpac-primary-soft)",
+          borderRadius: "8px",
+        }}
+      >
+        <Icon
+          size={16}
+          strokeWidth={1.9}
+          style={{ color: "var(--theme-primary)" }}
         />
-      </div>
+      </span>
 
-      <div className="flex-1" />
-
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <div
-            className="text-[9px] uppercase font-semibold"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.5px",
-            }}
-          >
-            Amount
-          </div>
-          <div
-            className="text-[14px] font-semibold tabular-nums leading-tight"
-            style={{
-              color: "var(--theme-text-primary)",
-              fontFamily: "var(--theme-font-mono)",
-            }}
-          >
-            {currency.format(deal.amount)}
-          </div>
+      {/* Customer + product */}
+      <div className="min-w-0 flex-1">
+        <div
+          className="text-[13px] font-semibold leading-tight truncate"
+          style={{ color: "var(--theme-text-primary)" }}
+        >
+          {deal.customerName}
         </div>
-        <div className="flex flex-col items-end gap-1 min-w-0">
-          <ReadinessMeter percent={deal.readiness} compact />
-          <span
-            className="text-[10.5px] truncate max-w-[160px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            {PHASE_LABEL[deal.phase]} · {deal.updatedLabel}
-          </span>
+        <div
+          className="text-[11px] mt-0.5 truncate"
+          style={{ color: "var(--theme-text-secondary)" }}
+        >
+          {deal.productLabel}
         </div>
       </div>
+
+      {/* Phase */}
+      <div
+        className="hidden sm:block shrink-0 text-[11px] font-medium px-2 py-0.5"
+        style={{
+          color: "var(--theme-text-secondary)",
+          background: "var(--theme-surface-subtle)",
+          borderRadius: "999px",
+        }}
+      >
+        {PHASE_LABEL[deal.phase]}
+      </div>
+
+      {/* Amount */}
+      <div
+        className="hidden md:block shrink-0 text-[13px] font-semibold tabular-nums text-right"
+        style={{
+          color: "var(--theme-text-primary)",
+          fontFamily: "var(--theme-font-mono)",
+          minWidth: "80px",
+        }}
+      >
+        {currency.format(deal.amount)}
+      </div>
+
+      {/* Readiness */}
+      <div className="shrink-0 flex items-center gap-2" style={{ minWidth: "70px" }}>
+        <div
+          className="overflow-hidden"
+          style={{
+            width: 48,
+            height: 3,
+            background: "var(--theme-border)",
+            borderRadius: "2px",
+          }}
+        >
+          <div
+            style={{
+              width: `${deal.readiness}%`,
+              height: "100%",
+              background: meterColor,
+            }}
+          />
+        </div>
+        <span
+          className="text-[11px] tabular-nums font-semibold"
+          style={{
+            color: meterColor,
+            fontFamily: "var(--theme-font-mono)",
+          }}
+        >
+          {deal.readiness}
+        </span>
+      </div>
+
+      {/* Status badge */}
+      <div className="shrink-0" style={{ minWidth: "20px" }}>
+        {deal.redFlag ? (
+          <AlertCircle
+            size={14}
+            strokeWidth={2.2}
+            style={{ color: "var(--theme-error)" }}
+          />
+        ) : isReady ? (
+          <CheckCircle2
+            size={14}
+            strokeWidth={2.2}
+            style={{ color: "#2e7d32" }}
+          />
+        ) : null}
+      </div>
+
+      {/* Updated */}
+      <div
+        className="hidden lg:block shrink-0 text-[11px] text-right"
+        style={{
+          color: "var(--theme-text-tertiary)",
+          minWidth: "70px",
+        }}
+      >
+        {deal.updatedLabel}
+      </div>
+
+      <ArrowUpRight
+        size={13}
+        strokeWidth={2.2}
+        style={{ color: "var(--theme-text-tertiary)" }}
+        className="shrink-0"
+      />
     </button>
   );
 }
 
-function StatTile({
+function StatCard({
+  icon: Icon,
   label,
   value,
   hint,
-  icon: Icon,
   accent,
-  className,
 }: {
+  icon: typeof Briefcase;
   label: string;
   value: string;
   hint: string;
-  icon: typeof Clock;
-  accent: "primary" | "ok" | "warn";
-  className: string;
+  accent?: "error" | "success";
 }) {
-  const color =
-    accent === "ok"
-      ? "#2e7d32"
-      : accent === "warn"
-        ? "var(--theme-error)"
+  const valueColor =
+    accent === "error"
+      ? "var(--theme-error)"
+      : accent === "success"
+        ? "#2e7d32"
+        : "var(--theme-text-primary)";
+  const iconColor =
+    accent === "error"
+      ? "var(--theme-error)"
+      : accent === "success"
+        ? "#2e7d32"
         : "var(--theme-primary)";
+
   return (
     <div
-      className={`${className} p-4 flex items-center gap-4`}
+      className="p-4 flex items-center gap-3"
       style={{
-        background: "var(--theme-card-bg)",
+        background: "var(--theme-surface-subtle)",
         border: "1px solid var(--theme-border)",
         borderRadius: "var(--theme-radius)",
       }}
     >
       <span
-        className="inline-flex items-center justify-center shrink-0"
+        className="inline-flex items-center justify-center shrink-0 self-stretch"
         style={{
-          width: 40,
-          height: 40,
-          background: "var(--westpac-primary-soft)",
+          width: 52,
+          minHeight: 52,
+          background: "#f0f0f0",
           borderRadius: "10px",
         }}
       >
-        <Icon size={19} strokeWidth={1.9} style={{ color }} />
+        <Icon size={22} strokeWidth={1.8} style={{ color: iconColor }} />
       </span>
       <div className="min-w-0">
         <div
@@ -481,120 +410,18 @@ function StatTile({
           {label}
         </div>
         <div
-          className="text-[22px] font-semibold leading-tight tabular-nums"
-          style={{ color: "var(--theme-text-primary)" }}
+          className="text-[20px] font-semibold leading-tight tabular-nums"
+          style={{ color: valueColor }}
         >
           {value}
         </div>
         <div
-          className="text-[11px]"
-          style={{ color: "var(--theme-text-secondary)" }}
+          className="text-[10.5px] mt-0.5"
+          style={{ color: "var(--theme-text-tertiary)" }}
         >
           {hint}
         </div>
       </div>
-    </div>
-  );
-}
-
-function NewDealTile({
-  onNewDeal,
-  className,
-}: {
-  onNewDeal: () => void;
-  className: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onNewDeal}
-      className={`${className} interactive-card text-left p-4 flex items-center justify-between gap-4 cursor-pointer`}
-      style={{
-        background: "var(--westpac-primary-soft)",
-        border: "1px dashed var(--theme-primary)",
-        borderRadius: "var(--theme-radius)",
-      }}
-    >
-      <div className="flex items-center gap-3 min-w-0">
-        <span
-          className="inline-flex items-center justify-center shrink-0"
-          style={{
-            width: 36,
-            height: 36,
-            background: "var(--theme-primary)",
-            borderRadius: "10px",
-          }}
-        >
-          <Briefcase size={17} strokeWidth={2.1} color="#fff" />
-        </span>
-        <div>
-          <div
-            className="text-[13px] font-semibold"
-            style={{ color: "var(--theme-primary)" }}
-          >
-            Start a new deal
-          </div>
-          <div
-            className="text-[11.5px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            Pick a product, entity, and amount — we&apos;ll build the checklist.
-          </div>
-        </div>
-      </div>
-      <ArrowUpRight
-        size={16}
-        strokeWidth={2.2}
-        style={{ color: "var(--theme-primary)" }}
-      />
-    </button>
-  );
-}
-
-// ——— Readiness mini-meter ———
-
-function ReadinessMeter({
-  percent,
-  compact = false,
-}: {
-  percent: number;
-  compact?: boolean;
-}) {
-  const fg =
-    percent >= 90
-      ? "#2e7d32"
-      : percent >= 60
-        ? "var(--theme-primary)"
-        : "var(--theme-text-tertiary)";
-  const width = compact ? 96 : 140;
-  return (
-    <div className="flex items-center gap-2">
-      <div
-        className="overflow-hidden"
-        style={{
-          width,
-          height: 4,
-          background: "var(--theme-border)",
-          borderRadius: "2px",
-        }}
-      >
-        <div
-          style={{
-            width: `${percent}%`,
-            height: "100%",
-            background: fg,
-          }}
-        />
-      </div>
-      <span
-        className="text-[11px] tabular-nums font-semibold"
-        style={{
-          color: fg,
-          fontFamily: "var(--theme-font-mono)",
-        }}
-      >
-        {percent}
-      </span>
     </div>
   );
 }

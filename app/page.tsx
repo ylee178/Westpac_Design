@@ -28,7 +28,7 @@ import { DealRibbon } from "@/components/deal-ribbon";
 import { PhaseSidebar } from "@/components/phase-sidebar";
 import { SetupProgressSidebar } from "@/components/setup-progress-sidebar";
 import { PhasePlaceholder } from "@/components/phase-placeholder";
-import { PhaseItemStack } from "@/components/phase-item-stack";
+import { PhaseItemStack, PhaseTransitionSkeleton } from "@/components/phase-item-stack";
 import { PhaseCompleteToast } from "@/components/phase-complete-toast";
 import { SubmitSuccess } from "@/components/submit-success";
 import { SkipDialog } from "@/components/skip-dialog";
@@ -45,8 +45,19 @@ export default function Page() {
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
   const [viewingPhase, setViewingPhase] = useState<Phase | null>(null);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  /** Item id currently playing its collapse animation before its
+   *  library state flips. Used by PhaseItemStack to apply the
+   *  `is-collapsing` wrapper class. */
+  const [pendingResolveId, setPendingResolveId] = useState<string | null>(
+    null,
+  );
+  /** Must match the CSS transition duration in `.item-collapse`. */
+  const RESOLVE_DELAY_MS = 420;
   /** Phase whose "just completed" toast is currently playing. */
   const [toastPhaseId, setToastPhaseId] = useState<Phase | null>(null);
+  /** Brief skeleton shown between phase-complete toast and next
+   *  phase content so the transition reads as "loading next phase". */
+  const [phaseTransitioning, setPhaseTransitioning] = useState(false);
   /** Previous phase statuses — used to detect the moment a phase
    *  flips to "complete" so the toast fires exactly once per flip. */
   const prevPhaseStatusRef = useRef<Map<Phase, string>>(new Map());
@@ -69,6 +80,8 @@ export default function Page() {
     setSkipTarget(null);
     setViewingPhase(null);
     setFocusedItemId(null);
+    setPendingResolveId(null);
+    setPhaseTransitioning(false);
     setToastPhaseId(null);
     prevPhaseStatusRef.current = new Map();
     setStep("dashboard");
@@ -139,11 +152,11 @@ export default function Page() {
   function handleToastDone() {
     const justFinished = toastPhaseId;
     setToastPhaseId(null);
-    // If the banker was viewing the phase that just completed,
-    // auto-advance to the next actionable phase so the main area
-    // smoothly moves forward.
+    setPendingResolveId(null);
     if (justFinished && viewingPhase === justFinished) {
+      setPhaseTransitioning(true);
       setViewingPhase(state.currentPhase.id);
+      setTimeout(() => setPhaseTransitioning(false), 700);
     }
   }
 
@@ -161,25 +174,34 @@ export default function Page() {
     const nextActionable = phaseSnap.items.find(
       (i) => i.status !== "complete" && i.status !== "skipped",
     );
-    setFocusedItemId(nextActionable?.id ?? phaseSnap.items[0]?.id ?? null);
+    setFocusedItemId(nextActionable?.id ?? null);
   }, [state, viewingPhase, focusedItemId, step]);
 
   // ——— Handlers ———
   function handleCompleteItem(item: CI) {
-    setLibrary((prev) =>
-      prev.map((i) => (i.id === item.id ? { ...i, status: "complete" } : i)),
-    );
-    // Auto-advance focus to the next actionable item in the current
-    // phase so the banker isn't left parked on a just-completed card.
+    if (pendingResolveId) return; // guard against double-clicks during the animation
+    setPendingResolveId(item.id);
     const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
-    if (!phaseSnap) return;
-    const remaining = phaseSnap.items.find(
-      (i) =>
-        i.id !== item.id &&
-        i.status !== "complete" &&
-        i.status !== "skipped",
-    );
-    if (remaining) setFocusedItemId(remaining.id);
+    const remaining = phaseSnap
+      ? phaseSnap.items.find(
+          (i) =>
+            i.id !== item.id &&
+            i.status !== "complete" &&
+            i.status !== "skipped",
+        )
+      : null;
+    setTimeout(() => {
+      setLibrary((prev) =>
+        prev.map((i) =>
+          i.id === item.id ? { ...i, status: "complete" } : i,
+        ),
+      );
+      setFocusedItemId(remaining ? remaining.id : null);
+      // Last item: keep pendingResolveId so the wrapper stays
+      // collapsed through the phase-complete toast. handleToastDone
+      // clears it when the toast lifts.
+      if (remaining) setPendingResolveId(null);
+    }, RESOLVE_DELAY_MS);
   }
 
   function handleRevertItem(item: CI) {
@@ -209,6 +231,7 @@ export default function Page() {
     setSkipTarget(null);
     setViewingPhase(null);
     setFocusedItemId(null);
+    setPendingResolveId(null);
     setToastPhaseId(null);
     prevPhaseStatusRef.current = new Map();
     resetDraft();
@@ -231,14 +254,29 @@ export default function Page() {
 
   function handleSkipConfirm(payload: { category: string; freeText?: string }) {
     if (!skipTarget) return;
-    setLibrary((prev) =>
-      prev.map((i) =>
-        i.id === skipTarget.id
-          ? { ...i, status: "skipped", skipReason: payload }
-          : i,
-      ),
-    );
+    const targetId = skipTarget.id;
     setSkipTarget(null);
+    setPendingResolveId(targetId);
+    const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
+    const remaining = phaseSnap
+      ? phaseSnap.items.find(
+          (i) =>
+            i.id !== targetId &&
+            i.status !== "complete" &&
+            i.status !== "skipped",
+        )
+      : null;
+    setTimeout(() => {
+      setLibrary((prev) =>
+        prev.map((i) =>
+          i.id === targetId
+            ? { ...i, status: "skipped", skipReason: payload }
+            : i,
+        ),
+      );
+      setFocusedItemId(remaining ? remaining.id : null);
+      if (remaining) setPendingResolveId(null);
+    }, RESOLVE_DELAY_MS);
   }
 
   function handleSkipCancel() {
@@ -264,17 +302,17 @@ export default function Page() {
   }
 
   // ——— Main area content ———
-  // Dashboard, loading, and complete steps take the full stage (no
-  // sidebar/ribbon). Empty + creator steps still render the deal
-  // progress sidebar with "Setup" highlighted so the banker can see
-  // where they are in the overall journey.
-  const isFullTakeoverStep =
-    step === "dashboard" || step === "loading" || step === "complete";
-  const isSetupStep = step === "empty" || step === "creator";
+  // Dashboard and complete steps take the full stage (no sidebar/
+  // ribbon). Empty, creator, and loading all share the setup-mode
+  // sidebar so "Setup in progress" anchors the left during the
+  // whole intake → build sequence.
+  const isFullTakeoverStep = step === "dashboard" || step === "complete";
+  const isSetupStep =
+    step === "empty" || step === "creator" || step === "loading";
   const showMasthead = true;
   const showRibbon = !isFullTakeoverStep && !isSetupStep;
   const showSetupSidebar = isSetupStep;
-  const showNewDealButton = step === "dashboard";
+  const showNewDealButton = true;
 
   // Submit is enabled once every phase has reached status "complete".
   const canSubmit = state.phases.every((p) => p.status === "complete");
@@ -298,10 +336,18 @@ export default function Page() {
       );
     }
 
-    // focused step — placeholder | completed phase list | item stack
+    // focused step — placeholder | transition skeleton | item stack
     if (!viewingPhase) return null;
     const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
     if (!phaseSnap) return null;
+
+    if (phaseTransitioning) {
+      return (
+        <PhaseTransitionSkeleton
+          count={phaseSnap.items.length || 3}
+        />
+      );
+    }
 
     const isPreviewingFuturePhase =
       phaseSnap.id !== state.currentPhase.id &&
@@ -326,6 +372,7 @@ export default function Page() {
         onRevert={handleRevertItem}
         onFocusItem={handleSelectItem}
         animationKey={phaseSnap.id}
+        pendingResolveId={pendingResolveId}
       />
     );
   })();

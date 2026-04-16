@@ -13,7 +13,7 @@ import { useEffect } from "react";
 import type { PhaseSnapshot } from "@/lib/deal-state";
 import { Check } from "lucide-react";
 
-const TOAST_DURATION_MS = 2000;
+const TOAST_DURATION_MS = 1660;
 
 interface Props {
   phase: PhaseSnapshot;

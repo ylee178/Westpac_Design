@@ -1,61 +1,44 @@
 "use client";
 
 /**
- * V1 step 3 — Full-screen "system is building" narrative.
+ * V1 step 3 — "Building your checklist" hand-off.
  *
- * This is NOT a generic loading spinner. It's a scripted reveal of
- * D1 (Dynamic Checklist Build): the banker watches the system
- * construct a deal-specific checklist and auto-verify the Setup
- * phase from trusted sources. ~6 seconds, center-takeover, no
- * sidebar or Pac panel — page.tsx hides them for this step.
+ * Two presentation phases:
  *
- * Beat structure (t = seconds):
- *   0.0  D1 badge + title fade in
- *   0.5  status line 1: "Linking customer record..."
- *   1.0  item 1 skeleton
- *   1.4  item 1 ✓
- *   1.5  status line 2: "Confirming product & entity..."
- *   1.8  item 2 skeleton
- *   2.2  item 2 ✓
- *   2.4  status line 3: "Running eligibility checks..."
- *   2.6  item 3 skeleton
- *   3.0  item 3 ✓
- *   3.2  status line 4: "✓ Setup complete"
- *   3.5  Ready to Submit 0 → 12% tick
- *   4.0  Green "Setup complete" banner slide-up
- *   5.6  Everything fade out
- *   6.0  advance to workspace (step → "focused")
+ *   A. LINES — narrow column, vertically centered. Three setup lines
+ *      materialize one at a time: each fades in with a spinner +
+ *      shimmering label, then resolves to ✓ + solid label.
  *
- * Changed in redesign:
- *   - Removed burgundy "Moving to Identification" bridge banner
- *     (it read as an alarm after the green banner and was
- *     redundant with the workspace sidebar).
- *   - Added big centered status line that rotates through beats
- *     so the screen feels like "AI is thinking" rather than a
- *     static page.
+ *   B. SKELETON — once all three lines are done, the list fades out
+ *      and the main area shows a skeleton of the focused workspace
+ *      (header + stacked item cards) so the content hand-off feels
+ *      like "the real thing is loading in", not a jarring cut.
+ *
+ * Left sidebar reads `loadingDoneCount` from flow-mode-context and
+ * ticks off Setup sub-items in sync with phase A.
+ *
+ * Timeline (ms):
+ *   0     title fades in
+ *   400   line 1 appears (spinner + shimmer)
+ *   1200  line 1 → ✓  (loadingDoneCount = 1)
+ *   1400  line 2 appears
+ *   2200  line 2 → ✓  (loadingDoneCount = 2)
+ *   2400  line 3 appears
+ *   3200  line 3 → ✓  (loadingDoneCount = 3)
+ *   3500  lines fade out
+ *   3820  skeleton fades in
+ *   4700  setStep("focused") — real workspace replaces skeleton
  */
 import { useEffect, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
-import { Check, Sparkles } from "lucide-react";
-import { Skeleton } from "@/components/skeleton";
+import { Check } from "lucide-react";
 import { productLabel } from "@/data/product-options";
+import { Skeleton } from "@/components/skeleton";
 
-const SETUP_ITEMS = [
-  {
-    label: "Link customer record",
-    source: "Customer master",
-    detail: "Sarah → Meridian Logistics Pty Ltd",
-  },
-  {
-    label: "Confirm product and entity type",
-    source: "BizEdge engine",
-    detail: "Bank Guarantee · Company (Pty Ltd)",
-  },
-  {
-    label: "Initial eligibility screen",
-    source: "Risk engine",
-    detail: "Trading ≥12 months · no losses · TCE ≤ $20M",
-  },
+const SETUP_LINES = [
+  { label: "Linking customer record", source: "Customer master" },
+  { label: "Confirming product and entity", source: "BizEdge engine" },
+  { label: "Running eligibility checks", source: "Risk engine" },
 ];
 
 function entityLabel(id: string): string {
@@ -68,325 +51,260 @@ function entityLabel(id: string): string {
   return map[id] ?? id;
 }
 
-type StatusLine = {
-  text: string;
-  tone: "thinking" | "complete";
-};
-
-const STATUS_LINES: { at: number; line: StatusLine }[] = [
-  { at: 500, line: { text: "Linking customer record...", tone: "thinking" } },
-  {
-    at: 1500,
-    line: { text: "Confirming product & entity...", tone: "thinking" },
-  },
-  {
-    at: 2400,
-    line: { text: "Running eligibility checks...", tone: "thinking" },
-  },
-  { at: 3200, line: { text: "Setup phase complete", tone: "complete" } },
-];
+type LineState = "hidden" | "pending" | "done";
 
 export function V1DynamicLoading() {
-  const { draft, setStep } = useFlowMode();
-  const [revealCount, setRevealCount] = useState(0);
-  const [readinessScore, setReadinessScore] = useState(0);
-  const [statusIndex, setStatusIndex] = useState(-1);
-  const [showBanner, setShowBanner] = useState(false);
-  const [fadingOut, setFadingOut] = useState(false);
+  const { draft, setStep, setLoadingDoneCount } = useFlowMode();
+  const [lineStates, setLineStates] = useState<LineState[]>([
+    "hidden",
+    "hidden",
+    "hidden",
+  ]);
+  const [linesFadingOut, setLinesFadingOut] = useState(false);
+  const [skeletonShown, setSkeletonShown] = useState(false);
 
   useEffect(() => {
+    setLoadingDoneCount(0);
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const setLine = (i: number, s: LineState) =>
+      setLineStates((prev) => {
+        const next = [...prev];
+        next[i] = s;
+        return next;
+      });
 
-    // Status rotator
-    STATUS_LINES.forEach(({ at }, i) => {
-      timers.push(setTimeout(() => setStatusIndex(i), at));
-    });
-
-    // Item skeleton/resolve cadence
-    timers.push(setTimeout(() => setRevealCount(0.5), 1000));
-    timers.push(setTimeout(() => setRevealCount(1), 1400));
-    timers.push(setTimeout(() => setRevealCount(1.5), 1800));
-    timers.push(setTimeout(() => setRevealCount(2), 2200));
-    timers.push(setTimeout(() => setRevealCount(2.5), 2600));
-    timers.push(setTimeout(() => setRevealCount(3), 3000));
-
-    // Ready to Submit tick 0 → 12
-    timers.push(
-      setTimeout(() => {
-        const start = Date.now();
-        const duration = 450;
-        const end = 12;
-        const frame = () => {
-          const elapsed = Date.now() - start;
-          const progress = Math.min(1, elapsed / duration);
-          setReadinessScore(Math.round(end * progress));
-          if (progress < 1) requestAnimationFrame(frame);
-        };
-        requestAnimationFrame(frame);
-      }, 3500),
+    const cadence: Array<[number, number, LineState]> = [
+      [400, 0, "pending"],
+      [1200, 0, "done"],
+      [1400, 1, "pending"],
+      [2200, 1, "done"],
+      [2400, 2, "pending"],
+      [3200, 2, "done"],
+    ];
+    cadence.forEach(([at, idx, s]) =>
+      timers.push(
+        setTimeout(() => {
+          setLine(idx, s);
+          if (s === "done") setLoadingDoneCount(idx + 1);
+        }, at),
+      ),
     );
 
-    // Green completion banner
-    timers.push(setTimeout(() => setShowBanner(true), 4000));
-
-    // Fade everything out before handing off
-    timers.push(setTimeout(() => setFadingOut(true), 5600));
-    // Advance to workspace
-    timers.push(setTimeout(() => setStep("focused"), 6000));
+    timers.push(setTimeout(() => setLinesFadingOut(true), 3500));
+    timers.push(setTimeout(() => setSkeletonShown(true), 3820));
+    timers.push(
+      setTimeout(() => {
+        setStep("focused");
+        setLoadingDoneCount(0);
+      }, 4700),
+    );
 
     return () => timers.forEach(clearTimeout);
-  }, [setStep]);
+  }, [setStep, setLoadingDoneCount]);
 
-  const currentStatus =
-    statusIndex >= 0 ? STATUS_LINES[statusIndex].line : null;
+  const dealLabel = [
+    productLabel(draft.product) || "this deal",
+    draft.entity ? entityLabel(draft.entity) : null,
+    draft.jurisdiction || null,
+  ]
+    .filter(Boolean)
+    .join(" × ");
 
+  // Phase A — narrow centered column of lines.
+  if (!skeletonShown) {
+    return (
+      <main
+        className="flex-1 flex items-center justify-center px-6"
+        style={{ background: "var(--theme-page-bg)" }}
+      >
+        <div
+          className="w-full max-w-[460px] flex flex-col items-start text-left"
+          style={{
+            opacity: linesFadingOut ? 0 : 1,
+            transform: linesFadingOut
+              ? "translateY(-6px)"
+              : "translateY(0)",
+            transition:
+              "opacity 320ms ease-out, transform 320ms ease-out",
+          }}
+          aria-hidden={linesFadingOut}
+        >
+          <div
+            className="text-[10px] uppercase font-semibold mb-2"
+            style={{
+              color: "var(--theme-text-tertiary)",
+              letterSpacing: "0.6px",
+              opacity: 0,
+              animation: "fade-in 320ms ease-out both",
+            }}
+          >
+            Building your checklist
+          </div>
+          <h1
+            className="text-[20px] font-semibold leading-[1.3]"
+            style={{
+              color: "var(--theme-text-primary)",
+              opacity: 0,
+              animation: "fade-in 360ms ease-out 100ms forwards",
+            }}
+          >
+            {dealLabel}
+          </h1>
+
+          <ul className="mt-9 w-full space-y-4">
+            {SETUP_LINES.map((line, i) => (
+              <SetupLine
+                key={line.label}
+                state={lineStates[i]}
+                label={line.label}
+                source={line.source}
+              />
+            ))}
+          </ul>
+        </div>
+      </main>
+    );
+  }
+
+  // Phase B — skeleton of the focused workspace. Matches
+  // PhaseItemStack's outer layout so the hand-off looks like the
+  // real content finishing its paint.
   return (
     <main
-      className="flex-1 flex items-center justify-center py-12 px-6"
-      style={{
-        background: "var(--theme-page-bg)",
-        opacity: fadingOut ? 0 : 1,
-        transition: "opacity 360ms ease-out",
-      }}
+      className="flex-1 overflow-y-auto flex flex-col"
+      style={{ background: "var(--theme-page-bg)" }}
     >
-      <div className="w-full max-w-[640px] flex flex-col items-center text-center">
-        {/* Big pulsing sparkles — "AI thinking" anchor */}
-        <div
-          className="mb-5"
-          style={{
-            opacity: 0,
-            animation: "fade-in 400ms ease-out 100ms forwards",
-          }}
-        >
-          <div
-            className="inline-flex items-center justify-center w-14 h-14"
-            style={{
-              background: "var(--westpac-primary-soft)",
-              border: "1px solid var(--westpac-primary-border)",
-              borderRadius: "50%",
-              animation: "pulse-dot 1600ms ease-in-out infinite",
-            }}
-          >
-            <Sparkles
-              size={22}
-              strokeWidth={2.2}
-              style={{ color: "var(--theme-primary)" }}
-            />
-          </div>
-        </div>
-
-        {/* D1 badge */}
-        <div
-          className="flex items-center gap-1.5 mb-2"
-          style={{
-            opacity: 0,
-            animation: "fade-in 320ms ease-out 220ms forwards",
-          }}
-        >
-          <span
-            className="text-[10px] uppercase font-semibold"
-            style={{
-              color: "var(--theme-primary)",
-              letterSpacing: "0.6px",
-            }}
-          >
-            D1 · Dynamic checklist build
-          </span>
-        </div>
-
-        {/* Title */}
-        <h1
-          className="text-[22px] font-semibold leading-[1.25]"
-          style={{
-            color: "var(--theme-text-primary)",
-            opacity: 0,
-            animation: "fade-in 400ms ease-out 400ms forwards",
-          }}
-        >
-          Building your checklist for{" "}
-          <span style={{ color: "var(--theme-primary)" }}>
-            {productLabel(draft.product) || "this deal"}
-            {draft.entity ? ` × ${entityLabel(draft.entity)}` : ""}
-            {draft.jurisdiction ? ` × ${draft.jurisdiction}` : ""}
-          </span>
-        </h1>
-
-        {/* Big status rotator — the "AI is thinking" line */}
-        <div
-          className="mt-4 min-h-[22px] flex items-center justify-center"
-          aria-live="polite"
-        >
-          {currentStatus ? (
-            <span
-              key={statusIndex}
-              className="inline-flex items-center gap-2 text-[14px] font-medium"
-              style={{
-                color:
-                  currentStatus.tone === "complete"
-                    ? "#2e7d32"
-                    : "var(--theme-text-secondary)",
-                animation: "fade-in 320ms ease-out both",
-              }}
-            >
-              {currentStatus.tone === "complete" ? (
-                <Check size={14} strokeWidth={2.8} />
-              ) : (
-                <span
-                  className="inline-block w-1.5 h-1.5"
-                  style={{
-                    background: "var(--theme-primary)",
-                    borderRadius: "50%",
-                    animation: "pulse-dot 1000ms ease-in-out infinite",
-                  }}
-                />
-              )}
-              {currentStatus.text}
-            </span>
-          ) : null}
-        </div>
-
-        {/* Setup items — supporting element */}
-        <div
-          className="mt-6 w-full divide-y text-left"
-          style={{
-            background: "var(--theme-card-bg)",
-            border: "1px solid var(--theme-border)",
-            borderRadius: "var(--theme-radius)",
-            overflow: "hidden",
-            opacity: 0,
-            animation: "fade-in 400ms ease-out 600ms forwards",
-          }}
-        >
-          {SETUP_ITEMS.map((item, i) => {
-            const state =
-              revealCount >= i + 1
-                ? "resolved"
-                : revealCount >= i + 0.5
-                  ? "skeleton"
-                  : "hidden";
-            return (
-              <SetupItemRow key={item.label} item={item} state={state} />
-            );
-          })}
-        </div>
-
-        {/* Readiness tick */}
-        {readinessScore > 0 ? (
-          <div
-            className="mt-3 flex items-center justify-center gap-2 text-[11px]"
-            style={{ color: "var(--theme-text-secondary)" }}
-          >
-            Ready to Submit:{" "}
-            <span
-              className="font-semibold tabular-nums"
-              style={{
-                color: "var(--theme-primary)",
-                fontFamily: "var(--theme-font-mono)",
-                fontSize: "14px",
-              }}
-            >
-              {readinessScore}%
-            </span>
-          </div>
-        ) : null}
-
-        {/* Green completion banner */}
-        {showBanner ? (
-          <div
-            className="mt-5 w-full"
-            style={{
-              opacity: 0,
-              animation: "slide-up-in 450ms ease-out forwards",
-            }}
-          >
-            <div
-              className="flex items-center gap-3 p-3"
-              style={{
-                background: "#f0f9f2",
-                border: "1px solid #bfe4c6",
-                borderLeft: "3px solid #2e7d32",
-                borderRadius: "var(--theme-radius)",
-              }}
-            >
-              <div
-                className="flex items-center justify-center w-6 h-6 shrink-0"
-                style={{ background: "#2e7d32", borderRadius: "50%" }}
-              >
-                <Check size={13} strokeWidth={3} color="white" />
-              </div>
-              <div
-                className="text-[13px] font-semibold"
-                style={{ color: "var(--theme-text-primary)" }}
-              >
-                Setup complete — 3 items auto-verified by system
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      <WorkspaceSkeleton />
     </main>
   );
 }
 
-type RowState = "hidden" | "skeleton" | "resolved";
-
-function SetupItemRow({
-  item,
-  state,
-}: {
-  item: (typeof SETUP_ITEMS)[number];
-  state: RowState;
-}) {
+function WorkspaceSkeleton() {
+  const none = "none" as const;
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3"
+      className="w-full max-w-[760px] mx-auto px-6 md:px-8 py-6"
       style={{
-        minHeight: "54px",
+        opacity: 0,
+        animation: "fade-in 360ms ease-out both",
       }}
     >
-      {state === "resolved" ? (
-        <div
-          className="flex items-center justify-center w-6 h-6 shrink-0"
-          style={{
-            background: "#2e7d32",
-            borderRadius: "50%",
-            animation: "pop-in 280ms ease-out both",
-          }}
-        >
-          <Check size={12} strokeWidth={3} color="white" />
+      <header className="mb-6">
+        <Skeleton animation={none} variant="text" width="80px" height="10px" />
+        <div className="mt-2">
+          <Skeleton animation={none} variant="text" width="42%" height="26px" />
         </div>
-      ) : state === "skeleton" ? (
-        <Skeleton variant="circle" width={24} height={24} />
-      ) : (
-        <div style={{ width: 24, height: 24 }} />
-      )}
-      <div className="min-w-0 flex-1">
-        {state === "resolved" ? (
-          <div style={{ animation: "fade-in 280ms ease-out both" }}>
-            <div
-              className="text-[13px] font-semibold"
-              style={{ color: "var(--theme-text-primary)" }}
-            >
-              {item.label}
-            </div>
-            <div
-              className="text-[11px] mt-0.5"
-              style={{ color: "var(--theme-text-secondary)" }}
-            >
-              ✓ via {item.source}
-              <span style={{ color: "var(--theme-text-tertiary)" }}>
-                {" · "}
-                {item.detail}
-              </span>
-            </div>
+        <div className="mt-2">
+          <Skeleton animation={none} variant="text" width="58%" height="12px" />
+        </div>
+        <div className="mt-3">
+          <Skeleton animation={none} variant="text" width="100px" height="10px" />
+        </div>
+      </header>
+
+      <div className="flex flex-col gap-3">
+        {[0, 1, 2].map((i) => (
+          <div
+            key={i}
+            className="w-full px-5 py-5"
+            style={{
+              background: "var(--theme-card-bg)",
+              border: "1px solid var(--theme-border)",
+              borderRadius: "var(--theme-radius-lg)",
+              opacity: 0,
+              animation: `fade-in 360ms ease-out ${80 + i * 90}ms forwards`,
+            }}
+          >
+            <Skeleton animation={none} variant="text" width={["65%", "55%", "48%"][i]} height="13px" />
           </div>
-        ) : state === "skeleton" ? (
-          <div className="flex flex-col gap-1.5">
-            <Skeleton variant="text" width="60%" height="14px" />
-            <Skeleton variant="text" width="42%" height="10px" />
-          </div>
-        ) : null}
+        ))}
       </div>
     </div>
+  );
+}
+
+function SetupLine({
+  state,
+  label,
+  source,
+}: {
+  state: LineState;
+  label: string;
+  source: string;
+}) {
+  if (state === "hidden") {
+    return <li style={{ height: "22px" }} aria-hidden="true" />;
+  }
+  const isPending = state === "pending";
+  return (
+    <li
+      className="flex items-center gap-3 text-[13px]"
+      style={{ animation: "fade-in 320ms ease-out both" }}
+    >
+      <StatusIcon state={state} />
+      {isPending ? (
+        <span className="text-shimmer" style={{ fontWeight: 500 }}>
+          {label}
+        </span>
+      ) : (
+        <span
+          style={{
+            color: "var(--theme-text-primary)",
+            fontWeight: 500,
+          }}
+        >
+          {label}
+        </span>
+      )}
+      {state === "done" ? (
+        <span
+          className="text-[11px]"
+          style={{
+            color: "var(--theme-text-tertiary)",
+            animation: "fade-in 280ms ease-out both",
+          }}
+        >
+          via {source}
+        </span>
+      ) : null}
+    </li>
+  );
+}
+
+function StatusIcon({ state }: { state: LineState }) {
+  if (state === "done") {
+    return (
+      <span
+        className="inline-flex items-center justify-center shrink-0"
+        style={{
+          width: 16,
+          height: 16,
+          background: "#2e7d32",
+          borderRadius: "50%",
+          animation: "pop-in 260ms ease-out both",
+        }}
+      >
+        <Check size={9} strokeWidth={3.5} color="white" />
+      </span>
+    );
+  }
+  // pending — spinner ring
+  return (
+    <span
+      className="inline-flex items-center justify-center shrink-0"
+      style={{ width: 16, height: 16 }}
+    >
+      <span
+        className="animate-spin"
+        style={{
+          width: 14,
+          height: 14,
+          border: "1.5px solid var(--theme-border)",
+          borderTopColor: "var(--theme-primary)",
+          borderRadius: "50%",
+          display: "inline-block",
+        }}
+      />
+    </span>
   );
 }

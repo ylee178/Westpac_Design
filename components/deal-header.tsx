@@ -103,14 +103,24 @@ export function DealMasthead({
               <button
                 type="button"
                 onClick={onNewDeal}
-                className="interactive-primary inline-flex items-center gap-1.5 h-8 px-3.5 text-[12px] font-semibold text-white cursor-pointer"
+                className="inline-flex items-center gap-1 h-8 px-2.5 text-[12px] font-medium cursor-pointer"
                 style={{
-                  background: "var(--theme-primary)",
+                  color: "var(--theme-primary)",
+                  background: "var(--westpac-primary-soft)",
                   borderRadius: "var(--theme-radius)",
+                  transition: "background-color 160ms ease, color 160ms ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "var(--theme-primary)";
+                  e.currentTarget.style.color = "#ffffff";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "var(--westpac-primary-soft)";
+                  e.currentTarget.style.color = "var(--theme-primary)";
                 }}
               >
-                <Plus size={13} strokeWidth={2.6} />
-                New Deal
+                <Plus size={13} strokeWidth={2.4} />
+                Create
               </button>
             ) : null}
             <button

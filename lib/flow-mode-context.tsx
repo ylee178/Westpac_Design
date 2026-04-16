@@ -61,6 +61,12 @@ interface FlowMode {
   focusedIndex: number;
   setFocusedIndex: Dispatch<SetStateAction<number>>;
 
+  /** Number of setup lines the dynamic loading screen has confirmed
+   *  as done. Shared so the left sidebar can tick off Setup sub-items
+   *  in sync with the main area. 0 = none, 3 = all. */
+  loadingDoneCount: number;
+  setLoadingDoneCount: (n: number) => void;
+
   /** Incremented when the dev panel "Reset state" button is clicked.
    *  page.tsx watches this and resets the full library + flow step. */
   resetSignal: number;
@@ -87,6 +93,7 @@ export function FlowModeProvider({ children }: { children: ReactNode }) {
   const [step, setStep] = useState<V1Step>("dashboard");
   const [draftState, setDraftState] = useState<DealDraft>(EMPTY_DRAFT);
   const [focusedIndex, setFocusedIndex] = useState(0);
+  const [loadingDoneCount, setLoadingDoneCount] = useState(0);
   const [resetSignal, setResetSignal] = useState(0);
 
   const setDraft = useCallback((patch: Partial<DealDraft>) => {
@@ -112,10 +119,22 @@ export function FlowModeProvider({ children }: { children: ReactNode }) {
       resetDraft,
       focusedIndex,
       setFocusedIndex,
+      loadingDoneCount,
+      setLoadingDoneCount,
       resetSignal,
       requestReset,
     }),
-    [mode, step, draftState, setDraft, resetDraft, focusedIndex, resetSignal, requestReset],
+    [
+      mode,
+      step,
+      draftState,
+      setDraft,
+      resetDraft,
+      focusedIndex,
+      loadingDoneCount,
+      resetSignal,
+      requestReset,
+    ],
   );
 
   return (

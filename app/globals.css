@@ -486,29 +486,30 @@
   0% {
     opacity: 0;
     transform: translateY(4px);
-    background-position: 180% 0;
+    background-position: -60% 0;
   }
-  35% {
+  30% {
     opacity: 1;
     transform: translateY(0);
+    background-position: -60% 0;
   }
   100% {
     opacity: 1;
     transform: translateY(0);
-    background-position: -80% 0;
+    background-position: 160% 0;
   }
 }
 .shimmer-message-in {
   position: relative;
-  animation: shimmer-message-in 1100ms ease-out 1 forwards;
+  animation: shimmer-message-in 2.4s ease-in-out 1 forwards;
   background-image: linear-gradient(
-    100deg,
+    105deg,
     transparent 0%,
-    transparent 42%,
-    rgba(218, 23, 16, 0.10) 48%,
-    rgba(218, 23, 16, 0.22) 50%,
-    rgba(218, 23, 16, 0.10) 52%,
-    transparent 58%,
+    transparent 30%,
+    rgba(122, 30, 58, 0.06) 42%,
+    rgba(122, 30, 58, 0.12) 50%,
+    rgba(122, 30, 58, 0.06) 58%,
+    transparent 70%,
     transparent 100%
   );
   background-size: 220% 100%;
@@ -525,50 +526,39 @@
    ============================================================ */
 .interactive-card {
   transition:
-    transform 160ms ease,
-    box-shadow 160ms ease,
+    background-color 160ms ease,
     border-color 160ms ease;
 }
 .interactive-card:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(122, 30, 58, 0.14) !important;
   border-color: var(--theme-primary) !important;
+  background-color: var(--westpac-primary-soft) !important;
 }
 .interactive-card:not(:disabled):active {
-  transform: translateY(0);
-  box-shadow: 0 2px 6px rgba(122, 30, 58, 0.10) !important;
+  background-color: var(--westpac-primary-border) !important;
 }
 
 .interactive-pill {
   transition:
-    transform 120ms ease,
     filter 160ms ease,
-    box-shadow 160ms ease,
     border-color 160ms ease;
 }
 .interactive-pill:not(:disabled):hover {
   filter: brightness(0.97);
   border-color: var(--theme-primary) !important;
-  box-shadow: 0 3px 10px rgba(122, 30, 58, 0.14) !important;
 }
 .interactive-pill:not(:disabled):active {
-  transform: scale(0.98);
+  filter: brightness(0.94);
 }
 
 .interactive-primary {
   transition:
-    transform 120ms ease,
-    filter 160ms ease,
-    box-shadow 200ms ease;
+    filter 160ms ease;
 }
 .interactive-primary:not(:disabled):hover {
-  filter: brightness(0.92);
-  box-shadow: 0 8px 22px rgba(122, 30, 58, 0.35) !important;
-  transform: translateY(-1px);
+  filter: brightness(0.88);
 }
 .interactive-primary:not(:disabled):active {
-  transform: translateY(0);
-  filter: brightness(0.88);
+  filter: brightness(0.82);
 }
 
 .interactive-subtle {
@@ -704,9 +694,59 @@
  */
 @keyframes phase-toast {
   0%   { opacity: 0; transform: translate(-50%, -64px); }
-  20%  { opacity: 1; transform: translate(-50%, 0); }
-  80%  { opacity: 1; transform: translate(-50%, 0); }
+  24%  { opacity: 1; transform: translate(-50%, 0); }
+  76%  { opacity: 1; transform: translate(-50%, 0); }
   100% { opacity: 0; transform: translate(-50%, -64px); }
+}
+
+/* Shimmer text — "AI is generating this line" state.
+ * Dark primary base with a soft light band slowly sweeping across.
+ * Wide peak + slow duration = "light passing through", not a pulse.
+ */
+@keyframes text-shimmer {
+  0%   { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+
+.text-shimmer {
+  background: linear-gradient(
+    105deg,
+    var(--theme-text-primary) 0%,
+    var(--theme-text-primary) 22%,
+    #bfbfbf 50%,
+    var(--theme-text-primary) 78%,
+    var(--theme-text-primary) 100%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: text-shimmer 3.2s linear infinite;
+}
+
+/* Item wrapper — smooth collapse when a checklist item is resolved.
+ * Uses grid-template-rows 1fr→0fr so the wrapper transitions from
+ * "auto" height to zero without hardcoding a max-height. Parent
+ * holds the spacing as margin-top so the collapse can absorb it.
+ */
+.item-collapse {
+  display: grid;
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows 420ms cubic-bezier(0.65, 0, 0.35, 1),
+    margin-top 420ms cubic-bezier(0.65, 0, 0.35, 1),
+    opacity 300ms ease-out;
+}
+.item-collapse > * {
+  overflow: hidden;
+  min-height: 0;
+}
+.item-collapse.is-collapsing {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  margin-top: 0 !important;
 }
 
 /* Keep Pac sharp and brand-red even in grayscale skeleton mode */
