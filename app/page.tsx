@@ -1,87 +1,89 @@
 "use client";
 
 /**
- * Main page — Westpac BizEdge deal workspace.
+ * Main page — Westpac BizEdge deal workspace (redesigned).
  *
- * Two top-level modes share state:
- *  - V1: Guided progressive checklist (empty → creator → loading →
- *        focused → showAll → complete)
- *  - V2: AI teammate (scripted chat, Phase 3 placeholder for now)
+ * 3-zone layout once a deal has been committed:
+ *   1. Masthead          — always visible
+ *   2. Deal ribbon       — slim header bar with Ready to Submit
+ *   3. Body split:
+ *        LEFT  · PhaseSidebar  (vertical phase spine + item list)
+ *        MAIN  · focused card | all-items list | phase placeholder
+ *        RIGHT · V2ChatPanel   (optional, dev-panel toggled)
  *
- * Header + progress spine + Ready to Submit score are shared.
+ * Single source of truth: `computeDealState(library, deal)` derives
+ * every value that the ribbon, sidebar, main area, and Pac panel
+ * render from. Nothing is hardcoded; readiness and red-flag lists
+ * recompute whenever an item changes status.
  */
-import { useEffect, useMemo, useState } from "react";
-import type {
-  ChecklistItem as CI,
-  Deal,
-  OwnerFilter as OF,
-  Phase,
-} from "@/lib/types";
-import { INITIAL_CHECKLIST, PHASES, SAMPLE_DEAL } from "@/data/deal-data";
-import { calculateReadiness } from "@/lib/readiness-calc";
-import {
-  reshapeChecklist,
-  itemsForPhase,
-} from "@/lib/checklist-reshape";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { ChecklistItem as CI, Deal, Phase } from "@/lib/types";
+import { INITIAL_CHECKLIST, SAMPLE_DEAL } from "@/data/deal-data";
+import { computeDealState } from "@/lib/deal-state";
 import { useDevMode } from "@/lib/dev-mode-context";
 import { useFlowMode } from "@/lib/flow-mode-context";
 
-import { DealMasthead, DealMetaStrip } from "@/components/deal-header";
-import { ProgressSpine } from "@/components/progress-spine";
-import { OwnerFilter } from "@/components/owner-filter";
-import { ChecklistListRow } from "@/components/checklist-list-row";
+import { DealMasthead } from "@/components/deal-header";
+import { DealRibbon } from "@/components/deal-ribbon";
+import { PhaseSidebar } from "@/components/phase-sidebar";
+import { SetupProgressSidebar } from "@/components/setup-progress-sidebar";
+import { PhasePlaceholder } from "@/components/phase-placeholder";
+import { PhaseItemStack } from "@/components/phase-item-stack";
+import { PhaseCompleteToast } from "@/components/phase-complete-toast";
+import { SubmitSuccess } from "@/components/submit-success";
 import { SkipDialog } from "@/components/skip-dialog";
+import { DealsDashboard } from "@/components/deals-dashboard";
 import { V1EmptyState } from "@/components/v1-empty-state";
 import { V1DealContextForm } from "@/components/v1-deal-context-form";
 import { V1DynamicLoading } from "@/components/v1-dynamic-loading";
-import { V1FocusedCard } from "@/components/v1-focused-card";
-import { V1PhaseTransition } from "@/components/v1-phase-transition";
-import { V1PhaseReadonly } from "@/components/v1-phase-readonly";
 import { V2ChatPanel } from "@/components/v2-chat-panel";
-import { ArrowRight, ArrowLeft, LayoutList, ListChecks, Sparkles } from "lucide-react";
 
 export default function Page() {
   // ——— State ———
   const [baseDeal, setBaseDeal] = useState<Deal>(SAMPLE_DEAL);
   const [library, setLibrary] = useState<CI[]>(INITIAL_CHECKLIST);
-  const [ownerFilter, setOwnerFilter] = useState<OF>("all");
   const [skipTarget, setSkipTarget] = useState<CI | null>(null);
-  const { product: demoProduct, entity: demoEntity, aiPanel, setProduct, setEntity } = useDevMode();
+  const [viewingPhase, setViewingPhase] = useState<Phase | null>(null);
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  /** Phase whose "just completed" toast is currently playing. */
+  const [toastPhaseId, setToastPhaseId] = useState<Phase | null>(null);
+  /** Previous phase statuses — used to detect the moment a phase
+   *  flips to "complete" so the toast fires exactly once per flip. */
+  const prevPhaseStatusRef = useRef<Map<Phase, string>>(new Map());
+
+  const { product: demoProduct, entity: demoEntity, aiPanel, setProduct, setEntity } =
+    useDevMode();
   const {
     step,
     setStep,
     draft,
     resetDraft,
-    focusedIndex,
-    setFocusedIndex,
     resetSignal,
   } = useFlowMode();
 
-  // When the dev panel fires a reset, wipe all state back to empty.
+  // Reset everything when the dev panel fires a reset.
   useEffect(() => {
     if (resetSignal === 0) return;
     setLibrary(INITIAL_CHECKLIST);
     setBaseDeal(SAMPLE_DEAL);
-    setOwnerFilter("all");
     setSkipTarget(null);
-    setFocusedIndex(0);
-    setStep("empty");
+    setViewingPhase(null);
+    setFocusedItemId(null);
+    setToastPhaseId(null);
+    prevPhaseStatusRef.current = new Map();
+    setStep("dashboard");
     resetDraft();
     setProduct("bank-guarantee");
     setEntity("company");
-  }, [resetSignal, resetDraft, setStep, setFocusedIndex, setProduct, setEntity]);
-  // V2 AI layer is always "on" when the Pac panel is visible — the
-  // readiness score bump uses the AI signal weighting below.
-  const isV2 = aiPanel;
+  }, [resetSignal, resetDraft, setStep, setProduct, setEntity]);
 
-  // Dev panel overrides product × entity for D1 reshape demo, AND the
-  // empty-state card selector writes the same values so the deal reflects
-  // whichever is current.
+  // Dev panel + empty-state card selector both write into `baseDeal`
+  // through the draft object. Merge them into the effective deal.
   const deal: Deal = useMemo(
     () => ({
       ...baseDeal,
-      product: demoProduct as Deal["product"],
-      entity: demoEntity as Deal["entity"],
+      product: (demoProduct as Deal["product"]) || baseDeal.product,
+      entity: (demoEntity as Deal["entity"]) || baseDeal.entity,
       customerName:
         draft.customerName.trim().length > 0
           ? draft.customerName.trim()
@@ -97,141 +99,134 @@ export default function Page() {
   );
 
   // ——— Derived ———
-  const reshaped = useMemo(
-    () => reshapeChecklist(library, deal),
-    [library, deal],
-  );
+  const state = useMemo(() => computeDealState(library, deal), [library, deal]);
 
-  const currentPhaseItems = useMemo(
-    () => itemsForPhase(reshaped, deal.phase),
-    [reshaped, deal.phase],
-  );
+  // First land — drop the banker on the current phase when they
+  // first enter the workspace.
+  useEffect(() => {
+    if (step !== "focused") return;
+    if (viewingPhase === null) {
+      setViewingPhase(state.currentPhase.id);
+    }
+  }, [step, viewingPhase, state.currentPhase.id]);
 
-  // Items for the Setup phase — used by the read-only view when the
-  // banker clicks back to the completed Setup tab in the spine.
-  const setupPhaseItems = useMemo(
-    () => reshaped.filter((i) => i.phase === "setup"),
-    [reshaped],
-  );
+  // Phase-complete detection: when any phase flips from non-complete
+  // to "complete", fire the toast. Tracked via a ref-backed map so
+  // the toast fires once per transition and not on re-renders with
+  // unchanged state.
+  useEffect(() => {
+    if (step !== "focused") return;
+    const prev = prevPhaseStatusRef.current;
+    let justCompleted: Phase | null = null;
+    for (const p of state.phases) {
+      const previous = prev.get(p.id);
+      if (previous && previous !== "complete" && p.status === "complete") {
+        justCompleted = p.id;
+        break;
+      }
+    }
+    // Always refresh the snapshot, even when no transition fired, so
+    // we don't re-detect the same flip on subsequent renders.
+    const next = new Map<Phase, string>();
+    for (const p of state.phases) next.set(p.id, p.status);
+    prevPhaseStatusRef.current = next;
 
-  const visibleItems = useMemo(
-    () =>
-      ownerFilter === "all"
-        ? currentPhaseItems
-        : currentPhaseItems.filter((i) => i.owner === ownerFilter),
-    [currentPhaseItems, ownerFilter],
-  );
+    if (justCompleted && !toastPhaseId) {
+      setToastPhaseId(justCompleted);
+    }
+  }, [state.phases, step, toastPhaseId]);
 
-  const ownerCounts = useMemo<Record<OF, number>>(() => {
-    const counts: Record<OF, number> = {
-      all: currentPhaseItems.length,
-      banker: 0,
-      system: 0,
-      customer: 0,
-    };
-    for (const i of currentPhaseItems) counts[i.owner] += 1;
-    return counts;
-  }, [currentPhaseItems]);
+  function handleToastDone() {
+    const justFinished = toastPhaseId;
+    setToastPhaseId(null);
+    // If the banker was viewing the phase that just completed,
+    // auto-advance to the next actionable phase so the main area
+    // smoothly moves forward.
+    if (justFinished && viewingPhase === justFinished) {
+      setViewingPhase(state.currentPhase.id);
+    }
+  }
 
-  const breakdown = useMemo(
-    () => calculateReadiness(reshaped, deal),
-    [reshaped, deal],
-  );
-
-  const redFlagItem = useMemo(
-    () =>
-      reshaped.find(
-        (i) =>
-          i.legallyMandatory &&
-          i.status !== "complete" &&
-          i.status !== "skipped",
-      ) ?? null,
-    [reshaped],
-  );
-  const hasRedFlag = redFlagItem !== null;
-
-  const bankerPending = useMemo(
-    () =>
-      reshaped.filter(
-        (i) =>
-          i.owner === "banker" &&
-          i.status !== "complete" &&
-          i.status !== "skipped",
-      ).length,
-    [reshaped],
-  );
-
-  const projectedAfterActions = useMemo(() => {
-    if (bankerPending === 0) return breakdown.total;
-    const resolved = reshaped.filter(
-      (i) => i.status === "complete" || i.status === "skipped",
-    ).length;
-    const newCompletion = Math.round(
-      ((resolved + bankerPending) / reshaped.length) * 100,
+  // Keep focusedItemId pointing at something real whenever the
+  // viewing phase changes. We only re-pick when the current selection
+  // has no match in the visible phase at all — a banker clicking a
+  // completed item in the sidebar must stick, so completed-but-valid
+  // selections are respected as deliberate edits.
+  useEffect(() => {
+    if (step !== "focused" || !viewingPhase) return;
+    const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
+    if (!phaseSnap) return;
+    const currentSelection = phaseSnap.items.find((i) => i.id === focusedItemId);
+    if (currentSelection) return;
+    const nextActionable = phaseSnap.items.find(
+      (i) => i.status !== "complete" && i.status !== "skipped",
     );
-    const newTotal = Math.round(
-      newCompletion * 0.5 +
-        breakdown.skipQuality * 0.2 +
-        breakdown.provenanceConfidence * 0.2 +
-        breakdown.modeAlignment * 0.1,
-    );
-    return Math.min(98, newTotal);
-  }, [reshaped, bankerPending, breakdown]);
+    setFocusedItemId(nextActionable?.id ?? phaseSnap.items[0]?.id ?? null);
+  }, [state, viewingPhase, focusedItemId, step]);
 
-  const v2Breakdown = useMemo(() => {
-    if (!isV2) return breakdown;
-    const aiSignal = 92;
-    const total = Math.round(
-      breakdown.checklistCompletion * 0.4 +
-        breakdown.skipQuality * 0.15 +
-        breakdown.provenanceConfidence * 0.2 +
-        breakdown.modeAlignment * 0.1 +
-        aiSignal * 0.15,
-    );
-    return { ...breakdown, total };
-  }, [breakdown, isV2]);
-  const effectiveBreakdown = isV2 ? v2Breakdown : breakdown;
-
-  // ——— V1 handlers ———
-  const identificationItems = useMemo(
-    () =>
-      reshaped.filter(
-        (i) => i.phase === "identification",
-      ),
-    [reshaped],
-  );
-
-  // In focused mode we walk through items that are NOT yet resolved.
-  const actionableIdentification = useMemo(
-    () =>
-      identificationItems.filter(
-        (i) => i.status !== "complete" && i.status !== "skipped",
-      ),
-    [identificationItems],
-  );
-
-  const currentFocusedItem =
-    actionableIdentification[focusedIndex] ?? null;
-
-  const phaseAllResolved =
-    identificationItems.length > 0 &&
-    identificationItems.every(
-      (i) => i.status === "complete" || i.status === "skipped",
-    );
-
+  // ——— Handlers ———
   function handleCompleteItem(item: CI) {
     setLibrary((prev) =>
+      prev.map((i) => (i.id === item.id ? { ...i, status: "complete" } : i)),
+    );
+    // Auto-advance focus to the next actionable item in the current
+    // phase so the banker isn't left parked on a just-completed card.
+    const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
+    if (!phaseSnap) return;
+    const remaining = phaseSnap.items.find(
+      (i) =>
+        i.id !== item.id &&
+        i.status !== "complete" &&
+        i.status !== "skipped",
+    );
+    if (remaining) setFocusedItemId(remaining.id);
+  }
+
+  function handleRevertItem(item: CI) {
+    setLibrary((prev) =>
       prev.map((i) =>
-        i.id === item.id ? { ...i, status: "complete" } : i,
+        i.id === item.id
+          ? { ...i, status: "pending", skipReason: undefined }
+          : i,
       ),
     );
-    // Stay on same index — the list shrinks underneath us so the "next"
-    // item slides in automatically. If we're past the end, clamp.
-    setFocusedIndex((idx) => Math.max(0, Math.min(idx, actionableIdentification.length - 2)));
+    // Focus the just-reverted item so the banker can immediately
+    // re-work it.
+    setFocusedItemId(item.id);
   }
 
   function handleRequestSkip(item: CI) {
     setSkipTarget(item);
+  }
+
+  function handleSubmitDeal() {
+    setStep("complete");
+  }
+
+  function handleStartNewDeal() {
+    setLibrary(INITIAL_CHECKLIST);
+    setBaseDeal(SAMPLE_DEAL);
+    setSkipTarget(null);
+    setViewingPhase(null);
+    setFocusedItemId(null);
+    setToastPhaseId(null);
+    prevPhaseStatusRef.current = new Map();
+    resetDraft();
+    setStep("dashboard");
+  }
+
+  function handleNewDealFromHeader() {
+    resetDraft();
+    setStep("empty");
+  }
+
+  function handleOpenDealFromDashboard(_dealId: string) {
+    void _dealId;
+    // Prototype: any deal tile drops into the existing scripted
+    // Meridian Logistics workspace so the demo has a single
+    // end-to-end narrative.
+    setStep("focused");
+    setViewingPhase(null);
   }
 
   function handleSkipConfirm(payload: { category: string; freeText?: string }) {
@@ -244,146 +239,143 @@ export default function Page() {
       ),
     );
     setSkipTarget(null);
-    setFocusedIndex((idx) => Math.max(0, Math.min(idx, actionableIdentification.length - 2)));
   }
 
   function handleSkipCancel() {
     setSkipTarget(null);
   }
 
-  function handleRestart() {
-    resetDraft();
-    setStep("empty");
-    setFocusedIndex(0);
-    setLibrary(INITIAL_CHECKLIST); // reset completed states
+  function handleSelectPhase(phase: Phase) {
+    setViewingPhase(phase);
+    // If the selected phase is the current actionable phase, reset
+    // focused to its next actionable item; otherwise leave focus
+    // alone (placeholder view doesn't use it).
+    const phaseSnap = state.phases.find((p) => p.id === phase);
+    if (phaseSnap && phase === state.currentPhase.id) {
+      const next = phaseSnap.items.find(
+        (i) => i.status !== "complete" && i.status !== "skipped",
+      );
+      setFocusedItemId(next?.id ?? phaseSnap.items[0]?.id ?? null);
+    }
   }
 
-  // Auto-advance to complete state when phase is fully resolved in focused step
-  const shouldShowComplete =
-    step === "focused" && phaseAllResolved;
+  function handleSelectItem(item: CI) {
+    setFocusedItemId(item.id);
+  }
 
-  // ——— Unified render: header + spine up top, main area + Pac panel below ———
+  // ——— Main area content ———
+  // Dashboard, loading, and complete steps take the full stage (no
+  // sidebar/ribbon). Empty + creator steps still render the deal
+  // progress sidebar with "Setup" highlighted so the banker can see
+  // where they are in the overall journey.
+  const isFullTakeoverStep =
+    step === "dashboard" || step === "loading" || step === "complete";
+  const isSetupStep = step === "empty" || step === "creator";
+  const showMasthead = true;
+  const showRibbon = !isFullTakeoverStep && !isSetupStep;
+  const showSetupSidebar = isSetupStep;
+  const showNewDealButton = step === "dashboard";
+
+  // Submit is enabled once every phase has reached status "complete".
+  const canSubmit = state.phases.every((p) => p.status === "complete");
 
   const mainContent = (() => {
-    if (step === "empty") return <V1EmptyState />;
-    if (step === "creator") return <V1DealContextForm />;
-    if (step === "loading") return <V1DynamicLoading />;
-    if (deal.phase === "setup") {
+    if (step === "dashboard") {
       return (
-        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
-          <V1PhaseReadonly
-            phaseLabel="Setup"
-            items={setupPhaseItems}
-            onReturn={() =>
-              setBaseDeal((d) => ({ ...d, phase: "identification" }))
-            }
-          />
-        </div>
-      );
-    }
-    if (shouldShowComplete) {
-      return (
-        <V1PhaseTransition
-          completedPhase="identification"
-          onRestart={handleRestart}
+        <DealsDashboard
+          bankerName={deal.banker.name}
+          onOpenDeal={handleOpenDealFromDashboard}
+          onNewDeal={handleNewDealFromHeader}
         />
       );
     }
-    if (step === "showAll") {
+    if (step === "empty") return <V1EmptyState />;
+    if (step === "creator") return <V1DealContextForm />;
+    if (step === "loading") return <V1DynamicLoading />;
+    if (step === "complete") {
       return (
-        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
-          <ShowAllView
-            visibleItems={visibleItems}
-            currentPhaseItems={currentPhaseItems}
-            ownerFilter={ownerFilter}
-            setOwnerFilter={setOwnerFilter}
-            ownerCounts={ownerCounts}
-            onReturn={() => setStep("focused")}
-            selectedItemId={currentFocusedItem?.id ?? null}
-            onSelectItem={(item) => {
-              const idx = actionableIdentification.findIndex(
-                (i) => i.id === item.id,
-              );
-              if (idx >= 0) setFocusedIndex(idx);
-              setStep("focused");
-            }}
-            onRequestSkip={handleRequestSkip}
-          />
-        </div>
+        <SubmitSuccess deal={deal} onStartNew={handleStartNewDeal} />
       );
     }
-    if (currentFocusedItem) {
+
+    // focused step — placeholder | completed phase list | item stack
+    if (!viewingPhase) return null;
+    const phaseSnap = state.phases.find((p) => p.id === viewingPhase);
+    if (!phaseSnap) return null;
+
+    const isPreviewingFuturePhase =
+      phaseSnap.id !== state.currentPhase.id &&
+      phaseSnap.status === "not-started";
+
+    if (isPreviewingFuturePhase) {
       return (
-        <div className="w-full max-w-[1040px] mx-auto px-6 md:px-8 py-6">
-          <FocusedView
-            item={currentFocusedItem}
-            total={actionableIdentification.length}
-            index={focusedIndex}
-            onComplete={handleCompleteItem}
-            onRequestSkip={handleRequestSkip}
-            onShowAll={() => setStep("showAll")}
-          />
-        </div>
+        <PhasePlaceholder
+          phase={phaseSnap}
+          currentPhase={state.currentPhase.id}
+          onReturn={() => setViewingPhase(state.currentPhase.id)}
+        />
       );
     }
+
     return (
-      <V1PhaseTransition
-        completedPhase="identification"
-        onRestart={handleRestart}
+      <PhaseItemStack
+        phase={phaseSnap}
+        focusedItemId={focusedItemId}
+        onComplete={handleCompleteItem}
+        onRequestSkip={handleRequestSkip}
+        onRevert={handleRevertItem}
+        onFocusItem={handleSelectItem}
+        animationKey={phaseSnap.id}
       />
     );
   })();
 
-  // Masthead (nav, Need help, banker name, Sign out, dev panel) is
-  // ALWAYS visible — even during empty/creator, so the banker's
-  // workspace chrome never disappears. ProgressSpine sub-header sits
-  // directly below the masthead. The DealMetaStrip (customer card
-  // with readiness score) only appears once the banker has committed
-  // to a deal so the spine isn't pushed further down than necessary.
-  const showMetaStrip = step !== "empty" && step !== "creator";
+  // Find the phase snapshot the toast should render for.
+  const toastPhase = toastPhaseId
+    ? state.phases.find((p) => p.id === toastPhaseId) ?? null
+    : null;
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      {/* Sticky header group: masthead → spine → (optional) meta strip */}
+      {/* Sticky header group: masthead → ribbon */}
       <div className="shrink-0">
-        <DealMasthead
-          bankerName={deal.banker.name}
-          bankerRole={deal.banker.role}
-        />
-        <div
-          style={{
-            background: "#f5f5f5",
-            borderBottom: "1px solid var(--theme-border)",
-          }}
-        >
-          <ProgressSpine
-            currentPhase={
-              step === "empty" || step === "creator" || step === "loading"
-                ? "setup"
-                : deal.phase
-            }
-            onPhaseChange={
-              step === "empty" || step === "creator" || step === "loading"
-                ? undefined
-                : (p) => setBaseDeal((d) => ({ ...d, phase: p }))
-            }
-          />
-        </div>
-        {showMetaStrip ? (
-          <DealMetaStrip
-            deal={deal}
-            breakdown={effectiveBreakdown}
-            hasRedFlag={hasRedFlag}
-            redFlagLabel={redFlagItem?.label}
-            redFlagSubtitle={redFlagItem?.subtitle}
-            bankerActionCount={bankerPending}
-            projectedAfterActions={projectedAfterActions}
+        {showMasthead ? (
+          <DealMasthead
+            bankerName={deal.banker.name}
+            bankerRole={deal.banker.role}
+            showNewDeal={showNewDealButton}
+            onNewDeal={handleNewDealFromHeader}
           />
         ) : null}
+        {showRibbon ? <DealRibbon deal={deal} /> : null}
       </div>
 
-      {/* Main area + optional Pac panel */}
+      {/* Phase-complete toast — drops from the masthead, holds, then
+          lifts. Non-blocking, fixed-position. */}
+      {toastPhase ? (
+        <PhaseCompleteToast
+          key={toastPhase.id}
+          phase={toastPhase}
+          onDone={handleToastDone}
+        />
+      ) : null}
+
+      {/* Body: sidebar + main + optional pac panel */}
       <div className="flex-1 flex min-h-0">
+        {showRibbon ? (
+          <PhaseSidebar
+            state={state}
+            viewingPhase={viewingPhase ?? state.currentPhase.id}
+            focusedItemId={focusedItemId}
+            onSelectPhase={handleSelectPhase}
+            onSelectItem={handleSelectItem}
+            canSubmit={canSubmit}
+            onSubmit={handleSubmitDeal}
+          />
+        ) : showSetupSidebar ? (
+          <SetupProgressSidebar />
+        ) : null}
+
         <main
           className="flex-1 min-w-0 overflow-y-auto flex flex-col"
           style={{ background: "var(--theme-page-bg)" }}
@@ -391,18 +383,21 @@ export default function Page() {
           {mainContent}
         </main>
 
-        {aiPanel ? (
-          <div className="w-[400px] shrink-0 hidden lg:block h-full">
+        {aiPanel && showRibbon ? (
+          <div className="w-[360px] shrink-0 hidden lg:block h-full">
             <V2ChatPanel
               deal={deal}
-              currentFocusedItem={currentFocusedItem}
-              readinessScore={effectiveBreakdown.total}
+              currentFocusedItem={
+                focusedItemId
+                  ? state.applicableItems.find((i) => i.id === focusedItemId) ?? null
+                  : null
+              }
+              readinessScore={state.breakdown.total}
             />
           </div>
         ) : null}
       </div>
 
-      {/* D2 — Skip dialog */}
       <SkipDialog
         open={skipTarget !== null}
         item={skipTarget}
@@ -413,135 +408,3 @@ export default function Page() {
   );
 }
 
-/** V1 focused single-item view with show-all affordance at bottom */
-function FocusedView({
-  item,
-  total,
-  index,
-  onComplete,
-  onRequestSkip,
-  onShowAll,
-}: {
-  item: CI;
-  total: number;
-  index: number;
-  onComplete: (item: CI) => void;
-  onRequestSkip: (item: CI) => void;
-  onShowAll: () => void;
-}) {
-  return (
-    <div>
-      <V1FocusedCard
-        item={item}
-        index={index}
-        total={total}
-        phaseLabel="Identification"
-        onComplete={onComplete}
-        onRequestSkip={onRequestSkip}
-      />
-
-      <div className="mt-6 flex items-center justify-center gap-2">
-        <span
-          className="text-[12px]"
-          style={{ color: "var(--theme-text-tertiary)" }}
-        >
-          Guided mode
-        </span>
-        <span style={{ color: "var(--theme-text-tertiary)" }}>·</span>
-        <button
-          type="button"
-          onClick={onShowAll}
-          className="interactive-link inline-flex items-center gap-1.5 text-[12px] font-medium cursor-pointer"
-          style={{ color: "var(--theme-primary)" }}
-        >
-          <LayoutList size={12} strokeWidth={2.2} />
-          Show all {total} items
-          <ArrowRight size={12} strokeWidth={2.2} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/** V1 show-all flat list view — D4 progressive disclosure */
-function ShowAllView({
-  visibleItems,
-  currentPhaseItems,
-  ownerFilter,
-  setOwnerFilter,
-  ownerCounts,
-  onReturn,
-  selectedItemId,
-  onSelectItem,
-  onRequestSkip,
-}: {
-  visibleItems: CI[];
-  currentPhaseItems: CI[];
-  ownerFilter: OF;
-  setOwnerFilter: (v: OF) => void;
-  ownerCounts: Record<OF, number>;
-  onReturn: () => void;
-  selectedItemId: string | null;
-  onSelectItem: (item: CI) => void;
-  onRequestSkip: (item: CI) => void;
-}) {
-  return (
-    <div className="max-w-[960px] mx-auto">
-      <button
-        type="button"
-        onClick={onReturn}
-        className="interactive-link inline-flex items-center gap-1.5 text-[12px] font-medium mb-4 cursor-pointer"
-        style={{ color: "var(--theme-primary)" }}
-      >
-        <ArrowLeft size={12} strokeWidth={2.2} />
-        Return to guided mode
-      </button>
-
-      <div className="flex items-end justify-between gap-4 flex-wrap mb-4 pb-4"
-        style={{ borderBottom: "1px solid var(--theme-border-subtle)" }}>
-        <h2
-          className="text-[18px] font-semibold"
-          style={{ color: "var(--theme-text-primary)" }}
-        >
-          Identification phase — all items
-        </h2>
-        <div className="flex flex-col gap-1">
-          <span
-            className="text-[10px] uppercase font-medium"
-            style={{
-              color: "var(--theme-text-tertiary)",
-              letterSpacing: "0.32px",
-            }}
-          >
-            Owner filter
-          </span>
-          <OwnerFilter
-            value={ownerFilter}
-            onChange={setOwnerFilter}
-            counts={ownerCounts}
-          />
-        </div>
-      </div>
-
-      <div
-        style={{
-          background: "var(--theme-card-bg)",
-          border: "1px solid var(--theme-border)",
-          borderRadius: "var(--theme-radius)",
-          overflow: "hidden",
-        }}
-      >
-        <ul>
-          {visibleItems.map((item) => (
-            <ChecklistListRow
-              key={item.id}
-              item={item}
-              selected={selectedItemId === item.id}
-              onSelect={onSelectItem}
-            />
-          ))}
-        </ul>
-      </div>
-    </div>
-  );
-}

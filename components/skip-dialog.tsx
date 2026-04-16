@@ -5,7 +5,7 @@
  * Submit button is disabled until the banker makes a deliberate choice.
  * Address D2's known failure mode (lazy free-text reasons → audit noise).
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChecklistItem } from "@/lib/types";
 import { SKIP_REASON_OPTIONS } from "@/data/deal-data";
 import {
@@ -29,6 +29,22 @@ interface Props {
 export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [freeText, setFreeText] = useState("");
+  const freeTextRef = useRef<HTMLInputElement>(null);
+
+  // Jump focus to the "Brief explanation" field the moment the banker
+  // picks "Other" — saves a mandatory click since that field is the
+  // only thing keeping Submit disabled in that branch.
+  useEffect(() => {
+    if (selectedId === "other") {
+      // Defer one frame so the input has definitely mounted before we
+      // try to focus it.
+      const id = requestAnimationFrame(() => {
+        freeTextRef.current?.focus();
+      });
+      return () => cancelAnimationFrame(id);
+    }
+    return undefined;
+  }, [selectedId]);
 
   // Derived — Submit is enabled only when a category is picked AND, if "Other",
   // free text is non-empty.
@@ -148,6 +164,7 @@ export function SkipDialog({ open, item, onCancel, onConfirm }: Props) {
               </Label>
               <Input
                 id="skip-freetext"
+                ref={freeTextRef}
                 value={freeText}
                 onChange={(e) => setFreeText(e.target.value)}
                 placeholder="Brief explanation (required)"

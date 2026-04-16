@@ -22,6 +22,7 @@ import {
 } from "react";
 
 export type V1Step =
+  | "dashboard"    // Deals landing page — bento grid of the banker's deals
   | "empty"        // Card selectors for product/entity/jurisdiction
   | "creator"      // Customer + amount + description form
   | "loading"      // Dynamic checklist build animation
@@ -80,10 +81,10 @@ const EMPTY_DRAFT: DealDraft = {
 const FlowModeContext = createContext<FlowMode | null>(null);
 
 export function FlowModeProvider({ children }: { children: ReactNode }) {
-  // Always start at "empty" on a fresh page load — the demo must
-  // play from the top every time.
+  // Always start at "dashboard" on a fresh page load — the banker
+  // lands on their deals list before creating anything.
   const [mode, setMode] = useState<TopMode>("v1");
-  const [step, setStep] = useState<V1Step>("empty");
+  const [step, setStep] = useState<V1Step>("dashboard");
   const [draftState, setDraftState] = useState<DealDraft>(EMPTY_DRAFT);
   const [focusedIndex, setFocusedIndex] = useState(0);
   const [resetSignal, setResetSignal] = useState(0);

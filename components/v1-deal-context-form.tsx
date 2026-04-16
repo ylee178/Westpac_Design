@@ -13,6 +13,7 @@
 import { useEffect, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
 import { Skeleton } from "@/components/skeleton";
+import { validateAmount } from "@/data/product-options";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 
 export function V1DealContextForm() {
@@ -25,7 +26,19 @@ export function V1DealContextForm() {
     return () => clearTimeout(t);
   }, []);
 
-  const canContinue = draft.customerName.trim().length > 0 && draft.amount.trim().length > 0;
+  const nameError =
+    draft.customerName.trim().length > 0 && draft.customerName.trim().length < 3
+      ? "Use at least 3 characters."
+      : null;
+  const amountError =
+    draft.amount.trim().length > 0
+      ? validateAmount(draft.amount, draft.product)
+      : null;
+  const canContinue =
+    draft.customerName.trim().length >= 3 &&
+    draft.amount.trim().length > 0 &&
+    amountError === null &&
+    nameError === null;
 
   function handleSubmit() {
     if (!canContinue || submitting) return;
@@ -112,6 +125,7 @@ export function V1DealContextForm() {
             value={draft.customerName}
             onChange={(v) => setDraft({ customerName: v })}
             placeholder="e.g. Meridian Logistics Pty Ltd"
+            error={nameError}
           />
           <Field
             label="Deal amount (AUD)"
@@ -123,6 +137,7 @@ export function V1DealContextForm() {
             placeholder="0"
             mono
             prefix="$"
+            error={amountError}
           />
           <Field
             label="Brief description (optional)"
@@ -190,6 +205,7 @@ function Field({
   mono = false,
   multiline = false,
   prefix,
+  error,
 }: {
   label: string;
   value: string;
@@ -199,10 +215,13 @@ function Field({
   mono?: boolean;
   multiline?: boolean;
   prefix?: string;
+  error?: string | null;
 }) {
   const commonStyle: React.CSSProperties = {
     background: "var(--theme-card-bg)",
-    border: "1px solid var(--theme-border-strong)",
+    border: error
+      ? "1px solid var(--theme-error)"
+      : "1px solid var(--theme-border-strong)",
     borderRadius: "var(--theme-radius)",
     color: "var(--theme-text-primary)",
     fontFamily: mono ? "var(--theme-font-mono)" : "inherit",
@@ -269,6 +288,14 @@ function Field({
           style={commonStyle}
         />
       )}
+      {error ? (
+        <div
+          className="mt-1.5 text-[11px] font-medium"
+          style={{ color: "var(--theme-error)" }}
+        >
+          {error}
+        </div>
+      ) : null}
     </label>
   );
 }

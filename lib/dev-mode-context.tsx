@@ -50,7 +50,7 @@ export function DevModeProvider({ children }: { children: ReactNode }) {
   const [grayscale, setGrayscale] = useState(false);
   const [product, setProduct] = useState<DemoProduct>("bank-guarantee");
   const [entity, setEntity] = useState<DemoEntity>("company");
-  const [aiPanel, setAiPanel] = useState(true); // default ON
+  const [aiPanel, setAiPanel] = useState(false); // default OFF — v1 is the default surface
 
   // Apply data-attrs to <html> so CSS variable overrides cascade everywhere.
   useLayoutEffect(() => {

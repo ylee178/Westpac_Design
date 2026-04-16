@@ -1,31 +1,42 @@
 "use client";
 
 /**
- * V1 step 3 — Dynamic loading animation with narrative pacing.
+ * V1 step 3 — Full-screen "system is building" narrative.
  *
- * Runs ~5.8 seconds with clear beat structure so the banker perceives
- * exactly what the system just did:
+ * This is NOT a generic loading spinner. It's a scripted reveal of
+ * D1 (Dynamic Checklist Build): the banker watches the system
+ * construct a deal-specific checklist and auto-verify the Setup
+ * phase from trusted sources. ~6 seconds, center-takeover, no
+ * sidebar or Pac panel — page.tsx hides them for this step.
  *
- *   t=0.0  mount — title block fades in
- *   t=0.2  D1 badge fade in
- *   t=0.5  product-sensitive title line settles
- *   t=1.0  item 1 skeleton row
- *   t=1.4  item 1 resolves to checkmark + source
- *   t=1.8  item 2 skeleton row
- *   t=2.2  item 2 resolves
- *   t=2.6  item 3 skeleton row
- *   t=3.0  item 3 resolves
- *   t=3.5  Ready to Submit ticks up 0 → 12% (animated count)
- *   t=4.0  "Setup complete — 3 items auto-verified" banner slides up
- *   t=5.0  banner cross-fades to narrative bridge
- *   t=5.8  advance to focused step
+ * Beat structure (t = seconds):
+ *   0.0  D1 badge + title fade in
+ *   0.5  status line 1: "Linking customer record..."
+ *   1.0  item 1 skeleton
+ *   1.4  item 1 ✓
+ *   1.5  status line 2: "Confirming product & entity..."
+ *   1.8  item 2 skeleton
+ *   2.2  item 2 ✓
+ *   2.4  status line 3: "Running eligibility checks..."
+ *   2.6  item 3 skeleton
+ *   3.0  item 3 ✓
+ *   3.2  status line 4: "✓ Setup complete"
+ *   3.5  Ready to Submit 0 → 12% tick
+ *   4.0  Green "Setup complete" banner slide-up
+ *   5.6  Everything fade out
+ *   6.0  advance to workspace (step → "focused")
  *
- * Each beat adds a new visible element, so even the 5.8s window
- * never feels like "waiting" — it feels like work in progress.
+ * Changed in redesign:
+ *   - Removed burgundy "Moving to Identification" bridge banner
+ *     (it read as an alarm after the green banner and was
+ *     redundant with the workspace sidebar).
+ *   - Added big centered status line that rotates through beats
+ *     so the screen feels like "AI is thinking" rather than a
+ *     static page.
  */
 import { useEffect, useState } from "react";
 import { useFlowMode } from "@/lib/flow-mode-context";
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { Skeleton } from "@/components/skeleton";
 import { productLabel } from "@/data/product-options";
 
@@ -57,28 +68,49 @@ function entityLabel(id: string): string {
   return map[id] ?? id;
 }
 
-type BannerPhase = "none" | "complete" | "bridge";
+type StatusLine = {
+  text: string;
+  tone: "thinking" | "complete";
+};
+
+const STATUS_LINES: { at: number; line: StatusLine }[] = [
+  { at: 500, line: { text: "Linking customer record...", tone: "thinking" } },
+  {
+    at: 1500,
+    line: { text: "Confirming product & entity...", tone: "thinking" },
+  },
+  {
+    at: 2400,
+    line: { text: "Running eligibility checks...", tone: "thinking" },
+  },
+  { at: 3200, line: { text: "Setup phase complete", tone: "complete" } },
+];
 
 export function V1DynamicLoading() {
   const { draft, setStep } = useFlowMode();
   const [revealCount, setRevealCount] = useState(0);
-  const [bannerPhase, setBannerPhase] = useState<BannerPhase>("none");
   const [readinessScore, setReadinessScore] = useState(0);
+  const [statusIndex, setStatusIndex] = useState(-1);
+  const [showBanner, setShowBanner] = useState(false);
+  const [fadingOut, setFadingOut] = useState(false);
 
   useEffect(() => {
     const timers: ReturnType<typeof setTimeout>[] = [];
 
-    // t=1.0 / 1.4 — item 1 skeleton then resolve
+    // Status rotator
+    STATUS_LINES.forEach(({ at }, i) => {
+      timers.push(setTimeout(() => setStatusIndex(i), at));
+    });
+
+    // Item skeleton/resolve cadence
     timers.push(setTimeout(() => setRevealCount(0.5), 1000));
     timers.push(setTimeout(() => setRevealCount(1), 1400));
-    // t=1.8 / 2.2 — item 2
     timers.push(setTimeout(() => setRevealCount(1.5), 1800));
     timers.push(setTimeout(() => setRevealCount(2), 2200));
-    // t=2.6 / 3.0 — item 3
     timers.push(setTimeout(() => setRevealCount(2.5), 2600));
     timers.push(setTimeout(() => setRevealCount(3), 3000));
 
-    // t=3.5 — readiness tick-up 0 → 12
+    // Ready to Submit tick 0 → 12
     timers.push(
       setTimeout(() => {
         const start = Date.now();
@@ -94,106 +126,154 @@ export function V1DynamicLoading() {
       }, 3500),
     );
 
-    // t=4.0 — completion banner
-    timers.push(setTimeout(() => setBannerPhase("complete"), 4000));
-    // t=5.0 — cross-fade to narrative bridge
-    timers.push(setTimeout(() => setBannerPhase("bridge"), 5000));
-    // t=5.8 — advance
-    timers.push(setTimeout(() => setStep("focused"), 5800));
+    // Green completion banner
+    timers.push(setTimeout(() => setShowBanner(true), 4000));
+
+    // Fade everything out before handing off
+    timers.push(setTimeout(() => setFadingOut(true), 5600));
+    // Advance to workspace
+    timers.push(setTimeout(() => setStep("focused"), 6000));
 
     return () => timers.forEach(clearTimeout);
   }, [setStep]);
 
+  const currentStatus =
+    statusIndex >= 0 ? STATUS_LINES[statusIndex].line : null;
+
   return (
     <main
-      className="flex-1 flex items-start justify-center py-12 px-6"
-      style={{ background: "var(--theme-page-bg)" }}
+      className="flex-1 flex items-center justify-center py-12 px-6"
+      style={{
+        background: "var(--theme-page-bg)",
+        opacity: fadingOut ? 0 : 1,
+        transition: "opacity 360ms ease-out",
+      }}
     >
-      <div className="w-full max-w-[720px]">
-        {/* Badge — fades in at 0.2s */}
+      <div className="w-full max-w-[640px] flex flex-col items-center text-center">
+        {/* Big pulsing sparkles — "AI thinking" anchor */}
         <div
-          className="flex items-center gap-2 mb-2"
+          className="mb-5"
           style={{
             opacity: 0,
-            animation: "fade-in 320ms ease-out 200ms forwards",
+            animation: "fade-in 400ms ease-out 100ms forwards",
           }}
         >
-          <Sparkles
-            size={12}
-            strokeWidth={2.2}
-            style={{ color: "var(--theme-primary)" }}
-          />
+          <div
+            className="inline-flex items-center justify-center w-14 h-14"
+            style={{
+              background: "var(--westpac-primary-soft)",
+              border: "1px solid var(--westpac-primary-border)",
+              borderRadius: "50%",
+              animation: "pulse-dot 1600ms ease-in-out infinite",
+            }}
+          >
+            <Sparkles
+              size={22}
+              strokeWidth={2.2}
+              style={{ color: "var(--theme-primary)" }}
+            />
+          </div>
+        </div>
+
+        {/* D1 badge */}
+        <div
+          className="flex items-center gap-1.5 mb-2"
+          style={{
+            opacity: 0,
+            animation: "fade-in 320ms ease-out 220ms forwards",
+          }}
+        >
           <span
             className="text-[10px] uppercase font-semibold"
             style={{
               color: "var(--theme-primary)",
-              letterSpacing: "0.5px",
+              letterSpacing: "0.6px",
             }}
           >
             D1 · Dynamic checklist build
           </span>
         </div>
 
-        {/* Title — fades in at 0.5s */}
+        {/* Title */}
         <h1
           className="text-[22px] font-semibold leading-[1.25]"
           style={{
             color: "var(--theme-text-primary)",
             opacity: 0,
-            animation: "fade-in 400ms ease-out 500ms forwards",
+            animation: "fade-in 400ms ease-out 400ms forwards",
           }}
         >
           Building your checklist for{" "}
           <span style={{ color: "var(--theme-primary)" }}>
-            {productLabel(draft.product)} × {entityLabel(draft.entity)} ×{" "}
-            {draft.jurisdiction}
+            {productLabel(draft.product) || "this deal"}
+            {draft.entity ? ` × ${entityLabel(draft.entity)}` : ""}
+            {draft.jurisdiction ? ` × ${draft.jurisdiction}` : ""}
           </span>
-          ...
         </h1>
-        <p
-          className="text-[13px] mt-1.5"
-          style={{
-            color: "var(--theme-text-secondary)",
-            opacity: 0,
-            animation: "fade-in 400ms ease-out 700ms forwards",
-          }}
-        >
-          Auto-verifying Setup phase items from system sources.
-        </p>
 
-        {/* Setup items — staggered reveal */}
+        {/* Big status rotator — the "AI is thinking" line */}
         <div
-          className="mt-6 divide-y"
+          className="mt-4 min-h-[22px] flex items-center justify-center"
+          aria-live="polite"
+        >
+          {currentStatus ? (
+            <span
+              key={statusIndex}
+              className="inline-flex items-center gap-2 text-[14px] font-medium"
+              style={{
+                color:
+                  currentStatus.tone === "complete"
+                    ? "#2e7d32"
+                    : "var(--theme-text-secondary)",
+                animation: "fade-in 320ms ease-out both",
+              }}
+            >
+              {currentStatus.tone === "complete" ? (
+                <Check size={14} strokeWidth={2.8} />
+              ) : (
+                <span
+                  className="inline-block w-1.5 h-1.5"
+                  style={{
+                    background: "var(--theme-primary)",
+                    borderRadius: "50%",
+                    animation: "pulse-dot 1000ms ease-in-out infinite",
+                  }}
+                />
+              )}
+              {currentStatus.text}
+            </span>
+          ) : null}
+        </div>
+
+        {/* Setup items — supporting element */}
+        <div
+          className="mt-6 w-full divide-y text-left"
           style={{
             background: "var(--theme-card-bg)",
             border: "1px solid var(--theme-border)",
             borderRadius: "var(--theme-radius)",
             overflow: "hidden",
             opacity: 0,
-            animation: "fade-in 400ms ease-out 800ms forwards",
+            animation: "fade-in 400ms ease-out 600ms forwards",
           }}
         >
           {SETUP_ITEMS.map((item, i) => {
-            // 0 = hidden, 0.5 = skeleton visible, 1 = resolved
-            const state = revealCount >= i + 1
-              ? "resolved"
-              : revealCount >= i + 0.5
-                ? "skeleton"
-                : "hidden";
+            const state =
+              revealCount >= i + 1
+                ? "resolved"
+                : revealCount >= i + 0.5
+                  ? "skeleton"
+                  : "hidden";
             return (
-              <SetupItemRow
-                key={item.label}
-                item={item}
-                state={state}
-              />
+              <SetupItemRow key={item.label} item={item} state={state} />
             );
           })}
         </div>
 
-        {/* Readiness tick — only visible once items resolving */}
+        {/* Readiness tick */}
         {readinessScore > 0 ? (
           <div
-            className="mt-4 flex items-center justify-end gap-2 text-[11px]"
+            className="mt-3 flex items-center justify-center gap-2 text-[11px]"
             style={{ color: "var(--theme-text-secondary)" }}
           >
             Ready to Submit:{" "}
@@ -210,82 +290,41 @@ export function V1DynamicLoading() {
           </div>
         ) : null}
 
-        {/* Completion / bridge banner — slides up at 4.0s */}
-        {bannerPhase !== "none" ? (
+        {/* Green completion banner */}
+        {showBanner ? (
           <div
-            className="mt-5 overflow-hidden"
+            className="mt-5 w-full"
             style={{
               opacity: 0,
               animation: "slide-up-in 450ms ease-out forwards",
             }}
           >
-            {bannerPhase === "complete" ? (
-              <BannerComplete key="complete" />
-            ) : (
-              <BannerBridge key="bridge" />
-            )}
+            <div
+              className="flex items-center gap-3 p-3"
+              style={{
+                background: "#f0f9f2",
+                border: "1px solid #bfe4c6",
+                borderLeft: "3px solid #2e7d32",
+                borderRadius: "var(--theme-radius)",
+              }}
+            >
+              <div
+                className="flex items-center justify-center w-6 h-6 shrink-0"
+                style={{ background: "#2e7d32", borderRadius: "50%" }}
+              >
+                <Check size={13} strokeWidth={3} color="white" />
+              </div>
+              <div
+                className="text-[13px] font-semibold"
+                style={{ color: "var(--theme-text-primary)" }}
+              >
+                Setup complete — 3 items auto-verified by system
+              </div>
+            </div>
           </div>
         ) : null}
       </div>
     </main>
-  );
-}
-
-function BannerComplete() {
-  return (
-    <div
-      className="flex items-center gap-3 p-3"
-      style={{
-        background: "#f0f9f2",
-        border: "1px solid #bfe4c6",
-        borderLeft: "3px solid #2e7d32",
-        borderRadius: "var(--theme-radius)",
-      }}
-    >
-      <div
-        className="flex items-center justify-center w-6 h-6 shrink-0 animate-pulse"
-        style={{ background: "#2e7d32", borderRadius: "50%" }}
-      >
-        <Check size={13} strokeWidth={3} color="white" />
-      </div>
-      <div
-        className="text-[13px] font-semibold"
-        style={{ color: "var(--theme-text-primary)" }}
-      >
-        Setup complete — 3 items auto-verified by system
-      </div>
-    </div>
-  );
-}
-
-function BannerBridge() {
-  return (
-    <div
-      className="flex items-start gap-3 p-3"
-      style={{
-        background: "var(--westpac-primary-soft)",
-        border: "1px solid var(--westpac-primary-border)",
-        borderLeft: "3px solid var(--theme-primary)",
-        borderRadius: "var(--theme-radius)",
-      }}
-    >
-      <ArrowRight
-        size={16}
-        strokeWidth={2.5}
-        className="shrink-0 mt-0.5"
-        style={{ color: "var(--theme-primary)" }}
-      />
-      <div
-        className="text-[13px] leading-[1.5]"
-        style={{ color: "var(--theme-text-primary)" }}
-      >
-        <span className="font-semibold">Moving to Identification</span>
-        <span style={{ color: "var(--theme-text-secondary)" }}>
-          {" "}— 6 items, 3 need your input. This phase verifies who
-          you're dealing with.
-        </span>
-      </div>
-    </div>
   );
 }
 
@@ -300,9 +339,9 @@ function SetupItemRow({
 }) {
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3.5"
+      className="flex items-center gap-3 px-4 py-3"
       style={{
-        minHeight: "58px",
+        minHeight: "54px",
       }}
     >
       {state === "resolved" ? (
